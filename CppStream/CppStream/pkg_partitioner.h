@@ -1,39 +1,33 @@
 #pragma once
 
-#include <array>
+#include <vector>
 
 #include "MurmurHash3.h"
 
 #ifndef PKG_PARTITIONER_H_
 #define PKG_PARTITIONER_H_
-template <std::size_t N>
 class PkgPartitioner
 {
 public:
-	PkgPartitioner(const std::array<uint16_t, N>& tasks);
+	PkgPartitioner(const std::vector<uint16_t>& tasks);
 	~PkgPartitioner();
 	__int16 partition_next(const std::string& key, size_t key_len);
 private:
-	std::array<uint16_t, N> tasks;
-	std::array<uint64_t, N> task_count;
+	std::vector<uint16_t> tasks;
+	std::vector<uint64_t> task_count;
 };
 
 #endif // !PKG_PARTITIONER_H_
 
-template<std::size_t N>
-inline PkgPartitioner<N>::PkgPartitioner(const std::array<uint16_t, N>& tasks)
-{
-	this->tasks = tasks;
-	task_count = { 0 };
-}
-
-template<std::size_t N>
-inline PkgPartitioner<N>::~PkgPartitioner()
+inline PkgPartitioner::PkgPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), task_count(tasks.size(), uint64_t(0))
 {
 }
 
-template<std::size_t N>
-inline __int16 PkgPartitioner<N>::partition_next(const std::string& key, size_t key_len)
+inline PkgPartitioner::~PkgPartitioner()
+{
+}
+
+inline __int16 PkgPartitioner::partition_next(const std::string& key, size_t key_len)
 {
 	uint32_t first_choice, second_choice;
 	MurmurHash3_x86_32(key.c_str(), key_len, 13, &first_choice);
