@@ -13,7 +13,7 @@ class WindowPartitioner
 public:
 	WindowPartitioner(uint64_t window, uint64_t slide, const std::vector<uint16_t> tasks, size_t buffer_size);
 	~WindowPartitioner();
-	__int16 partition_next(const std::string& key, size_t key_len);
+	__int16 partition_next(time_t timestamp, const std::string& key, size_t key_len);
 private:
 	std::vector<uint16_t> tasks;
 	WindowLoad<std::string> windowLoad;
@@ -30,7 +30,7 @@ inline WindowPartitioner::~WindowPartitioner()
 {
 }
 
-inline __int16 WindowPartitioner::partition_next(const std::string & key, size_t key_len)
+inline __int16 WindowPartitioner::partition_next(time_t timestamp, const std::string & key, size_t key_len)
 {
 	uint32_t first_choice, second_choice;
 	MurmurHash3_x86_32(key.c_str(), key_len, 13, &first_choice);
@@ -40,8 +40,7 @@ inline __int16 WindowPartitioner::partition_next(const std::string & key, size_t
 	// sag policy
 	auto first_card = windowLoad.get_cardinality(first_choice);
 	auto second_card = windowLoad.get_cardinality(second_choice);
-	uint16_t selected_choice = first_card > second_card ? second_card : first_card;
-	std::time_t time = std::time(nullptr);
-	windowLoad.add(time, key, key_len, selected_choice);
+	uint16_t selected_choice = first_card > second_card ? second_choice : first_choice;
+	windowLoad.add(timestamp, key, key_len, selected_choice);
 	return 0;
 }

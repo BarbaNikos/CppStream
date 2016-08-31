@@ -6,7 +6,7 @@
 
 int t_main(int argc, char** argv)
 {
-	std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	/*std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	const size_t buffer_size = (size_t) 1e+6;
 	std::cout << "Current architecture size of size_t: " << sizeof(size_t) << " (max value for size_t: " << 
 		std::numeric_limits<size_t>::max() << ")." << std::endl;
@@ -28,6 +28,6 @@ int t_main(int argc, char** argv)
 	std::cout << "Total time: " << traverse_time.count() << " msec." << std::endl;
 
 	char ch;
-	std::cin >> ch;
+	std::cin >> ch;*/
 	return 0;
 }

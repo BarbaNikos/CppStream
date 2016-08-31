@@ -9,7 +9,7 @@ template <class T>
 class CircularBuffer
 {
 public:
-	CircularBuffer(const std::vector<uint16_t> tasks, size_t buffer_size);
+	CircularBuffer(size_t task_number, size_t buffer_size);
 	~CircularBuffer();
 	void progress_head();
 	bool is_empty();
@@ -29,7 +29,8 @@ private:
 #endif // !CIRCULAR_BUFFER_H_
 
 template<class T>
-inline CircularBuffer<T>::CircularBuffer(const std::vector<uint16_t> tasks, size_t buffer_size) : buffer(buffer_size, BasicWindow<T>(tasks, __int64(0), __int64(0)))
+inline CircularBuffer<T>::CircularBuffer(size_t task_number, size_t buffer_size) :
+	buffer(buffer_size, BasicWindow<T>(task_number, __int64(0), __int64(0)))
 {
 	this->head = uint16_t(0);
 	this->tail = uint16_t(0);

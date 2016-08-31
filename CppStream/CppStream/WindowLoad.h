@@ -12,10 +12,9 @@ template <class T>
 class WindowLoad
 {
 public:
-	WindowLoad(uint64_t window, uint64_t slide, const std::vector<uint16_t> tasks, size_t buffer_size);
+	WindowLoad(uint64_t window, uint64_t slide, const std::vector<uint16_t>& tasks, size_t buffer_size);
 	~WindowLoad();
 	void add(__int64 time_t, T key, size_t key_length, uint16_t task_index);
-
 	uint64_t get_max_cardinality();
 	uint64_t get_min_cardinality();
 	uint64_t get_cardinality(uint16_t task_index);
@@ -24,7 +23,7 @@ public:
 	uint64_t get_min_count();
 private:
 	void remove_last_window();
-
+	size_t task_number;
 	CircularBuffer<T> ring_buffer;
 	uint64_t slide;
 	uint64_t window;
@@ -37,10 +36,11 @@ private:
 #endif // !WINDOW_LOAD_H_
 
 template<class T>
-inline WindowLoad<T>::WindowLoad(uint64_t window, uint64_t slide, const std::vector<uint16_t> tasks, size_t buffer_size) : 
-	ring_buffer(tasks, buffer_size), tasks(tasks), count(tasks.size(), uint64_t(0)), state(tasks.size(), uint64_t(0)), 
+inline WindowLoad<T>::WindowLoad(uint64_t window, uint64_t slide, const std::vector<uint16_t>& tasks, size_t buffer_size) : 
+	ring_buffer(tasks.size(), buffer_size), tasks(tasks), count(tasks.size(), uint64_t(0)), state(tasks.size(), uint64_t(0)), 
 	cardinality(tasks.size(), std::unordered_set<T>())
 {
+	this->task_number = tasks.size();
 	this->slide = slide;
 	this->tasks = tasks;
 	this->buffer_size = buffer_size;
@@ -56,23 +56,25 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 {
 	std::vector<BasicWindow<T>>& buffer_ref = ring_buffer.get_buffer();
 	uint16_t buffer_head = this->ring_buffer.get_head();
-	if (this->ring_buffer.is_empty())
+	if (ring_buffer.is_empty())
 	{
 		buffer_ref[buffer_head].set_time(time_t, time_t + slide);
 		buffer_ref[buffer_head].count[task_index] += 1;
 		buffer_ref[buffer_head].cardinality[task_index].insert(key);
 		buffer_ref[buffer_head].byte_state[task_index] += key_length;
 
-		this->cardinality[task_index].insert(key);
-		this->count[task_index] += 1;
-		this->state[task_index] += key_length;
+		cardinality[task_index].insert(key);
+		count[task_index] += 1;
+		state[task_index] += key_length;
+
+		ring_buffer.progress_head();
 	}
 	else
 	{
 		if ((buffer_ref[buffer_head].start_t <= time_t && buffer_ref[buffer_head].end_t >= time_t) || buffer_ref[buffer_head].start_t > time_t)
 		{
 			buffer_ref[buffer_head].count[task_index] += 1;
-			this->count[task_index] += 1;
+			count[task_index] += 1;
 			// TODO: Need to think what happens with varying cardinalities of different operations
 			auto search = buffer_ref[buffer_head].cardinality[task_index].find(key);
 			if (search == buffer_ref[buffer_head].cardinality[task_index].end())
@@ -83,13 +85,14 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 		}
 		else
 		{
-			if (this->ring_buffer.is_full())
+			if (ring_buffer.is_full())
 			{
 				remove_last_window();
 			}
-			this->ring_buffer.progress_head();
-			// need to clear contents first
-			buffer_head = this->ring_buffer.get_head();
+			// the following skips a spot (it is a bug, needs fixing)
+			ring_buffer.progress_head();
+			
+			buffer_head = ring_buffer.get_head();
 
 			buffer_ref[buffer_head].set_time(time_t, time_t + slide);
 			buffer_ref[buffer_head].init();
@@ -97,9 +100,9 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 			buffer_ref[buffer_head].cardinality[task_index].insert(key);
 			buffer_ref[buffer_head].byte_state[task_index] += key_length;
 			
-			this->cardinality[task_index].insert(key);
-			this->count[task_index] += 1;
-			this->state[task_index] += key_length;
+			cardinality[task_index].insert(key);
+			count[task_index] += 1;
+			state[task_index] += key_length;
 		}
 	}
 }
@@ -165,7 +168,7 @@ inline void WindowLoad<T>::remove_last_window()
 	uint16_t buffer_tail = ring_buffer.get_tail();
 	while (buffer_tail != buffer_head)
 	{
-		for (size_t i = 0; i < last_window->tasks.size(); ++i)
+		for (size_t i = 0; i < task_number; ++i)
 		{
 			std::unordered_set<T>& task_keys = last_window->cardinality[i];
 			for (std::unordered_set<T>::iterator it = task_keys.begin(); it != task_keys.end(); ++it)
