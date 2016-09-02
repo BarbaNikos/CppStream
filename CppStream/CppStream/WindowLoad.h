@@ -67,11 +67,11 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 		count[task_index] += 1;
 		state[task_index] += key_length;
 
-		ring_buffer.progress_head();
+		ring_buffer.increase_size();
 	}
 	else
 	{
-		if ((buffer_ref[buffer_head].start_t <= time_t && buffer_ref[buffer_head].end_t >= time_t) || buffer_ref[buffer_head].start_t > time_t)
+		if (buffer_ref[buffer_head].start_t <= time_t && time_t <= buffer_ref[buffer_head].end_t)
 		{
 			buffer_ref[buffer_head].count[task_index] += 1;
 			count[task_index] += 1;
@@ -89,7 +89,6 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 			{
 				remove_last_window();
 			}
-			// the following skips a spot (it is a bug, needs fixing)
 			ring_buffer.progress_head();
 			
 			buffer_head = ring_buffer.get_head();
@@ -103,6 +102,8 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 			cardinality[task_index].insert(key);
 			count[task_index] += 1;
 			state[task_index] += key_length;
+
+			ring_buffer.increase_size();
 		}
 	}
 }
@@ -162,33 +163,40 @@ inline uint64_t WindowLoad<T>::get_min_count()
 template<class T>
 inline void WindowLoad<T>::remove_last_window()
 {
-	BasicWindow<T>* last_window = ring_buffer.pop_tail();
-	std::vector<BasicWindow<T>> buffer_ref = ring_buffer.get_buffer();
-	uint16_t buffer_head = ring_buffer.get_head();
-	uint16_t buffer_tail = ring_buffer.get_tail();
-	while (buffer_tail != buffer_head)
+	BasicWindow<T>* last_window = ring_buffer.peek_tail();
+	if (last_window == nullptr)
 	{
-		for (size_t i = 0; i < task_number; ++i)
+		return;
+	}
+	else
+	{
+		std::vector<BasicWindow<T>>& buffer_ref = ring_buffer.get_buffer();
+		uint16_t buffer_head = ring_buffer.get_head();
+		uint16_t window_it = ring_buffer.get_tail();
+		do 
 		{
-			std::unordered_set<T>& task_keys = last_window->cardinality[i];
-			for (std::unordered_set<T>::iterator it = task_keys.begin(); it != task_keys.end(); ++it)
+			window_it = window_it < buffer_ref.size() - 1 ? window_it + 1 : 0;
+			for (size_t i = 0; i < task_number; ++i)
 			{
-				if (last_window->cardinality[i].find(*it) != last_window->cardinality[i].end())
+				std::unordered_set<T>& task_keys = buffer_ref[window_it].cardinality[i];
+				for (std::unordered_set<T>::const_iterator it = task_keys.begin(); it != task_keys.end(); ++it)
 				{
-					last_window->cardinality[i].erase(*it);
+					auto pos = last_window->cardinality[i].find(*it);
+					if (pos != last_window->cardinality[i].end())
+					{
+						last_window->cardinality[i].erase(pos);
+					}
 				}
 			}
-		}
-		// increment
-		buffer_tail = buffer_tail >= buffer_ref.size() - 1 ? 0 : buffer_tail + 1;
-	}
-	for (size_t i = 0; i < tasks.size(); ++i)
-	{
-		count[i] -= last_window->count[i];
-		state[i] -= last_window->byte_state[i];
-		for (std::unordered_set<T>::iterator it = last_window->cardinality[i].begin(); it != last_window->cardinality[i].begin(); ++it)
+		} while (window_it != buffer_head);
+		for (size_t i = 0; i < tasks.size(); ++i)
 		{
-			cardinality[i].erase(*it);
+			count[i] -= last_window->count[i];
+			state[i] -= last_window->byte_state[i];
+			for (auto it = last_window->cardinality[i].begin(); it != last_window->cardinality[i].begin(); ++it)
+			{
+				cardinality[i].erase(*it);
+			}
 		}
 	}
 }

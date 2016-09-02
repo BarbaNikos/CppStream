@@ -7,6 +7,7 @@
 #include "BasicWindow.h"
 #include "pkg_partitioner.h"
 #include "window_partitioner.h"
+#include "debs_challenge_util.h"
 
 void vanilla_main()
 {
@@ -56,7 +57,7 @@ void vanilla_main()
 	uint64_t window = 1000;
 	uint64_t slide = 100;
 	const size_t buffer_size = (size_t)ceil(window / slide);
-	WindowPartitioner window_partitioner(window, slide, tasks, 10);
+	WindowPartitioner<std::string> window_partitioner(window, slide, tasks, 10);
 	start = std::chrono::high_resolution_clock::now();
 	for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -71,23 +72,63 @@ void vanilla_main()
 
 void test_window_group()
 {
-	uint64_t window = 5;
+	uint64_t window = 2;
 	uint64_t slide = 1;
 	std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-	WindowPartitioner window_partitioner(window, slide, tasks, 5);
-	auto s = std::string("1");
-	time_t t1 = 1;
-	window_partitioner.partition_next(t1, s, s.length());
-	auto s1 = std::string("2");
-	time_t t2 = 2;
-	window_partitioner.partition_next(t2, s1, s1.length());
+	WindowPartitioner<uint32_t> window_partitioner(window, slide, tasks, 2);
+	auto s = uint32_t(1);
+	time_t t = 1;
+	window_partitioner.partition_next(t, s, sizeof(s));
+	s = uint32_t(3);
+	t = 3;
+	window_partitioner.partition_next(t, s, sizeof(s));
+	s = uint32_t(5);
+	t = 5;
+	window_partitioner.partition_next(t, s, sizeof(s));
+}
+
+void debs_parse_test()
+{
+	std::vector<DebsChallenge::Ride> lines;
+	std::string line;
+	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\divided_data.small\\1\\1\\0.csv";
+	std::ifstream file(input_file_name);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file." << std::endl;
+		exit(1);
+	}
+	DebsChallenge::CellAssign cell_assign;
+	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
+	while (getline(file, line))
+	{
+		DebsChallenge::Ride ride;
+		cell_assign.parse_cells(line, ride);
+		lines.push_back(ride);
+	}
+	std::chrono::high_resolution_clock::time_point scan_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+
+	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		
+	}
+	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::nano> traverse_time = end - start;
+	std::cout << "Time to traverse lines and extract cells: " << traverse_time.count() << " (nanosec)." << std::endl;
 }
 
 int main(int argc, char** argv)
 {
 	char ch;
-	
-	test_window_group();
+
+	// test_window_group();
+
+	// vanilla_main();
+
+	debs_parse_test();
 
 	std::cin >> ch;
 
