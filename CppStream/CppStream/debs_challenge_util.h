@@ -11,11 +11,12 @@ namespace DebsChallenge
 {
 	typedef struct 
 	{
-		std::size_t operator () (const std::pair<uint8_t, uint8_t> &p) const
+		std::size_t operator () (const std::pair<uint16_t, uint16_t> &p) const
 		{
-			auto h1 = std::hash<uint8_t>{}(p.first);
-			auto h2 = std::hash<uint8_t>{}(p.first);
-			return h1 ^ h2;
+			auto h1 = std::hash<uint16_t>{}(p.first);
+			auto h2 = std::hash<uint16_t>{}(p.second);
+			std::size_t result = h1 ^ h2;
+			return result;
 		}
 	}pair_hash;
 
@@ -26,19 +27,20 @@ namespace DebsChallenge
 
 		static std::array<double, 8> get_square_edges(double latitude, double longitude, double squareSideLength);
 		
-		static std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash> get_squares(double latitude, double longitude, double distance, double grid_distance);
+		static void get_squares(double latitude, double longitude, double distance, double grid_distance, 
+			std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells);
 		
 		static double point_distance(double latitude, double longitude, double latitude_2, double longitude_2);
 		
-		static bool cell_membership(double point_latitude, double point_longitude, std::array<double, 8> cell);
+		static bool cell_membership(double point_latitude, double point_longitude, std::array<double, 8>& cell);
 		
-		static std::pair<uint8_t, uint8_t> recursive_location(int min_x, int max_x, int min_y, int max_y,
-			std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells, double point_latitude, double point_longitude);
+		static std::pair<uint16_t, uint16_t> recursive_location(int min_x, int max_x, int min_y, int max_y,
+			std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells, double point_latitude, double point_longitude);
 
 	private:
 		
-		static std::pair<uint8_t, uint8_t> locate(int min_x, int max_x, int min_y, int max_y, 
-			std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells,
+		static std::pair<uint16_t, uint16_t> locate(int min_x, int max_x, int min_y, int max_y, 
+			std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells,
 			double point_latitude, double point_longitude);
 
 		static double to_degrees(double value_in_radians);
@@ -76,7 +78,7 @@ namespace DebsChallenge
 		CellAssign();
 		~CellAssign();
 	private:
-		std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash> cells;
+		std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash> cells;
 		const static double latitude;
 		const static double longitude;
 		const static uint32_t cell_distance;

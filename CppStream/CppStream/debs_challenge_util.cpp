@@ -6,6 +6,7 @@
 #include <ctime>
 #include <locale>
 #include <iomanip>
+#include <chrono>
 
 #include "debs_challenge_util.h"
 
@@ -47,44 +48,37 @@ inline std::array<double, 8> DebsChallenge::TaxiCoordinateHelper::get_square_edg
 	return square;
 }
 
-std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash> DebsChallenge::TaxiCoordinateHelper::get_squares(double latitude, double longitude, 
-	double distance, double grid_distance)
+void DebsChallenge::TaxiCoordinateHelper::get_squares(double latitude, double longitude, double distance, double grid_distance, 
+	std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells)
 {
-	std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash> cell_grid;
-	double center_latitude;
-	double center_longitude;
+	double center_latitude, center_longitude;
 	double first_row_latitude = latitude;
 	double first_row_longitude = longitude;
-	for (size_t i = 1; i <= grid_distance; i++)
+	uint16_t i = 1;
+	do
 	{
-		if (i > 1)
-		{
-			std::array<double, 2> coordinates = get_coordinate_point(first_row_latitude, first_row_longitude, distance, double(180));
-			first_row_latitude = coordinates[0];
-			first_row_longitude = coordinates[1];
-		}
 		center_latitude = first_row_latitude;
 		center_longitude = first_row_longitude;
-		for (size_t j = 1; j <= grid_distance; j++)
+		uint16_t j = 1;
+		do
 		{
-			std::array<double, 2> coordinates;
+			std::array<double, 2> coordinates = { center_latitude, center_longitude };
 			if (j > 1)
 			{
 				coordinates = get_coordinate_point(center_latitude, center_longitude, distance, double(90));
 			}
-			else
-			{
-				coordinates[0] = center_latitude;
-				coordinates[1] = center_longitude;
-			}
 			std::array<double, 8> square = get_square_edges(coordinates[0], coordinates[1], distance);
-			std::pair<uint8_t, uint8_t> key = std::make_pair(uint8_t(i), uint8_t(j));
-			cell_grid.insert(std::make_pair(key, square));
+			std::pair<uint16_t, uint16_t> key = std::make_pair(uint16_t(i), uint16_t(j));
+			cells.insert(std::make_pair(key, square));
 			center_latitude = coordinates[0];
 			center_longitude = coordinates[1];
-		}
-	}
-	return cell_grid;
+			j++;
+		} while (j <= grid_distance);
+		std::array<double, 2> coordinates = get_coordinate_point(first_row_latitude, first_row_longitude, distance, double(180));
+		first_row_latitude = coordinates[0];
+		first_row_longitude = coordinates[1];
+		i++;
+	} while (i <= grid_distance);
 }
 
 inline double DebsChallenge::TaxiCoordinateHelper::point_distance(double latitude, double longitude, double latitude_2, double longitude_2)
@@ -99,7 +93,7 @@ inline double DebsChallenge::TaxiCoordinateHelper::point_distance(double latitud
 	return DebsChallenge::TaxiCoordinateHelper::R * c;
 }
 
-inline bool DebsChallenge::TaxiCoordinateHelper::cell_membership(double point_latitude, double point_longitude, std::array<double, 8> cell)
+inline bool DebsChallenge::TaxiCoordinateHelper::cell_membership(double point_latitude, double point_longitude, std::array<double, 8>& cell)
 {
 	double x_a = cell[0];
 	double y_a = cell[1];
@@ -116,12 +110,12 @@ inline bool DebsChallenge::TaxiCoordinateHelper::cell_membership(double point_la
 	return (f_ab <= 0 && f_bc <= 0 && f_cd <= 0 && f_da <= 0);
 }
 
-std::pair<uint8_t, uint8_t> DebsChallenge::TaxiCoordinateHelper::recursive_location(int min_x, int max_x, int min_y, int max_y, 
-	std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells, double point_latitude, double point_longitude)
+std::pair<uint16_t, uint16_t> DebsChallenge::TaxiCoordinateHelper::recursive_location(int min_x, int max_x, int min_y, int max_y, 
+	std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells, double point_latitude, double point_longitude)
 {
 	int mid_x = int(floor((min_x + max_x) / 2));
 	int mid_y = int(floor((min_y + max_y) / 2));
-	std::pair<uint8_t, uint8_t> key = std::make_pair(mid_x, mid_y);
+	std::pair<uint16_t, uint16_t> key = std::make_pair(mid_x, mid_y);
 	std::array<double, 8> middle_cell = cells[key];
 	double f_upper = (middle_cell[6] - middle_cell[0]) * (point_longitude - middle_cell[1]) - (middle_cell[7] - middle_cell[1]) * (point_latitude - middle_cell[0]);
 	double f_right = (middle_cell[4] - middle_cell[6]) * (point_longitude - middle_cell[7]) - (middle_cell[5] - middle_cell[7]) * (point_latitude - middle_cell[6]);
@@ -177,14 +171,14 @@ std::pair<uint8_t, uint8_t> DebsChallenge::TaxiCoordinateHelper::recursive_locat
 	}
 }
 
-std::pair<uint8_t, uint8_t> DebsChallenge::TaxiCoordinateHelper::locate(int min_x, int max_x, int min_y, int max_y, 
-	std::unordered_map<std::pair<uint8_t, uint8_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells, double point_latitude, double point_longitude)
+std::pair<uint16_t, uint16_t> DebsChallenge::TaxiCoordinateHelper::locate(int min_x, int max_x, int min_y, int max_y, 
+	std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash>& cells, double point_latitude, double point_longitude)
 {
-	for (size_t x = min_x; x <= max_x; ++x)
+	for (uint16_t x = min_x; x <= max_x; ++x)
 	{
-		for (size_t y = min_y; y <= max_y; ++y)
+		for (uint16_t y = min_y; y <= max_y; ++y)
 		{
-			auto candidate_cell = std::make_pair(uint8_t(x), uint8_t(y));
+			auto candidate_cell = std::make_pair(uint16_t(x), uint16_t(y));
 			if (DebsChallenge::TaxiCoordinateHelper::cell_membership(point_latitude, point_longitude, cells[candidate_cell]))
 			{
 				return candidate_cell;
@@ -241,8 +235,12 @@ void DebsChallenge::CellAssign::parse_cells(std::string ride_info, Ride& ride)
 
 DebsChallenge::CellAssign::CellAssign()
 {
-	cells = DebsChallenge::TaxiCoordinateHelper::get_squares(CellAssign::latitude, CellAssign::longitude, 
-		CellAssign::cell_distance, CellAssign::grid_distance);
+	std::chrono::system_clock::time_point square_start = std::chrono::system_clock::now();
+	DebsChallenge::TaxiCoordinateHelper::get_squares(CellAssign::latitude, CellAssign::longitude, 
+		CellAssign::cell_distance, CellAssign::grid_distance, cells);
+	std::chrono::system_clock::time_point square_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> square_calc_time = square_end - square_start;
+	std::cout << "Time to calculate squares: " << square_calc_time.count() << " (msec). Total squares: " << cells.size() << std::endl;
 }
 
 DebsChallenge::CellAssign::~CellAssign()

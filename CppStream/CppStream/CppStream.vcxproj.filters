@@ -36,6 +36,9 @@
     <ClInclude Include="debs_challenge_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CardinalityEstimator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="debs_challenge_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CardinalityEstimator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

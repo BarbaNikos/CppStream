@@ -8,6 +8,9 @@
 #include "pkg_partitioner.h"
 #include "window_partitioner.h"
 #include "debs_challenge_util.h"
+#include "CardinalityEstimator.h"
+
+const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 };
 
 void vanilla_main()
 {
@@ -110,14 +113,40 @@ void debs_parse_test()
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
 	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
 
-	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	PkgPartitioner pkg(tasks);
+	std::chrono::high_resolution_clock::time_point pkg_start = std::chrono::high_resolution_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
-		
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = pkg.partition_next(key, key.length());
 	}
-	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::nano> traverse_time = end - start;
-	std::cout << "Time to traverse lines and extract cells: " << traverse_time.count() << " (nanosec)." << std::endl;
+	std::chrono::high_resolution_clock::time_point pkg_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
+
+	uint64_t window = 1000 * 60 * 30; 
+	uint64_t slide = 1000 * 60;
+	const size_t buffer_size = (size_t)ceil(window / slide);
+	WindowPartitioner<std::string> wag(window, slide, tasks, buffer_size);
+	std::chrono::high_resolution_clock::time_point wag_start = std::chrono::high_resolution_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = wag.partition_next(it->dropoff_datetime, key, key.length());
+	}
+	std::chrono::high_resolution_clock::time_point wag_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> wag_partition_time = wag_end - wag_start;
+	std::cout << "Time partition using WAG: " << wag_partition_time.count() << " (msec)." << std::endl;
+}
+
+void prob_count_example()
+{
+	CardinalityEstimator::ProbCount prob_count;
+	prob_count.update_bitmap(1);
 }
 
 int main(int argc, char** argv)
@@ -128,7 +157,9 @@ int main(int argc, char** argv)
 
 	// vanilla_main();
 
-	debs_parse_test();
+	// debs_parse_test();
+
+	prob_count_example();
 
 	std::cin >> ch;
 

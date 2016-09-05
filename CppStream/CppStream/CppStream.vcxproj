@@ -113,6 +113,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CardinalityEstimator.h" />
     <ClInclude Include="BasicWindow.h" />
     <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="debs_challenge_util.h" />
@@ -122,6 +123,7 @@
     <ClInclude Include="window_partitioner.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CardinalityEstimator.cpp" />
     <ClCompile Include="debs_challenge_util.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MurmurHash3.cpp" />
