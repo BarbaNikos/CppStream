@@ -9,6 +9,7 @@
 #include "window_partitioner.h"
 #include "debs_challenge_util.h"
 #include "CardinalityEstimator.h"
+#include "BitTrickBox.h"
 
 const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 };
 
@@ -145,8 +146,127 @@ void debs_parse_test()
 
 void prob_count_example()
 {
-	CardinalityEstimator::ProbCount prob_count;
-	prob_count.update_bitmap(1);
+	/*CardinalityEstimator::ProbCount prob_count;
+	prob_count.update_bitmap(1);*/
+}
+
+void bit_tricks_scenario()
+{
+	uint32_t i = 8; // 0x00000008
+	uint32_t l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000008
+	uint32_t f_l = BitWizard::lowest_order_bit_index(i);
+	uint32_t h = BitWizard::highest_order_bit_index_slow(i); // 0x00000008
+	uint32_t f_h = BitWizard::highest_order_bit_index(i);
+	uint64_t h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	uint64_t f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	if (l != f_l)
+	{
+		throw new std::exception("first one failed on lowest");
+	}
+	if (h != f_h)
+	{
+		throw new std::exception("first one failed on highest");
+	}
+	if (h_64 != f_h_64)
+	{
+		throw new std::exception("first one failed on highest (x64)");
+	}
+	i = 15; // 0x0000000f
+	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
+	f_l = BitWizard::lowest_order_bit_index(i);
+	h = BitWizard::highest_order_bit_index_slow(i); // 0x00000008
+	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	f_h = BitWizard::highest_order_bit_index(i);
+	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	if (l != f_l)
+	{
+		std::cout << "second one failed on lowest" << std::endl;
+	}
+	if (h != f_h)
+	{
+		std::cout << "second one failed on highest" << std::endl;
+	}
+	i = 123452; // 0x0001e23c
+	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000004
+	f_l = BitWizard::lowest_order_bit_index(i);
+	h = BitWizard::highest_order_bit_index_slow(i); // 0x00010000
+	f_h = BitWizard::highest_order_bit_index(i);
+	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	if (l != f_l)
+	{
+		throw new std::exception("third one failed on lowest");
+	}
+	if (h != f_h)
+	{
+		throw new std::exception("third one failed on highest");
+	}
+	i = uint32_t(0xffffffff);
+	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
+	f_l = BitWizard::lowest_order_bit_index(i);
+	h = BitWizard::highest_order_bit_index_slow(i); // 0x80000000
+	f_h = BitWizard::highest_order_bit_index(i);
+	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	if (l != f_l)
+	{
+		throw new std::exception("fourth one failed on lowest");
+	}
+	if (h != f_h)
+	{
+		throw new std::exception("fourth one failed on highest");
+	}
+	i = uint32_t(0x80000000);
+	l = BitWizard::lowest_order_bit_index_slow(i); // 0x800000000
+	f_l = BitWizard::lowest_order_bit_index(i);
+	h = BitWizard::highest_order_bit_index_slow(i); // 0x80000000
+	f_h = BitWizard::highest_order_bit_index(i);
+	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	if (l != f_l)
+	{
+		throw new std::exception("fifth one failed on lowest");
+	}
+	if (h != f_h)
+	{
+		throw new std::exception("fifth one failed on highest");
+	}
+	i = uint32_t(0x80000001);
+	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
+	f_l = BitWizard::lowest_order_bit_index(i);
+	h = BitWizard::highest_order_bit_index_slow(i); // 0x80000000
+	f_h = BitWizard::highest_order_bit_index(i);
+	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	if (l != f_l)
+	{
+		throw new std::exception("sixth one failed on lowest");
+	}
+	if (h != f_h)
+	{
+		throw new std::exception("sixth one failed on highest");
+	}
+	i = uint32_t(0x00000000);
+	l = BitWizard::lowest_order_bit_index_slow(i);
+	f_l = BitWizard::lowest_order_bit_index(i);
+	h = BitWizard::highest_order_bit_index_slow(i);
+	f_h = BitWizard::highest_order_bit_index(i);
+	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 }
 
 int main(int argc, char** argv)
@@ -158,6 +278,8 @@ int main(int argc, char** argv)
 	// vanilla_main();
 
 	// debs_parse_test();
+
+	bit_tricks_scenario();
 
 	prob_count_example();
 

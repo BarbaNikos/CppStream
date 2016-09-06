@@ -39,6 +39,9 @@
     <ClInclude Include="CardinalityEstimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BitTrickBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
