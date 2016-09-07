@@ -12,6 +12,12 @@
 class BitWizard
 {
 public:
+	static const uint8_t MultiplyDeBruijnBitPosition2[32];
+
+	static uint32_t return_max_uint32(uint32_t x, uint32_t y);
+
+	static uint32_t log_base_2_of_power_of_2_uint(uint32_t value);
+
 	static uint32_t swap_bits_32(uint32_t value);
 
 	static uint16_t isolate_bits_16(size_t offset, size_t length, uint16_t value);
@@ -42,6 +48,22 @@ public:
 	static uint32_t highest_order_bit_index_arch(uint32_t value);
 	static uint64_t highest_order_bit_index_arch(uint64_t value);
 };
+
+const uint8_t BitWizard::MultiplyDeBruijnBitPosition2[32] =
+{
+	0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+	31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+};
+
+inline uint32_t BitWizard::return_max_uint32(uint32_t x, uint32_t y)
+{
+	return x ^ ((x ^ y) & -(x < y)); // max(x, y) -- NEED TO TEST IT!!!
+}
+
+inline uint32_t BitWizard::log_base_2_of_power_of_2_uint(uint32_t value)
+{
+	return BitWizard::MultiplyDeBruijnBitPosition2[(uint32_t)(value * 0x077CB531U) >> 27];
+}
 
 inline uint32_t BitWizard::swap_bits_32(uint32_t v)
 {

@@ -149,7 +149,7 @@ void prob_count_example()
 {
 	CardinalityEstimator::ProbCount prob_count;
 	CardinalityEstimator::HyperLoglog hyper_loglog(10);
-	for (size_t i = 0; i < 1000000; ++i)
+	for (size_t i = 0; i < 10000000; ++i)
 	{
 		prob_count.update_bitmap(uint32_t(i));
 		hyper_loglog.update_bitmap(uint32_t(i));

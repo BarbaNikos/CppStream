@@ -90,7 +90,7 @@ inline void CardinalityEstimator::HyperLoglog::update_bitmap(uint32_t value)
 	MurmurHash3_x86_32(&value, sizeof(value), 13, &hash_result);
 	uint32_t j = BitWizard::isolate_bits_32(32 - k, k, hash_result) >> (32 - k);	// isolate k highest order bits
 	uint32_t w = BitWizard::isolate_bits_32(0, 32 - k, hash_result);	// isolate 32-k lowest order bits
-	uint32_t leftmost_bit = log2(BitWizard::lowest_order_bit_index(w));
+	uint32_t leftmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(BitWizard::lowest_order_bit_index(w));
 	buckets[j] = buckets[j] < leftmost_bit ? leftmost_bit : buckets[j];
 }
 
@@ -103,8 +103,10 @@ inline uint32_t CardinalityEstimator::HyperLoglog::cardinality_estimation()
 	}
 	double Z = double(1) / sum;
 	double E = a_32 * m * m * Z;
-	// Correction
-	double E_star;
+	return E;
+	// Corrections proposed by Heule et al. from Hyperloglog in Practice: Algorithmic Engineering of a State of the 
+	// art cardinality estimation algorithm
+	/*double E_star;
 	if (E <= double(5/2) * double(m))
 	{
 		size_t V = 0;
@@ -125,7 +127,7 @@ inline uint32_t CardinalityEstimator::HyperLoglog::cardinality_estimation()
 	{
 		E_star = -1 * pow(2, 32) * log(1 - E / pow(2, 32));
 	}
-	return E_star;
+	return E_star;*/
 }
 
 #endif // !CARDINALITY_ESTIMATOR_
