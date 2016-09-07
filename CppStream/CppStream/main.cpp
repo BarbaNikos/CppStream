@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <chrono>
+#include <climits>
 
 #include "BasicWindow.h"
 #include "pkg_partitioner.h"
@@ -146,8 +147,15 @@ void debs_parse_test()
 
 void prob_count_example()
 {
-	/*CardinalityEstimator::ProbCount prob_count;
-	prob_count.update_bitmap(1);*/
+	CardinalityEstimator::ProbCount prob_count;
+	CardinalityEstimator::HyperLoglog hyper_loglog(10);
+	for (size_t i = 0; i < 1000000; ++i)
+	{
+		prob_count.update_bitmap(uint32_t(i));
+		hyper_loglog.update_bitmap(uint32_t(i));
+	}
+	std::cout << "Probabilistic Count: estimated cardinality: " << prob_count.cardinality_estimation() << std::endl;
+	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << std::endl;
 }
 
 void bit_tricks_scenario()
@@ -159,8 +167,10 @@ void bit_tricks_scenario()
 	uint32_t f_h = BitWizard::highest_order_bit_index(i);
 	uint64_t h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	uint64_t f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+	
 	uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
 	uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	
 	if (l != f_l)
 	{
 		throw new std::exception("first one failed on lowest");
@@ -269,6 +279,270 @@ void bit_tricks_scenario()
 	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 }
 
+void bit_tricks_performance_16()
+{
+	const unsigned long upper_limit = ULONG_MAX / 32;
+	size_t sum = 0, f_sum = 0, f_arch_sum = 0;
+	std::chrono::system_clock::time_point normal_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t l_16 = BitWizard::lowest_order_bit_index_slow(uint16_t(i));
+		sum += l_16;
+	}
+	std::chrono::system_clock::time_point normal_end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point fast_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t f_l_16 = BitWizard::lowest_order_bit_index(uint16_t(i));
+		f_sum += f_l_16;
+	}
+	std::chrono::system_clock::time_point fast_end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t f_l_16_arch = BitWizard::lowest_order_bit_index_arch(uint16_t(i));
+		f_arch_sum += f_l_16_arch;
+	}
+	std::chrono::system_clock::time_point fast_arch_end = std::chrono::system_clock::now();
+
+	std::chrono::duration<double, std::milli> normal_duration = normal_end - normal_start;
+	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
+	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "low-order-16-bit :: normal: " << normal_duration.count() << ", fast: " << 
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t f_l_16_arch = BitWizard::lowest_order_bit_index_arch(uint16_t(i));
+		f_arch_sum += f_l_16_arch;
+	}
+	fast_arch_end = std::chrono::system_clock::now();
+	fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "low-order-16-bit without branch for fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	// high-order
+	sum = 0; f_sum = 0; f_arch_sum;
+	normal_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t l_16 = BitWizard::highest_order_bit_index_slow(uint16_t(i));
+		sum += l_16;
+	}
+	normal_end = std::chrono::system_clock::now();
+	fast_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t f_l_16 = BitWizard::highest_order_bit_index(uint16_t(i));
+		f_sum += f_l_16;
+	}
+	fast_end = std::chrono::system_clock::now();
+	fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint16_t f_l_16_arch = BitWizard::highest_order_bit_index_arch(uint16_t(i));
+		f_arch_sum += f_l_16_arch;
+	}
+	fast_arch_end = std::chrono::system_clock::now();
+	normal_duration = normal_end - normal_start;
+	fast_duration = fast_end - fast_start;
+	fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "high-order-16-bit :: normal: " << normal_duration.count() << ", fast: " <<
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+}
+
+void bit_tricks_performance_32()
+{
+	const unsigned long upper_limit = ULONG_MAX / 32;
+	size_t sum = 0, f_sum = 0, f_arch_sum = 0;
+	std::chrono::system_clock::time_point normal_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint32_t l_32 = BitWizard::lowest_order_bit_index_slow(uint32_t(i));
+		sum += l_32;
+	}
+	std::chrono::system_clock::time_point normal_end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point fast_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint32_t f_l_32 = BitWizard::lowest_order_bit_index(uint32_t(i));
+		f_sum += f_l_32;
+	}
+	std::chrono::system_clock::time_point fast_end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint32_t f_l_32_arch = BitWizard::lowest_order_bit_index_arch(uint32_t(i));
+		f_arch_sum += f_l_32_arch;
+	}
+	std::chrono::system_clock::time_point fast_arch_end = std::chrono::system_clock::now();
+
+	std::chrono::duration<double, std::milli> normal_duration = normal_end - normal_start;
+	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
+	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "low-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	// high-order
+	sum = 0; f_sum = 0; f_arch_sum;
+	normal_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint32_t l_32 = BitWizard::highest_order_bit_index_slow(uint32_t(i));
+		sum += l_32;
+	}
+	normal_end = std::chrono::system_clock::now();
+	fast_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint32_t f_l_32 = BitWizard::highest_order_bit_index(uint32_t(i));
+		f_sum += f_l_32;
+	}
+	fast_end = std::chrono::system_clock::now();
+	fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint32_t f_l_32_arch = BitWizard::highest_order_bit_index_arch(uint32_t(i));
+		f_arch_sum += f_l_32_arch;
+	}
+	fast_arch_end = std::chrono::system_clock::now();
+	normal_duration = normal_end - normal_start;
+	fast_duration = fast_end - fast_start;
+	fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "high-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+}
+
+void bit_tricks_performance_64()
+{
+	const unsigned long upper_limit = ULONG_MAX / 32;
+	size_t sum = 0, f_sum = 0, f_arch_sum = 0;
+	std::chrono::system_clock::time_point normal_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t l_64 = BitWizard::lowest_order_bit_index_slow(uint64_t(i));
+		sum += l_64;
+	}
+	std::chrono::system_clock::time_point normal_end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point fast_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t f_l_64 = BitWizard::lowest_order_bit_index(uint64_t(i));
+		f_sum += f_l_64;
+	}
+	std::chrono::system_clock::time_point fast_end = std::chrono::system_clock::now();
+	std::chrono::system_clock::time_point fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t f_l_64_arch = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+		f_arch_sum += f_l_64_arch;
+	}
+	std::chrono::system_clock::time_point fast_arch_end = std::chrono::system_clock::now();
+
+	std::chrono::duration<double, std::milli> normal_duration = normal_end - normal_start;
+	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
+	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "low-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	// high-order
+	sum = 0; f_sum = 0; f_arch_sum;
+	normal_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t l_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+		sum += l_64;
+	}
+	normal_end = std::chrono::system_clock::now();
+	fast_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t f_l_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+		f_sum += f_l_64;
+	}
+	fast_end = std::chrono::system_clock::now();
+	fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t f_l_64_arch = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+		f_arch_sum += f_l_64_arch;
+	}
+	fast_arch_end = std::chrono::system_clock::now();
+	normal_duration = normal_end - normal_start;
+	fast_duration = fast_end - fast_start;
+	fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "high-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	fast_arch_start = std::chrono::system_clock::now();
+	for (unsigned long i = 0; i < upper_limit; ++i)
+	{
+		uint64_t f_l_64_arch = 0x8000000000000000 >> __lzcnt64(i);
+		f_arch_sum += f_l_64_arch;
+	}
+	fast_arch_end = std::chrono::system_clock::now();
+	fast_arch_duration = fast_arch_end - fast_arch_start;
+	std::cout << "high-order-64-bit without branch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+}
+
+int bit_tricks_correctness_test()
+{
+	for (unsigned long i = 0; i < ULONG_MAX; ++i)
+	{
+		uint16_t l_16 = BitWizard::lowest_order_bit_index_slow(uint16_t(i));
+		uint16_t f_l_16 = BitWizard::lowest_order_bit_index(uint16_t(i));
+		uint16_t f_l_arch_16 = BitWizard::lowest_order_bit_index_arch(uint16_t(i));
+
+		uint16_t h_16 = BitWizard::highest_order_bit_index_slow(uint16_t(i));
+		uint16_t f_h_16 = BitWizard::highest_order_bit_index(uint16_t(i));
+		uint16_t f_h_arch_16 = BitWizard::highest_order_bit_index_arch(uint16_t(i));
+
+		if (l_16 != f_l_16 || l_16 != f_l_arch_16)
+		{
+			std::cout << "for input number: " << uint16_t(i) << ", l_16: " << l_16 << ", f_l_16: " << f_l_16 << ", f_l_arch_16: " << f_l_arch_16 << std::endl;
+			return 1;
+		}
+		if (h_16 != f_h_16 || h_16 != f_h_arch_16)
+		{
+			std::cout << "for input number: " << uint16_t(i) << ", h_16: " << h_16 << ", f_h_16: " << f_h_16 << ", f_h_arch_16: " << f_h_arch_16 << std::endl;
+			return 1;
+		}
+		uint32_t l_32 = BitWizard::lowest_order_bit_index_slow(uint32_t(i));
+		uint32_t f_l_32 = BitWizard::lowest_order_bit_index(uint32_t(i));
+		uint32_t f_l_arch_32 = BitWizard::lowest_order_bit_index_arch(uint32_t(i));
+
+		uint32_t h_32 = BitWizard::highest_order_bit_index_slow(uint32_t(i));
+		uint32_t f_h_32 = BitWizard::highest_order_bit_index(uint32_t(i));
+		uint32_t f_h_arch_32 = BitWizard::highest_order_bit_index_arch(uint32_t(i));
+
+		if (l_32 != f_l_32 || l_32 != f_l_arch_32)
+		{
+			std::cout << "for input number: " << uint32_t(i) << ", l_32: " << l_32 << ", f_l_32: " << f_l_32 << ", f_l_arch_32: " << f_l_arch_32 << std::endl;
+			return 1;
+		}
+		if (h_32 != f_h_32 || h_32 != f_h_arch_32)
+		{
+			std::cout << "for input number: " << uint32_t(i) << ", h_32: " << h_32 << ", f_h_32: " << f_h_32 << ", f_h_arch_32: " << f_h_arch_32 << std::endl;
+			return 1;
+		}
+		uint64_t l_64 = BitWizard::lowest_order_bit_index_slow(uint64_t(i));
+		uint64_t f_l_64 = BitWizard::lowest_order_bit_index(uint64_t(i));
+		uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+
+		uint64_t h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
+		uint64_t f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
+		uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+
+		if (l_64 != f_l_64 || l_64 != f_l_arch_64)
+		{
+			std::cout << "for input number: " << uint64_t(i) << ", l_64: " << l_64 << ", f_l_64: " << f_l_64 << ", f_l_arch_64: " << f_l_arch_64 << std::endl;
+			return 1;
+		}
+		if (h_64 != f_h_64 || h_64 != f_h_arch_64)
+		{
+			std::cout << "for input number: " << uint64_t(i) << ", h_64: " << h_64 << ", f_h_64: " << f_h_64 << ", f_h_arch_64: " << f_h_arch_64 << std::endl;
+			return 1;
+		}
+	}
+	std::cout << "All numbers passed..." << std::endl;
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	char ch;
@@ -279,9 +553,17 @@ int main(int argc, char** argv)
 
 	// debs_parse_test();
 
-	bit_tricks_scenario();
+	// bit_tricks_scenario();
 
 	prob_count_example();
+
+	// bit_tricks_correctness_test();
+
+	// bit_tricks_performance_16();
+
+	// bit_tricks_performance_32();
+
+	// bit_tricks_performance_64();
 
 	std::cin >> ch;
 
