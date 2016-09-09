@@ -45,6 +45,9 @@
     <ClInclude Include="cag_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="partition_policy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

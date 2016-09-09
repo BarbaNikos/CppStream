@@ -120,6 +120,7 @@
     <ClInclude Include="CircularBuffer.h" />
     <ClInclude Include="debs_challenge_util.h" />
     <ClInclude Include="MurmurHash3.h" />
+    <ClInclude Include="partition_policy.h" />
     <ClInclude Include="pkg_partitioner.h" />
     <ClInclude Include="WindowLoad.h" />
     <ClInclude Include="window_partitioner.h" />

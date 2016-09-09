@@ -154,7 +154,7 @@ void debs_partition_performance()
 {
 	std::vector<DebsChallenge::Ride> lines;
 	std::string line;
-	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\sorted_data.small\\1\\sorted_data.csv";
+	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv";
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{

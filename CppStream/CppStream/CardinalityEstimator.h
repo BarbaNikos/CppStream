@@ -39,6 +39,8 @@ namespace CardinalityEstimator
 		uint16_t k;
 		uint16_t m;
 		uint32_t* buckets;
+		double _current_sum;
+		double _multiplier;
 	};
 }
 
@@ -82,14 +84,17 @@ const double CardinalityEstimator::HyperLoglog::a_64 = 0.709;
 
 inline CardinalityEstimator::HyperLoglog::HyperLoglog(uint8_t k)
 {
+	_current_sum = double(0);
 	m = (uint16_t)std::pow(2, k);
 	this->k = k;
 	buckets = new uint32_t[m];
 	for (size_t i = 0; i < m; ++i)
 	{
 		buckets[i] = uint32_t(0);
+		_current_sum += (double(1) / std::pow(2, uint32_t(0)));
 	}
 	a_m = 0.7213 / (1 + 1.079 / m);
+	_multiplier = a_32 * m * m;
 }
 
 CardinalityEstimator::HyperLoglog::~HyperLoglog()
@@ -104,8 +109,12 @@ inline void CardinalityEstimator::HyperLoglog::update_bitmap_with_hashed_value(u
 	uint32_t lob = BitWizard::lowest_order_bit_index(w);
 	uint32_t leftmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(lob);
 	uint32_t current = buckets[j];
+	//_current_sum -= (double(1) / std::pow(2, buckets[j]));
+	_current_sum -= (double(1) / double(1 << buckets[j]));
 	// buckets[j] = current < leftmost_bit ? leftmost_bit : current;
 	buckets[j] = BitWizard::return_max_uint32(current, leftmost_bit);
+	//_current_sum += (double(1) / std::pow(2, buckets[j]));
+	_current_sum += (double(1) / double(1 << buckets[j]));
 }
 
 inline void CardinalityEstimator::HyperLoglog::update_bitmap(uint32_t value)
@@ -117,15 +126,7 @@ inline void CardinalityEstimator::HyperLoglog::update_bitmap(uint32_t value)
 
 inline uint32_t CardinalityEstimator::HyperLoglog::cardinality_estimation()
 {
-	double sum = 0;
-	for (size_t i = 0; i < m; ++i)
-	{
-		if (buckets[i] != 0)
-		{
-			sum += (double(1) / std::pow(2, buckets[i]));
-		}
-	}
-	double E = a_32 * m * m * double(1) / sum;
+	double E = _multiplier / _current_sum;
 	return (uint32_t)E;
 }
 
