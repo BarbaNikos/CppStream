@@ -36,5 +36,5 @@ inline __int16 PkgPartitioner::partition_next(const std::string& key, size_t key
 	second_choice = second_choice % tasks.size();
 	uint16_t selected_choice = task_count[first_choice] < task_count[second_choice] ? first_choice : second_choice;
 	task_count[selected_choice] += 1;
-	return 0;
+	return selected_choice;
 }

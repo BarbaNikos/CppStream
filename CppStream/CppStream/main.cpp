@@ -4,6 +4,9 @@
 #include <string>
 #include <chrono>
 #include <climits>
+#include <cstdlib>
+#include <cstdio>
+#include <cmath>
 
 #include "BasicWindow.h"
 #include "pkg_partitioner.h"
@@ -11,6 +14,7 @@
 #include "debs_challenge_util.h"
 #include "CardinalityEstimator.h"
 #include "BitTrickBox.h"
+#include "cag_partitioner.h"
 
 const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 };
 
@@ -145,17 +149,143 @@ void debs_parse_test()
 	std::cout << "Time partition using WAG: " << wag_partition_time.count() << " (msec)." << std::endl;
 }
 
-void prob_count_example()
+void debs_partition_performance()
+{
+	std::vector<DebsChallenge::Ride> lines;
+	std::string line;
+	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\debug.csv";
+	std::ifstream file(input_file_name);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file." << std::endl;
+		exit(1);
+	}
+	DebsChallenge::CellAssign cell_assign;
+	std::chrono::system_clock::time_point scan_start = std::chrono::system_clock::now();
+	while (getline(file, line))
+	{
+		DebsChallenge::Ride ride;
+		cell_assign.parse_cells(line, ride);
+		lines.push_back(ride);
+	}
+	std::chrono::system_clock::time_point scan_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+
+	PkgPartitioner pkg(tasks);
+	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = pkg.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
+
+	CagNaivePartitioner cag_naive(tasks);
+	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = cag_naive.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
+	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec)." << std::endl;
+
+	CagPcPartitioner cag_pc(tasks);
+	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = cag_pc.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
+	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec)." << std::endl;
+
+	CagHllPartitioner cag_hll(tasks, 5);
+	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = cag_hll.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
+	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec)." << std::endl;
+
+	//std::vector<uint32_t> cag_naive_cardinality;
+	//cag_naive.get_cardinality_vector(cag_naive_cardinality);
+	//std::vector<uint32_t> cag_pc_cardinality;
+	//cag_pc.get_cardinality_vector(cag_pc_cardinality);
+	//std::vector<uint32_t> cag_hll_cardinality;
+	//cag_hll.get_cardinality_vector(cag_hll_cardinality);
+	//std::cout << "cag-naive size: " << cag_naive_cardinality.size() << ", cag-pc size: " << cag_pc_cardinality.size() << ", cag-hll size: " << cag_hll_cardinality.size() << std::endl;
+	//uint32_t pc_delta = 0, hll_delta = 0;
+	//std::cout << "***** Result Cardinalities *****" << std::endl;
+	//for (size_t i = 0; i < tasks.size(); ++i)
+	//{
+	//	std::cout << "task-" << i << " " << cag_naive_cardinality[i] << " " << cag_pc_cardinality[i] << " " << cag_hll_cardinality[i] << std::endl;
+	//	/*pc_delta += std::abs(double(cag_naive_cardinality[i] - cag_pc_cardinality[i]));
+	//	hll_delta += std::abs(double(cag_naive_cardinality[i] - cag_hll_cardinality[i]));*/
+	//}
+	/*std::cout << "Delta-PC: " << pc_delta << ", Delta-HLL: " << hll_delta << "." << std::endl;*/
+	std::cout << "------ END -----" << std::endl;
+}
+
+void card_estimate_example()
 {
 	CardinalityEstimator::ProbCount prob_count;
 	CardinalityEstimator::HyperLoglog hyper_loglog(10);
-	for (size_t i = 0; i < 10000000; ++i)
+	for (size_t i = 0; i < 1000000000; ++i)
 	{
 		prob_count.update_bitmap(uint32_t(i));
 		hyper_loglog.update_bitmap(uint32_t(i));
 	}
 	std::cout << "Probabilistic Count: estimated cardinality: " << prob_count.cardinality_estimation() << std::endl;
 	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << std::endl;
+}
+
+void log_perf_test()
+{
+	uint32_t value = 2;
+	const uint32_t upper_limit = UINT32_MAX / 32;
+	uint32_t sum = 0;
+	std::chrono::system_clock::time_point std_start = std::chrono::system_clock::now();
+	while (value < upper_limit)
+	{
+		sum += std::log2(value);
+		value *= 2;
+	}
+	std::chrono::system_clock::time_point std_end = std::chrono::system_clock::now();
+
+	uint32_t c_value = 2;
+	uint32_t c_cum = 0;
+	std::chrono::system_clock::time_point custom_start = std::chrono::system_clock::now();
+	while (c_value < upper_limit)
+	{
+		c_cum += BitWizard::log_base_2_of_power_of_2_uint(c_value);
+		c_value *= 2;
+	}
+	std::chrono::system_clock::time_point custom_end = std::chrono::system_clock::now();
+
+	if (sum != c_cum)
+	{
+		std::cout << "Sums do not match! sum: " << sum << ", c_sum: " << c_cum << "." << std::endl;
+	}
+	std::chrono::duration<double, std::micro> std_duration = std_end - std_start;
+	std::chrono::duration<double, std::micro> custom_duration = custom_end - custom_start;
+	std::cout << "STD: " << std_duration.count() << ", Custom: " << custom_duration.count() << " (msec)." << std::endl;
 }
 
 void bit_tricks_scenario()
@@ -543,6 +673,33 @@ int bit_tricks_correctness_test()
 	return 0;
 }
 
+void bit_tricks_max_test()
+{
+	srand(time(nullptr));
+	size_t sum = 0, c_sum = 0;
+	std::chrono::system_clock::time_point std_start = std::chrono::system_clock::now();
+	for (size_t i = 0; i < 1000000; i++)
+	{
+		uint32_t x = rand() % 100000;
+		uint32_t y = rand() % 100000;
+		sum += x > y ? x : y;
+	}
+	std::chrono::system_clock::time_point std_end = std::chrono::system_clock::now();
+
+	std::chrono::system_clock::time_point c_start = std::chrono::system_clock::now();
+	for (size_t i = 0; i < 1000000; i++)
+	{
+		uint32_t x = rand() % 100000;
+		uint32_t y = rand() % 100000;
+		c_sum += BitWizard::return_max_uint32(x, y);
+	}
+	std::chrono::system_clock::time_point c_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::micro> std_duration = std_end - std_start;
+	std::chrono::duration<double, std::micro> custom_duration = c_end - c_start;
+	std::cout << "STD: " << std_duration.count() << ", Custom: " << custom_duration.count() << " (msec)." << std::endl;
+	return;
+}
+
 int main(int argc, char** argv)
 {
 	char ch;
@@ -555,7 +712,7 @@ int main(int argc, char** argv)
 
 	// bit_tricks_scenario();
 
-	prob_count_example();
+	// card_estimate_example();
 
 	// bit_tricks_correctness_test();
 
@@ -564,6 +721,12 @@ int main(int argc, char** argv)
 	// bit_tricks_performance_32();
 
 	// bit_tricks_performance_64();
+
+	// log_perf_test();
+
+	// bit_tricks_max_test();
+
+	debs_partition_performance();
 
 	std::cin >> ch;
 

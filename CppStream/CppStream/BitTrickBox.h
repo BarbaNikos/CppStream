@@ -57,7 +57,7 @@ const uint8_t BitWizard::MultiplyDeBruijnBitPosition2[32] =
 
 inline uint32_t BitWizard::return_max_uint32(uint32_t x, uint32_t y)
 {
-	return x ^ ((x ^ y) & -(x < y)); // max(x, y) -- NEED TO TEST IT!!!
+	return x ^ ((x ^ y) & -(x < y)); // max(x, y)
 }
 
 inline uint32_t BitWizard::log_base_2_of_power_of_2_uint(uint32_t value)
@@ -225,36 +225,33 @@ inline uint64_t BitWizard::highest_order_bit_index(uint64_t value)
 inline uint16_t BitWizard::lowest_order_bit_index_arch(uint16_t value)
 {
 	unsigned long mask;
-	return _BitScanForward64(&mask, uint64_t(value)) != 0 ? uint16_t(1) << mask : uint16_t(0);
+	return _BitScanForward(&mask, value) != 0 ? uint16_t(1) << mask : uint16_t(0);
 }
 
 inline uint32_t BitWizard::lowest_order_bit_index_arch(uint32_t value)
 {
 	unsigned long mask;
-	return _BitScanForward(&mask, uint64_t(value)) != 0 ? uint32_t(1) << mask : uint32_t(0);
+	return _BitScanForward(&mask, value) != 0 ? uint32_t(1) << mask : uint32_t(0);
 }
 
 inline uint64_t BitWizard::lowest_order_bit_index_arch(uint64_t value)
 {
 	unsigned long mask;
-	return _BitScanForward(&mask, value) != 0 ? uint64_t(1) << mask : uint64_t(0);
+	return _BitScanForward64(&mask, value) != 0 ? uint64_t(1) << mask : uint64_t(0);
 }
 
 inline uint16_t BitWizard::highest_order_bit_index_arch(uint16_t value)
 {
-	// return 0x8000 >> __lzcnt16(value);
 	return value != 0 ? 0x8000 >> __lzcnt16(value) : uint16_t(0);
 }
 
 inline uint32_t BitWizard::highest_order_bit_index_arch(uint32_t value)
 {
-	// return 0x80000000 >> __lzcnt(value);
 	return value != 0 ? 0x80000000 >> __lzcnt(value) : uint32_t(0);
 }
 
 inline uint64_t BitWizard::highest_order_bit_index_arch(uint64_t value)
 {
-	// return 0x8000000000000000 >> __lzcnt64(value);
 	return value != 0 ? 0x8000000000000000 >> __lzcnt64(value) : uint64_t(0);
 }
 

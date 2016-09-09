@@ -15,9 +15,11 @@ namespace CardinalityEstimator
 	public:
 		ProbCount();
 		~ProbCount();
+		void update_bitmap_with_hashed_value(uint32_t hashed_value);
 		void update_bitmap(uint32_t value);
 		uint32_t cardinality_estimation();
 	private:
+		const static double phi;
 		uint32_t bitmap;
 	};
 
@@ -26,6 +28,7 @@ namespace CardinalityEstimator
 	public:
 		HyperLoglog(uint8_t k);
 		~HyperLoglog();
+		void update_bitmap_with_hashed_value(uint32_t hashed_value);
 		void update_bitmap(uint32_t value);
 		uint32_t cardinality_estimation();
 	private:
@@ -39,6 +42,8 @@ namespace CardinalityEstimator
 	};
 }
 
+const double CardinalityEstimator::ProbCount::phi = 0.77351;
+
 CardinalityEstimator::ProbCount::ProbCount()
 {
 	bitmap = uint64_t(0);
@@ -48,11 +53,17 @@ CardinalityEstimator::ProbCount::~ProbCount()
 {
 }
 
+inline void CardinalityEstimator::ProbCount::update_bitmap_with_hashed_value(uint32_t hashed_value)
+{
+	uint32_t leftmost_bit = hashed_value == 0 ? uint32_t(0x80000000) : BitWizard::lowest_order_bit_index(hashed_value);
+	bitmap |= leftmost_bit;
+}
+
 inline void CardinalityEstimator::ProbCount::update_bitmap(uint32_t value)
 {
 	uint32_t hash_result;
 	MurmurHash3_x86_32(&value, sizeof(value), 13, &hash_result);
-	uint32_t leftmost_bit = hash_result == 0 ? uint32_t(31) : BitWizard::lowest_order_bit_index(hash_result);
+	uint32_t leftmost_bit = hash_result == 0 ? uint32_t(0x80000000) : BitWizard::lowest_order_bit_index(hash_result);
 	bitmap |= leftmost_bit;
 }
 
@@ -60,8 +71,8 @@ inline uint32_t CardinalityEstimator::ProbCount::cardinality_estimation()
 {
 	uint32_t negated_bitmap = bitmap ^ int32_t(-1);
 	uint32_t leftmost_zero = BitWizard::lowest_order_bit_index(negated_bitmap);
-	uint32_t R = log2(leftmost_zero);
-	return pow(2, R) / 0.77531;
+	uint32_t R = BitWizard::log_base_2_of_power_of_2_uint(leftmost_zero);
+	return std::pow(2, R) / CardinalityEstimator::ProbCount::phi;
 }
 
 const double CardinalityEstimator::HyperLoglog::a_16 = 0.673;
@@ -72,16 +83,38 @@ const double CardinalityEstimator::HyperLoglog::a_64 = 0.709;
 
 CardinalityEstimator::HyperLoglog::HyperLoglog(uint8_t k)
 {
-	this->m = pow(2, k);
+	m = std::pow(2, k);
 	this->k = k;
-	buckets = (uint32_t*)std::calloc(this->m, sizeof(uint32_t));
+	buckets = new uint32_t[m];
+	for (size_t i = 0; i < m; i++)
+	{
+		buckets[i] = uint32_t(0);
+	}
 	a_m = 0.7213 / (1 + 1.079 / m);
 }
 
 CardinalityEstimator::HyperLoglog::~HyperLoglog()
 {
-	free(buckets);
+	delete[] buckets;
 	buckets = nullptr;
+}
+
+inline void CardinalityEstimator::HyperLoglog::update_bitmap_with_hashed_value(uint32_t hashed_value)
+{
+	uint32_t j = BitWizard::isolate_bits_32(32 - k, k, hashed_value);
+	uint32_t s_j = j >> (32 - k);	// isolate k highest order bits
+	uint32_t w = BitWizard::isolate_bits_32(0, 32 - k, hashed_value);	// isolate 32-k lowest order bits
+	uint32_t lob = BitWizard::lowest_order_bit_index(w);
+	uint32_t leftmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(lob);
+	if (s_j >= m)
+	{
+		int st = s_j + j;
+		std::cout << "here s_j points to " << s_j << " when m is: " << m << std::endl;
+		exit(1);
+	}
+	uint32_t current = buckets[s_j];
+	buckets[s_j] = current < leftmost_bit ? leftmost_bit : current;
+	//buckets[j] = BitWizard::return_max_uint32(buckets[j], leftmost_bit);
 }
 
 inline void CardinalityEstimator::HyperLoglog::update_bitmap(uint32_t value)
@@ -92,6 +125,7 @@ inline void CardinalityEstimator::HyperLoglog::update_bitmap(uint32_t value)
 	uint32_t w = BitWizard::isolate_bits_32(0, 32 - k, hash_result);	// isolate 32-k lowest order bits
 	uint32_t leftmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(BitWizard::lowest_order_bit_index(w));
 	buckets[j] = buckets[j] < leftmost_bit ? leftmost_bit : buckets[j];
+	// buckets[j] = BitWizard::return_max_uint32(buckets[j], leftmost_bit);
 }
 
 inline uint32_t CardinalityEstimator::HyperLoglog::cardinality_estimation()
@@ -99,35 +133,13 @@ inline uint32_t CardinalityEstimator::HyperLoglog::cardinality_estimation()
 	double sum = 0;
 	for (size_t i = 0; i < m; ++i)
 	{
-		sum += (double(1) / pow(2, buckets[i]));
-	}
-	double Z = double(1) / sum;
-	double E = a_32 * m * m * Z;
-	return E;
-	// Corrections proposed by Heule et al. from Hyperloglog in Practice: Algorithmic Engineering of a State of the 
-	// art cardinality estimation algorithm
-	/*double E_star;
-	if (E <= double(5/2) * double(m))
-	{
-		size_t V = 0;
-		for (size_t i = 0; i < m; i++)
+		if (buckets[i] != 0)
 		{
-			if (buckets[i] == 0)
-			{
-				V++;
-			}
+			sum += (double(1) / std::pow(2, buckets[i]));
 		}
-		E_star = m * log(m / V);
 	}
-	else if (E <= double(1/30 * pow(2, 32)))
-	{
-		E_star = E;
-	}
-	else
-	{
-		E_star = -1 * pow(2, 32) * log(1 - E / pow(2, 32));
-	}
-	return E_star;*/
+	double E = a_32 * m * m * double(1) / sum;
+	return E;
 }
 
 #endif // !CARDINALITY_ESTIMATOR_

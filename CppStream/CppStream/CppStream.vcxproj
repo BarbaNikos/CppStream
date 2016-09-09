@@ -114,6 +114,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BitTrickBox.h" />
+    <ClInclude Include="cag_partitioner.h" />
     <ClInclude Include="CardinalityEstimator.h" />
     <ClInclude Include="BasicWindow.h" />
     <ClInclude Include="CircularBuffer.h" />
