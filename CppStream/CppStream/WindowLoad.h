@@ -54,14 +54,14 @@ inline WindowLoad<T>::~WindowLoad()
 template<class T>
 inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_t task_index)
 {
-	std::vector<BasicWindow<T>>& buffer_ref = ring_buffer.get_buffer();
+	BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
 	uint16_t buffer_head = this->ring_buffer.get_head();
 	if (ring_buffer.is_empty())
 	{
-		buffer_ref[buffer_head].set_time(time_t, time_t + slide);
-		buffer_ref[buffer_head].count[task_index] += 1;
-		buffer_ref[buffer_head].cardinality[task_index].insert(key);
-		buffer_ref[buffer_head].byte_state[task_index] += key_length;
+		buffer_ref[buffer_head]->set_time(time_t, time_t + slide);
+		buffer_ref[buffer_head]->count[task_index] += 1;
+		buffer_ref[buffer_head]->cardinality[task_index].insert(key);
+		buffer_ref[buffer_head]->byte_state[task_index] += key_length;
 
 		cardinality[task_index].insert(key);
 		count[task_index] += 1;
@@ -71,16 +71,16 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 	}
 	else
 	{
-		if (buffer_ref[buffer_head].start_t <= time_t && time_t <= buffer_ref[buffer_head].end_t)
+		if (buffer_ref[buffer_head]->start_t <= time_t && time_t <= buffer_ref[buffer_head]->end_t)
 		{
-			buffer_ref[buffer_head].count[task_index] += 1;
+			buffer_ref[buffer_head]->count[task_index] += 1;
 			count[task_index] += 1;
 			// TODO: Need to think what happens with varying cardinalities of different operations
-			auto search = buffer_ref[buffer_head].cardinality[task_index].find(key);
-			if (search == buffer_ref[buffer_head].cardinality[task_index].end())
+			auto search = buffer_ref[buffer_head]->cardinality[task_index].find(key);
+			if (search == buffer_ref[buffer_head]->cardinality[task_index].end())
 			{
-				buffer_ref[buffer_head].cardinality[task_index].insert(key);
-				buffer_ref[buffer_head].byte_state[task_index] += key_length;
+				buffer_ref[buffer_head]->cardinality[task_index].insert(key);
+				buffer_ref[buffer_head]->byte_state[task_index] += key_length;
 			}
 		}
 		else
@@ -93,11 +93,11 @@ inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_
 			
 			buffer_head = ring_buffer.get_head();
 
-			buffer_ref[buffer_head].set_time(time_t, time_t + slide);
-			buffer_ref[buffer_head].init();
-			buffer_ref[buffer_head].count[task_index] += 1;
-			buffer_ref[buffer_head].cardinality[task_index].insert(key);
-			buffer_ref[buffer_head].byte_state[task_index] += key_length;
+			buffer_ref[buffer_head]->set_time(time_t, time_t + slide);
+			buffer_ref[buffer_head]->init();
+			buffer_ref[buffer_head]->count[task_index] += 1;
+			buffer_ref[buffer_head]->cardinality[task_index].insert(key);
+			buffer_ref[buffer_head]->byte_state[task_index] += key_length;
 			
 			cardinality[task_index].insert(key);
 			count[task_index] += 1;
@@ -170,15 +170,15 @@ inline void WindowLoad<T>::remove_last_window()
 	}
 	else
 	{
-		std::vector<BasicWindow<T>>& buffer_ref = ring_buffer.get_buffer();
+		BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
 		uint16_t buffer_head = ring_buffer.get_head();
 		uint16_t window_it = ring_buffer.get_tail();
 		do 
 		{
-			window_it = window_it < buffer_ref.size() - 1 ? window_it + 1 : 0;
+			window_it = window_it < ring_buffer.get_size() - 1 ? window_it + 1 : 0;
 			for (size_t i = 0; i < task_number; ++i)
 			{
-				std::unordered_set<T>& task_keys = buffer_ref[window_it].cardinality[i];
+				std::unordered_set<T>& task_keys = buffer_ref[window_it]->cardinality[i];
 				for (std::unordered_set<T>::const_iterator it = task_keys.begin(); it != task_keys.end(); ++it)
 				{
 					auto pos = last_window->cardinality[i].find(*it);

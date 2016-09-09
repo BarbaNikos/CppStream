@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <ctime>
 #include <fstream>
@@ -16,7 +17,7 @@
 #include "BitTrickBox.h"
 #include "cag_partitioner.h"
 
-const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 };
+const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
 
 void vanilla_main()
 {
@@ -153,7 +154,7 @@ void debs_partition_performance()
 {
 	std::vector<DebsChallenge::Ride> lines;
 	std::string line;
-	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\debug.csv";
+	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\sorted_data.small\\1\\sorted_data.csv";
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
@@ -224,22 +225,22 @@ void debs_partition_performance()
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
 	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec)." << std::endl;
 
-	//std::vector<uint32_t> cag_naive_cardinality;
-	//cag_naive.get_cardinality_vector(cag_naive_cardinality);
-	//std::vector<uint32_t> cag_pc_cardinality;
-	//cag_pc.get_cardinality_vector(cag_pc_cardinality);
-	//std::vector<uint32_t> cag_hll_cardinality;
-	//cag_hll.get_cardinality_vector(cag_hll_cardinality);
-	//std::cout << "cag-naive size: " << cag_naive_cardinality.size() << ", cag-pc size: " << cag_pc_cardinality.size() << ", cag-hll size: " << cag_hll_cardinality.size() << std::endl;
-	//uint32_t pc_delta = 0, hll_delta = 0;
-	//std::cout << "***** Result Cardinalities *****" << std::endl;
-	//for (size_t i = 0; i < tasks.size(); ++i)
-	//{
-	//	std::cout << "task-" << i << " " << cag_naive_cardinality[i] << " " << cag_pc_cardinality[i] << " " << cag_hll_cardinality[i] << std::endl;
-	//	/*pc_delta += std::abs(double(cag_naive_cardinality[i] - cag_pc_cardinality[i]));
-	//	hll_delta += std::abs(double(cag_naive_cardinality[i] - cag_hll_cardinality[i]));*/
-	//}
-	/*std::cout << "Delta-PC: " << pc_delta << ", Delta-HLL: " << hll_delta << "." << std::endl;*/
+	std::vector<uint32_t> cag_naive_cardinality;
+	cag_naive.get_cardinality_vector(cag_naive_cardinality);
+	std::vector<uint32_t> cag_pc_cardinality;
+	cag_pc.get_cardinality_vector(cag_pc_cardinality);
+	std::vector<uint32_t> cag_hll_cardinality;
+	cag_hll.get_cardinality_vector(cag_hll_cardinality);
+	std::cout << "cag-naive size: " << cag_naive_cardinality.size() << ", cag-pc size: " << cag_pc_cardinality.size() << ", cag-hll size: " << cag_hll_cardinality.size() << std::endl;
+	uint32_t pc_delta = 0, hll_delta = 0;
+	std::cout << "***** Result Cardinalities *****" << std::endl;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		std::cout << "task-" << i << " " << cag_naive_cardinality[i] << " " << cag_pc_cardinality[i] << " " << cag_hll_cardinality[i] << std::endl;
+		/*pc_delta += std::abs(double(cag_naive_cardinality[i] - cag_pc_cardinality[i]));
+		hll_delta += std::abs(double(cag_naive_cardinality[i] - cag_hll_cardinality[i]));*/
+	}
+	std::cout << "Delta-PC: " << pc_delta << ", Delta-HLL: " << hll_delta << "." << std::endl;
 	std::cout << "------ END -----" << std::endl;
 }
 

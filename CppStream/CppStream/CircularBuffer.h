@@ -17,37 +17,47 @@ public:
 	void progress_tail();
 	bool is_empty();
 	bool is_full();
+	size_t get_size();
 	BasicWindow<T>* peek_tail();
-	std::vector<BasicWindow<T>>& get_buffer();
+	BasicWindow<T>** get_buffer();
 	uint16_t get_head();
 	uint16_t get_tail();
 private:
-	std::vector<BasicWindow<T>> buffer;
+	BasicWindow<T>** _buffer;
 	uint16_t head;
 	uint16_t tail;
 	size_t size;
+	size_t buffer_size;
 };
-#endif // !CIRCULAR_BUFFER_H_
 
 template<class T>
-inline CircularBuffer<T>::CircularBuffer(size_t task_number, size_t buffer_size) :
-	buffer(buffer_size, BasicWindow<T>(task_number, __int64(0), __int64(0)))
+inline CircularBuffer<T>::CircularBuffer(size_t task_number, size_t buffer_size)
 {
-	this->head = uint16_t(0);
-	this->tail = uint16_t(0);
-	this->size = size_t(0);
+	_buffer = new BasicWindow<T>*[buffer_size];
+	for (size_t i = 0; i < buffer_size; ++i)
+	{
+		_buffer[i] = new BasicWindow<T>(task_number, __int64(0), __int64(0));
+	}
+	this->buffer_size = buffer_size;
+	head = uint16_t(0);
+	tail = uint16_t(0);
+	size = size_t(0);
 }
 
 template<class T>
 inline CircularBuffer<T>::~CircularBuffer()
 {
-	// nothing to clean
+	for (size_t i = 0; i < buffer_size; ++i)
+	{
+		delete _buffer[i];
+	}
+	delete[] _buffer;
 }
 
 template<class T>
 inline void CircularBuffer<T>::increase_size()
 {
-	if (size < buffer.size())
+	if (size < buffer_size)
 	{
 		size += 1;
 	}
@@ -65,13 +75,13 @@ inline void CircularBuffer<T>::decrease_size()
 template<class T>
 inline void CircularBuffer<T>::progress_head()
 {
-	head = head == buffer.size() - 1 ? 0 : head + 1;
+	head = head == buffer_size - 1 ? 0 : head + 1;
 }
 
 template<class T>
 inline void CircularBuffer<T>::progress_tail()
 {
-	tail = tail == buffer.size() - 1 ? size_t(0) : tail + 1;
+	tail = tail == buffer_size - 1 ? size_t(0) : tail + 1;
 }
 
 template<class T>
@@ -83,7 +93,13 @@ inline bool CircularBuffer<T>::is_empty()
 template<class T>
 inline bool CircularBuffer<T>::is_full()
 {
-	return size == buffer.size();
+	return size == buffer_size;
+}
+
+template<class T>
+inline size_t CircularBuffer<T>::get_size()
+{
+	return size;
 }
 
 template<class T>
@@ -95,14 +111,14 @@ inline BasicWindow<T>* CircularBuffer<T>::peek_tail()
 	}
 	else
 	{
-		return &(buffer[tail]);
+		return _buffer[tail];
 	}
 }
 
 template<class T>
-inline std::vector<BasicWindow<T>>& CircularBuffer<T>::get_buffer()
+inline BasicWindow<T>** CircularBuffer<T>::get_buffer()
 {
-	return buffer;
+	return _buffer;
 }
 
 template<class T>
@@ -116,3 +132,4 @@ inline uint16_t CircularBuffer<T>::get_tail()
 {
 	return tail;
 }
+#endif // !CIRCULAR_BUFFER_H_
