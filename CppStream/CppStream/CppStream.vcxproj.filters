@@ -15,51 +15,51 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BasicWindow.h">
+    <ClInclude Include="include\BasicWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WindowLoad.h">
+    <ClInclude Include="include\BitTrickBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pkg_partitioner.h">
+    <ClInclude Include="include\cag_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MurmurHash3.h">
+    <ClInclude Include="include\CardinalityEstimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="window_partitioner.h">
+    <ClInclude Include="include\CircularBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CircularBuffer.h">
+    <ClInclude Include="include\debs_challenge_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="debs_challenge_util.h">
+    <ClInclude Include="include\MurmurHash3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CardinalityEstimator.h">
+    <ClInclude Include="include\partition_policy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BitTrickBox.h">
+    <ClInclude Include="include\pkg_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cag_partitioner.h">
+    <ClInclude Include="include\window_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="partition_policy.h">
+    <ClInclude Include="include\WindowLoad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\ring_buffer_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MurmurHash3.cpp">
+    <ClCompile Include="src\MurmurHash3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ring_buffer_main.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="debs_challenge_util.cpp">
+    <ClCompile Include="src\debs_challenge_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

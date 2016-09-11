@@ -113,23 +113,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BitTrickBox.h" />
-    <ClInclude Include="cag_partitioner.h" />
-    <ClInclude Include="CardinalityEstimator.h" />
-    <ClInclude Include="BasicWindow.h" />
-    <ClInclude Include="CircularBuffer.h" />
-    <ClInclude Include="debs_challenge_util.h" />
-    <ClInclude Include="MurmurHash3.h" />
-    <ClInclude Include="partition_policy.h" />
-    <ClInclude Include="pkg_partitioner.h" />
-    <ClInclude Include="WindowLoad.h" />
-    <ClInclude Include="window_partitioner.h" />
+    <ClInclude Include="include\BasicWindow.h" />
+    <ClInclude Include="include\BitTrickBox.h" />
+    <ClInclude Include="include\cag_partitioner.h" />
+    <ClInclude Include="include\CardinalityEstimator.h" />
+    <ClInclude Include="include\CircularBuffer.h" />
+    <ClInclude Include="include\debs_challenge_util.h" />
+    <ClInclude Include="include\MurmurHash3.h" />
+    <ClInclude Include="include\partition_policy.h" />
+    <ClInclude Include="include\pkg_partitioner.h" />
+    <ClInclude Include="include\WindowLoad.h" />
+    <ClInclude Include="include\window_partitioner.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="debs_challenge_util.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="MurmurHash3.cpp" />
-    <ClCompile Include="ring_buffer_main.cpp" />
+    <ClCompile Include="src\debs_challenge_util.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\MurmurHash3.cpp" />
+    <ClCompile Include="src\ring_buffer_main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
