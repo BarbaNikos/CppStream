@@ -1,7 +1,8 @@
 #pragma once
-
+#include <iostream>
 #include <vector>
 #include <ctime>
+#include <cinttypes>
 
 #include "MurmurHash3.h"
 #include "WindowLoad.h"

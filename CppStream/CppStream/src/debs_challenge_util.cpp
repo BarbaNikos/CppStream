@@ -1,12 +1,4 @@
 #pragma once
-#include <iostream>
-#include <cmath>
-#include <string>
-#include <sstream>
-#include <ctime>
-#include <locale>
-#include <iomanip>
-#include <chrono>
 
 #include "../include/debs_challenge_util.h"
 

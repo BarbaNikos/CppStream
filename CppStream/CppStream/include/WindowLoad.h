@@ -1,10 +1,12 @@
 #pragma once
-#include "BasicWindow.h"
-#include "CircularBuffer.h"
-
+#include <iostream>
 #include <vector>
 #include <limits>
 #include <algorithm>
+#include <cinttypes>
+
+#include "BasicWindow.h"
+#include "CircularBuffer.h"
 
 #ifndef WINDOW_LOAD_H_
 #define WINDOW_LOAD_H_
@@ -54,7 +56,7 @@ inline WindowLoad<T>::~WindowLoad()
 template<class T>
 inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_t task_index)
 {
-	BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
+	WindowLib::BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
 	uint16_t buffer_head = this->ring_buffer.get_head();
 	if (ring_buffer.is_empty())
 	{
@@ -163,14 +165,14 @@ inline uint64_t WindowLoad<T>::get_min_count()
 template<class T>
 inline void WindowLoad<T>::remove_last_window()
 {
-	BasicWindow<T>* last_window = ring_buffer.peek_tail();
+	WindowLib::BasicWindow<T>* last_window = ring_buffer.peek_tail();
 	if (last_window == nullptr)
 	{
 		return;
 	}
 	else
 	{
-		BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
+		WindowLib::BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
 		uint16_t buffer_head = ring_buffer.get_head();
 		uint16_t window_it = ring_buffer.get_tail();
 		do 

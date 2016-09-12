@@ -1,7 +1,4 @@
-#include <iostream>
-#include <chrono>
-#include <limits>
-
+#pragma once
 #include "../include/CircularBuffer.h"
 
 int t_main(int argc, char** argv)

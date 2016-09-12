@@ -1,10 +1,14 @@
 #pragma once
-
+#include <iostream>
+#include <cstdlib>
+#include <cinttypes>
 #include <vector>
+
 #include "BasicWindow.h"
 
 #ifndef CIRCULAR_BUFFER_H_
 #define CIRCULAR_BUFFER_H_
+
 template <class T>
 class CircularBuffer
 {
@@ -18,12 +22,12 @@ public:
 	bool is_empty();
 	bool is_full();
 	size_t get_size();
-	BasicWindow<T>* peek_tail();
-	BasicWindow<T>** get_buffer();
+	WindowLib::BasicWindow<T>* peek_tail();
+	WindowLib::BasicWindow<T>** get_buffer();
 	uint16_t get_head();
 	uint16_t get_tail();
 private:
-	BasicWindow<T>** _buffer;
+	WindowLib::BasicWindow<T>** _buffer;
 	uint16_t head;
 	uint16_t tail;
 	size_t size;
@@ -33,10 +37,10 @@ private:
 template<class T>
 inline CircularBuffer<T>::CircularBuffer(size_t task_number, size_t buffer_size)
 {
-	_buffer = new BasicWindow<T>*[buffer_size];
+	_buffer = new WindowLib::BasicWindow<T>*[buffer_size];
 	for (size_t i = 0; i < buffer_size; ++i)
 	{
-		_buffer[i] = new BasicWindow<T>(task_number, __int64(0), __int64(0));
+		_buffer[i] = new WindowLib::BasicWindow<T>(task_number, __int64(0), __int64(0));
 	}
 	this->buffer_size = buffer_size;
 	head = uint16_t(0);
@@ -103,7 +107,7 @@ inline size_t CircularBuffer<T>::get_size()
 }
 
 template<class T>
-inline BasicWindow<T>* CircularBuffer<T>::peek_tail()
+inline WindowLib::BasicWindow<T>* CircularBuffer<T>::peek_tail()
 {
 	if (is_empty())
 	{
@@ -116,7 +120,7 @@ inline BasicWindow<T>* CircularBuffer<T>::peek_tail()
 }
 
 template<class T>
-inline BasicWindow<T>** CircularBuffer<T>::get_buffer()
+inline WindowLib::BasicWindow<T>** CircularBuffer<T>::get_buffer()
 {
 	return _buffer;
 }

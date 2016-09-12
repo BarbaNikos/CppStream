@@ -13,7 +13,6 @@
 #include "../include/pkg_partitioner.h"
 #include "../include/window_partitioner.h"
 #include "../include/debs_challenge_util.h"
-#include "../include/CardinalityEstimator.h"
 #include "../include/BitTrickBox.h"
 #include "../include/cag_partitioner.h"
 
@@ -186,7 +185,7 @@ void debs_partition_performance()
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
 	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
 
-	CagNaivePartitioner cag_naive(tasks);
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks);
 	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -199,7 +198,7 @@ void debs_partition_performance()
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
 	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec)." << std::endl;
 
-	CagPcPartitioner cag_pc(tasks);
+	CagPartionLib::CagPcPartitioner cag_pc(tasks);
 	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -212,7 +211,7 @@ void debs_partition_performance()
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
 	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec)." << std::endl;
 
-	CagHllPartitioner cag_hll(tasks, 5);
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, 5);
 	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -704,7 +703,14 @@ void bit_tricks_max_test()
 int main(int argc, char** argv)
 {
 	char ch;
-
+	std::cout << "MSC_VER: " << _MSC_VER << std::endl;
+	int num = 17;
+	int clz = 0;
+	unsigned long ctz = 0;
+	clz = __lzcnt(num);
+	_BitScanForward(&ctz, num);
+	std::cout << "clz " << clz << std::endl;
+	std::cout << "ctz " << ctz << std::endl;
 	// test_window_group();
 
 	// vanilla_main();
@@ -727,7 +733,7 @@ int main(int argc, char** argv)
 
 	// bit_tricks_max_test();
 
-	debs_partition_performance();
+	// debs_partition_performance();
 
 	std::cin >> ch;
 

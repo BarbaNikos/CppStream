@@ -1,9 +1,16 @@
 #pragma once
+#include <iostream>
+#include <string>
 #include <ctime>
+#include <cmath>
 #include <array>
 #include <utility>
 #include <functional>
 #include <unordered_map>
+#include <sstream>
+#include <locale>
+#include <iomanip>
+#include <chrono>
 
 #ifndef DEBS_COORDINATE_HELPER_H_
 #define DEBS_COORDINATE_HELPER_H_

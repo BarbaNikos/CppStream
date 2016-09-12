@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <cinttypes>
 //-----------------------------------------------------------------------------
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.

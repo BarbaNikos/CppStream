@@ -1,6 +1,7 @@
 #pragma once
-
+#include <iostream>
 #include <vector>
+#include <cinttypes>
 
 #include "MurmurHash3.h"
 

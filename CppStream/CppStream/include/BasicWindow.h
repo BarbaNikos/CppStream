@@ -1,28 +1,31 @@
 #pragma once
+#include <iostream>
 #include <vector>
 #include <unordered_set>
+#include <cinttypes>
 
 #ifndef BASIC_WINDOW_H_
 #define BASIC_WINDOW_H_
-
-template<class T>
-class BasicWindow
+namespace WindowLib
 {
-public:
-	BasicWindow(size_t task_number, __int64 start_t, __int64 end_t);
-	~BasicWindow();
-	void set_time(__int64 start_t, __int64 end_t);
-	void init();
-	__int64 start_t;
-	__int64 end_t;
-	std::vector<std::unordered_set<T>> cardinality;
-	std::vector<uint64_t> byte_state;
-	std::vector<uint64_t> count;
-};
-#endif // !BASIC_WINDOW_H_
+	template<class T>
+	class BasicWindow
+	{
+	public:
+		BasicWindow(size_t task_number, __int64 start_t, __int64 end_t);
+		~BasicWindow();
+		void set_time(__int64 start_t, __int64 end_t);
+		void init();
+		__int64 start_t;
+		__int64 end_t;
+		std::vector<std::unordered_set<T>> cardinality;
+		std::vector<uint64_t> byte_state;
+		std::vector<uint64_t> count;
+	};
+}
 
 template<class T>
-inline BasicWindow<T>::BasicWindow(size_t task_number, __int64 start_t, __int64 end_t) :
+WindowLib::BasicWindow<T>::BasicWindow(size_t task_number, __int64 start_t, __int64 end_t) :
 	byte_state(task_number, uint64_t(0)), count(task_number, uint64_t(0)), cardinality(task_number, std::unordered_set<T>())
 {
 	this->start_t = start_t;
@@ -30,19 +33,19 @@ inline BasicWindow<T>::BasicWindow(size_t task_number, __int64 start_t, __int64 
 }
 
 template<class T>
-inline BasicWindow<T>::~BasicWindow()
+WindowLib::BasicWindow<T>::~BasicWindow()
 {
 }
 
 template<class T>
-inline void BasicWindow<T>::set_time(__int64 start_t, __int64 end_t)
+void WindowLib::BasicWindow<T>::set_time(__int64 start_t, __int64 end_t)
 {
 	this->start_t = start_t;
 	this->end_t = end_t;
 }
 
 template<class T>
-inline void BasicWindow<T>::init()
+void WindowLib::BasicWindow<T>::init()
 {
 	auto byte_it = byte_state.begin();
 	auto count_it = count.begin();
@@ -55,3 +58,4 @@ inline void BasicWindow<T>::init()
 		++count_it;
 	}
 }
+#endif // !BASIC_WINDOW_H_
