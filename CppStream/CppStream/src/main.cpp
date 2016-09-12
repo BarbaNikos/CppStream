@@ -15,6 +15,7 @@
 #include "../include/debs_challenge_util.h"
 #include "../include/BitTrickBox.h"
 #include "../include/cag_partitioner.h"
+#include "../include/tpch_util.h"
 
 const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
 
@@ -700,17 +701,69 @@ void bit_tricks_max_test()
 	return;
 }
 
+void parse_tpch_lineitem()
+{
+	std::vector<Tpch::lineitem> lines;
+	std::string line;
+	std::string input_file_name = "D:\\tpch_2_17_0\\dbgen\\lineitem.tbl";
+	std::ifstream file(input_file_name);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file." << std::endl;
+		exit(1);
+	}
+	Tpch::DataParser parser;
+	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
+	while (getline(file, line))
+	{
+		Tpch::lineitem line_item;
+		Tpch::DataParser::parse_lineitem(line, line_item);
+		lines.push_back(line_item);
+	}
+	file.close();
+	std::chrono::high_resolution_clock::time_point scan_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+}
+
+void parse_tpch_order()
+{
+	std::vector<Tpch::order> lines;
+	std::string line;
+	std::string input_file_name = "D:\\tpch_2_17_0\\dbgen\\orders.tbl";
+	std::ifstream file(input_file_name);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file." << std::endl;
+		exit(1);
+	}
+	Tpch::DataParser parser;
+	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
+	while (getline(file, line))
+	{
+		Tpch::order order;
+		Tpch::DataParser::parse_order(line, order);
+		lines.push_back(order);
+	}
+	file.close();
+	std::chrono::high_resolution_clock::time_point scan_end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+}
+
 int main(int argc, char** argv)
 {
 	char ch;
-	std::cout << "MSC_VER: " << _MSC_VER << std::endl;
+	// parse_tpch_lineitem();
+	parse_tpch_order();
+	/*std::cout << "MSC_VER: " << _MSC_VER << std::endl;
 	int num = 17;
 	int clz = 0;
 	unsigned long ctz = 0;
 	clz = __lzcnt(num);
 	_BitScanForward(&ctz, num);
 	std::cout << "clz " << clz << std::endl;
-	std::cout << "ctz " << ctz << std::endl;
+	std::cout << "ctz " << ctz << std::endl;*/
 	// test_window_group();
 
 	// vanilla_main();

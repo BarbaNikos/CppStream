@@ -48,6 +48,9 @@
     <ClInclude Include="include\WindowLoad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\tpch_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ring_buffer_main.cpp">
