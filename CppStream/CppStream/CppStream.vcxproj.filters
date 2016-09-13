@@ -51,6 +51,12 @@
     <ClInclude Include="include\tpch_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\tpch_query.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\debs_challenge_query.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ring_buffer_main.cpp">
@@ -65,13 +71,13 @@
     <ClCompile Include="src\debs_challenge_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\BitTrickBox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cag_partitioner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\CardinalityEstimator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BitTrickBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

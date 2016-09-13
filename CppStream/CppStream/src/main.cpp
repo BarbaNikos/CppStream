@@ -8,6 +8,11 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cmath>
+#include <unordered_map>
+#include <unordered_set>
+#include <queue>
+#include <thread>
+#include <future>
 
 #include "../include/BasicWindow.h"
 #include "../include/pkg_partitioner.h"
@@ -16,8 +21,10 @@
 #include "../include/BitTrickBox.h"
 #include "../include/cag_partitioner.h"
 #include "../include/tpch_util.h"
+#include "../include/tpch_query.h"
 
-const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
+//const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
+const std::vector<uint16_t> tasks = { 1, 2, 3, 4 };
 
 void vanilla_main()
 {
@@ -42,6 +49,7 @@ void vanilla_main()
 	std::chrono::duration<double, std::micro> scan_time = scan_end - scan_start;
 
 	lines.shrink_to_fit();
+	file.close();
 	std::cout << "Time to scan file: " << scan_time.count() << " (microsec). Total lines: " << lines.size() << std::endl;
 
 	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
@@ -76,85 +84,12 @@ void vanilla_main()
 	end = std::chrono::high_resolution_clock::now();
 	partition_time = end - start;
 	std::cout << "(A)-LAG Time to partition lines: " << partition_time.count() << " (microsec)." << std::endl;
-
-	std::cout << "Press any key to continue..." << std::endl;
 }
 
-void test_window_group()
-{
-	uint64_t window = 2;
-	uint64_t slide = 1;
-	std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-	WindowPartitioner<uint32_t> window_partitioner(window, slide, tasks, 2);
-	auto s = uint32_t(1);
-	time_t t = 1;
-	window_partitioner.partition_next(t, s, sizeof(s));
-	s = uint32_t(3);
-	t = 3;
-	window_partitioner.partition_next(t, s, sizeof(s));
-	s = uint32_t(5);
-	t = 5;
-	window_partitioner.partition_next(t, s, sizeof(s));
-}
-
-void debs_parse_test()
+void debs_partition_performance(std::string input_file_name)
 {
 	std::vector<DebsChallenge::Ride> lines;
 	std::string line;
-	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\divided_data.small\\1\\1\\0.csv";
-	std::ifstream file(input_file_name);
-	if (!file.is_open())
-	{
-		std::cout << "failed to open file." << std::endl;
-		exit(1);
-	}
-	DebsChallenge::CellAssign cell_assign;
-	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
-	while (getline(file, line))
-	{
-		DebsChallenge::Ride ride;
-		cell_assign.parse_cells(line, ride);
-		lines.push_back(ride);
-	}
-	std::chrono::high_resolution_clock::time_point scan_end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
-	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
-
-	PkgPartitioner pkg(tasks);
-	std::chrono::high_resolution_clock::time_point pkg_start = std::chrono::high_resolution_clock::now();
-	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
-	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "," + dropoff_cell;
-		short task = pkg.partition_next(key, key.length());
-	}
-	std::chrono::high_resolution_clock::time_point pkg_end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
-	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
-
-	uint64_t window = 1000 * 60 * 30; 
-	uint64_t slide = 1000 * 60;
-	const size_t buffer_size = (size_t)ceil(window / slide);
-	WindowPartitioner<std::string> wag(window, slide, tasks, buffer_size);
-	std::chrono::high_resolution_clock::time_point wag_start = std::chrono::high_resolution_clock::now();
-	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
-	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "," + dropoff_cell;
-		short task = wag.partition_next(it->dropoff_datetime, key, key.length());
-	}
-	std::chrono::high_resolution_clock::time_point wag_end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::milli> wag_partition_time = wag_end - wag_start;
-	std::cout << "Time partition using WAG: " << wag_partition_time.count() << " (msec)." << std::endl;
-}
-
-void debs_partition_performance()
-{
-	std::vector<DebsChallenge::Ride> lines;
-	std::string line;
-	std::string input_file_name = "D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv";
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
@@ -171,9 +106,16 @@ void debs_partition_performance()
 	}
 	std::chrono::system_clock::time_point scan_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	lines.shrink_to_fit();
+	file.close();
 	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
 
 	PkgPartitioner pkg(tasks);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> pkg_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		pkg_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+	}
 	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -181,12 +123,19 @@ void debs_partition_performance()
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = pkg.partition_next(key, key.length());
+		pkg_key_per_task[tasks[task]].insert(key);
 	}
 	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
 	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
 
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks);
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_naive_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_naive_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+	}
 	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -194,12 +143,38 @@ void debs_partition_performance()
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = cag_naive.partition_next(key, key.length());
+		cag_naive_key_per_task[tasks[task]].insert(key);
 	}
 	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
 	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec)." << std::endl;
 
-	CagPartionLib::CagPcPartitioner cag_pc(tasks);
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_naive_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		lag_naive_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+	}
+	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = lag_naive.partition_next(key, key.length());
+		lag_naive_key_per_task[tasks[task]].insert(key);
+	}
+	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
+	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec)." << std::endl;
+
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_pc_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_pc_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+	}
 	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -207,12 +182,37 @@ void debs_partition_performance()
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = cag_pc.partition_next(key, key.length());
+		cag_pc_key_per_task[tasks[task]].insert(key);
 	}
 	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
 	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec)." << std::endl;
 
-	CagPartionLib::CagHllPartitioner cag_hll(tasks, 5);
+	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_pc_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		lag_pc_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+	}
+	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = lag_pc.partition_next(key, key.length());
+		lag_pc_key_per_task[tasks[task]].insert(key);
+	}
+	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
+	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec)." << std::endl;
+
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_hll_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_hll_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+	}
 	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
 	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
@@ -220,27 +220,45 @@ void debs_partition_performance()
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = cag_hll.partition_next(key, key.length());
+		cag_hll_key_per_task[tasks[task]].insert(key);
 	}
 	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
 	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec)." << std::endl;
 
-	std::vector<uint32_t> cag_naive_cardinality;
-	cag_naive.get_cardinality_vector(cag_naive_cardinality);
-	std::vector<uint32_t> cag_pc_cardinality;
-	cag_pc.get_cardinality_vector(cag_pc_cardinality);
-	std::vector<uint32_t> cag_hll_cardinality;
-	cag_hll.get_cardinality_vector(cag_hll_cardinality);
-	std::cout << "cag-naive size: " << cag_naive_cardinality.size() << ", cag-pc size: " << cag_pc_cardinality.size() << ", cag-hll size: " << cag_hll_cardinality.size() << std::endl;
-	uint32_t pc_delta = 0, hll_delta = 0;
-	std::cout << "***** Result Cardinalities *****" << std::endl;
+	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
+	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_hll_key_per_task;
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		std::cout << "task-" << i << " " << cag_naive_cardinality[i] << " " << cag_pc_cardinality[i] << " " << cag_hll_cardinality[i] << std::endl;
-		/*pc_delta += std::abs(double(cag_naive_cardinality[i] - cag_pc_cardinality[i]));
-		hll_delta += std::abs(double(cag_naive_cardinality[i] - cag_hll_cardinality[i]));*/
+		lag_hll_key_per_task[tasks[i]] = std::unordered_set<std::string>();
 	}
-	std::cout << "Delta-PC: " << pc_delta << ", Delta-HLL: " << hll_delta << "." << std::endl;
+	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = lag_hll.partition_next(key, key.length());
+		lag_hll_key_per_task[tasks[task]].insert(key);
+	}
+	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
+	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec)." << std::endl;
+
+	//std::vector<uint32_t> cag_naive_cardinality;
+	//cag_naive.get_cardinality_vector(cag_naive_cardinality);
+	//std::vector<uint32_t> cag_pc_cardinality;
+	//cag_pc.get_cardinality_vector(cag_pc_cardinality);
+	//std::vector<uint32_t> cag_hll_cardinality;
+	//cag_hll.get_cardinality_vector(cag_hll_cardinality);
+	//std::cout << "cag-naive size: " << cag_naive_cardinality.size() << ", cag-pc size: " << cag_pc_cardinality.size() << ", cag-hll size: " << cag_hll_cardinality.size() << std::endl;
+	//uint32_t pc_delta = 0, hll_delta = 0;
+	//std::cout << "***** Result Cardinalities *****" << std::endl;
+	//for (size_t i = 0; i < tasks.size(); ++i)
+	//{
+	//	std::cout << "task-" << i << " " << cag_naive_cardinality[i] << " " << cag_pc_cardinality[i] << " " << cag_hll_cardinality[i] << std::endl;
+	//}
+	//std::cout << "Delta-PC: " << pc_delta << ", Delta-HLL: " << hll_delta << "." << std::endl;
 	std::cout << "------ END -----" << std::endl;
 }
 
@@ -674,45 +692,16 @@ int bit_tricks_correctness_test()
 	return 0;
 }
 
-void bit_tricks_max_test()
-{
-	srand(time(nullptr));
-	size_t sum = 0, c_sum = 0;
-	std::chrono::system_clock::time_point std_start = std::chrono::system_clock::now();
-	for (size_t i = 0; i < 1000000; i++)
-	{
-		uint32_t x = rand() % 100000;
-		uint32_t y = rand() % 100000;
-		sum += x > y ? x : y;
-	}
-	std::chrono::system_clock::time_point std_end = std::chrono::system_clock::now();
-
-	std::chrono::system_clock::time_point c_start = std::chrono::system_clock::now();
-	for (size_t i = 0; i < 1000000; i++)
-	{
-		uint32_t x = rand() % 100000;
-		uint32_t y = rand() % 100000;
-		c_sum += BitWizard::return_max_uint32(x, y);
-	}
-	std::chrono::system_clock::time_point c_end = std::chrono::system_clock::now();
-	std::chrono::duration<double, std::micro> std_duration = std_end - std_start;
-	std::chrono::duration<double, std::micro> custom_duration = c_end - c_start;
-	std::cout << "STD: " << std_duration.count() << ", Custom: " << custom_duration.count() << " (msec)." << std::endl;
-	return;
-}
-
-void parse_tpch_lineitem()
+std::vector<Tpch::lineitem> parse_tpch_lineitem(std::string input_file_name)
 {
 	std::vector<Tpch::lineitem> lines;
 	std::string line;
-	std::string input_file_name = "D:\\tpch_2_17_0\\dbgen\\lineitem.tbl";
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file." << std::endl;
 		exit(1);
 	}
-	Tpch::DataParser parser;
 	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
 	while (getline(file, line))
 	{
@@ -720,13 +709,15 @@ void parse_tpch_lineitem()
 		Tpch::DataParser::parse_lineitem(line, line_item);
 		lines.push_back(line_item);
 	}
-	file.close();
 	std::chrono::high_resolution_clock::time_point scan_end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	file.close();
+	lines.shrink_to_fit();
 	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+	return lines;
 }
 
-void parse_tpch_order()
+std::vector<Tpch::order> parse_tpch_order()
 {
 	std::vector<Tpch::order> lines;
 	std::string line;
@@ -737,7 +728,6 @@ void parse_tpch_order()
 		std::cout << "failed to open file." << std::endl;
 		exit(1);
 	}
-	Tpch::DataParser parser;
 	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
 	while (getline(file, line))
 	{
@@ -748,27 +738,153 @@ void parse_tpch_order()
 	file.close();
 	std::chrono::high_resolution_clock::time_point scan_end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	file.close();
+	line.shrink_to_fit();
 	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+	return lines;
+}
+
+void tpch_q1_performance(std::string input_file)
+{
+	std::vector<Tpch::lineitem> lines = parse_tpch_lineitem(input_file);
+
+	std::cout << "------- TPCH Q-1 partition performance --------" << std::endl;
+	// PKG
+	PkgPartitioner pkg(tasks);
+	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = pkg.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
+	// CAG - naive
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_naive.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
+	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec)." << std::endl;
+	// LAG - naive
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
+	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = lag_naive.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
+	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec)." << std::endl;
+	// CAG - pc
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_pc.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
+	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec)." << std::endl;
+	// LAG - pc
+	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = lag_pc.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
+	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec)." << std::endl;
+	// CAG - hll
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
+	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_hll.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
+	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec)." << std::endl;
+	// LAG - hll
+	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
+	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = lag_hll.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
+	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "------ END -----" << std::endl;
+}
+
+void tpch_q1_worker(std::queue<Tpch::lineitem>& queue, std::mutex& mu, std::condition_variable& cond)
+{
+	std::cout << "Thread worker-" << std::this_thread::get_id() << " initiates execution..." << std::endl;
+	Tpch::QueryOne query_one(queue, mu, cond);
+	query_one.operate();
+	std::cout << "Thread worker-" << std::this_thread::get_id() << " concluded execution!" << std::endl;
+}
+
+void thread_playground()
+{
+	// initialize buffers
+	std::vector<std::queue<Tpch::lineitem>> queues;
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::vector<std::thread> threads;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues.push_back(std::queue<Tpch::lineitem>());
+		std::thread(tpch_q1_worker, queues.back(), mu_xes[i], cond_vars[i]);
+		threads.push_back(std::thread(tpch_q1_worker, queues.back(), mu_xes[i], cond_vars[i]));
+	}
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " initiates partitioning..." << std::endl;
+	
+	// start partitioning
+
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " starts sending conclusive messages..." << std::endl;
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_order_key = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i].push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " starts joining worker threads." << std::endl;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i].join();
+	}
+	std::cout << "Partitioner thread is done" << std::endl;
+	delete[] mu_xes;
+	delete[] cond_vars;
 }
 
 int main(int argc, char** argv)
 {
+	std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
+
 	char ch;
-	// parse_tpch_lineitem();
-	parse_tpch_order();
-	/*std::cout << "MSC_VER: " << _MSC_VER << std::endl;
-	int num = 17;
-	int clz = 0;
-	unsigned long ctz = 0;
-	clz = __lzcnt(num);
-	_BitScanForward(&ctz, num);
-	std::cout << "clz " << clz << std::endl;
-	std::cout << "ctz " << ctz << std::endl;*/
-	// test_window_group();
-
+	
 	// vanilla_main();
-
-	// debs_parse_test();
 
 	// bit_tricks_scenario();
 
@@ -784,10 +900,13 @@ int main(int argc, char** argv)
 
 	// log_perf_test();
 
-	// bit_tricks_max_test();
+	// debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
 
-	// debs_partition_performance();
+	// tpch_q1_performance(lineitem_file_name);
 
+	thread_playground();
+
+	std::cout << "Press any key to continue..." << std::endl;
 	std::cin >> ch;
 
 	return 0;

@@ -232,7 +232,7 @@ DebsChallenge::CellAssign::CellAssign()
 		CellAssign::cell_distance, CellAssign::grid_distance, cells);
 	std::chrono::system_clock::time_point square_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> square_calc_time = square_end - square_start;
-	std::cout << "Time to calculate squares: " << square_calc_time.count() << " (msec). Total squares: " << cells.size() << std::endl;
+	//std::cout << "Time to calculate squares: " << square_calc_time.count() << " (msec). Total squares: " << cells.size() << std::endl;
 }
 
 DebsChallenge::CellAssign::~CellAssign()

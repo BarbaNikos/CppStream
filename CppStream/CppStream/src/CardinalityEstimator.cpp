@@ -69,7 +69,7 @@ void CardinalityEstimator::HyperLoglog::update_bitmap_with_hashed_value(uint32_t
 	//_current_sum -= (double(1) / std::pow(2, buckets[j]));
 	_current_sum -= (double(1) / double(1 << buckets[j]));
 	// buckets[j] = current < leftmost_bit ? leftmost_bit : current;
-	buckets[j] = BitWizard::return_max_uint32(current, leftmost_bit);
+	buckets[j] = BitWizard::max_uint32(current, leftmost_bit);
 	//_current_sum += (double(1) / std::pow(2, buckets[j]));
 	_current_sum += (double(1) / double(1 << buckets[j]));
 }

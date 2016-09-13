@@ -118,10 +118,12 @@
     <ClInclude Include="include\cag_partitioner.h" />
     <ClInclude Include="include\CardinalityEstimator.h" />
     <ClInclude Include="include\CircularBuffer.h" />
+    <ClInclude Include="include\debs_challenge_query.h" />
     <ClInclude Include="include\debs_challenge_util.h" />
     <ClInclude Include="include\MurmurHash3.h" />
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
+    <ClInclude Include="include\tpch_query.h" />
     <ClInclude Include="include\tpch_util.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />
