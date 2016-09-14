@@ -1304,7 +1304,7 @@ int main(int argc, char** argv)
 
 	// log_perf_test();
 
-	// debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
+	debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
 
 	// tpch_q1_performance(lineitem_file_name);
 

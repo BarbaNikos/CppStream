@@ -202,12 +202,9 @@ void DebsChallenge::CellAssign::parse_cells(std::string ride_info, Ride& ride)
 	}
 	ride.medallion = tokens[0];
 	ride.hack_license = tokens[1];
-	str_stream = std::stringstream(tokens[2]);
-	str_stream >> std::get_time(&pickup_t, "%Y-%m-%d %H:%M:%S"); // format sample: 2013-01-01 00:00:00
-	ride.pickup_datetime = std::mktime(&pickup_t);
-	str_stream = std::stringstream(tokens[3]);
-	str_stream >> std::get_time(&dropoff_t, "%Y-%m-%d %H:%M:%S");
-	ride.dropoff_datetime = std::mktime(&dropoff_t);
+	// format sample: 2013-01-01 00:00:00
+	ride.pickup_datetime = produce_timestamp(tokens[2]);
+	ride.dropoff_datetime = produce_timestamp(tokens[3]);
 	ride.trip_time_in_secs = std::stoi(tokens[4]);
 	ride.trip_distance = std::stof(tokens[5]);
 	double pickup_longitude = std::stod(tokens[6]);
@@ -238,4 +235,21 @@ DebsChallenge::CellAssign::CellAssign()
 DebsChallenge::CellAssign::~CellAssign()
 {
 	cells.clear();
+}
+
+time_t DebsChallenge::CellAssign::produce_timestamp(const std::string & datetime_literal)
+{
+	std::tm time_info;
+	std::time_t rawtime;
+	int y = 0, m = 0, d = 0, h = 0, min = 0, sec = 0;
+	time(&rawtime);
+	sscanf_s(datetime_literal.c_str(), "%d-%d-%d %d:%d:%d", &y, &m, &d, &h, &min, &sec);
+	gmtime(&time_info, &rawtime);
+	time_info.tm_year = y - 1900;
+	time_info.tm_mon = m - 1;
+	time_info.tm_mday = d;
+	time_info.tm_hour = h;
+	time_info.tm_min = min;
+	time_info.tm_sec = sec;
+	return std::mktime(&time_info);
 }

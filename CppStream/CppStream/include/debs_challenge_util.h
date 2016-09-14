@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include <string>
-#include <ctime>
 #include <cmath>
 #include <array>
 #include <utility>
@@ -14,6 +13,18 @@
 
 #ifndef DEBS_COORDINATE_HELPER_H_
 #define DEBS_COORDINATE_HELPER_H_
+
+#if defined(_MSC_VER)
+
+#include <ctime>
+#define gmtime(result,time)	gmtime_s(result,time)
+
+#else	// defined(_MSC_VER)
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <ctime>
+#define gmtime(result,time)	gmtime_s(time,result) 
+#endif // !defined(_MSC_VER_)
+
 namespace DebsChallenge
 {
 	typedef struct 
@@ -85,6 +96,7 @@ namespace DebsChallenge
 		CellAssign();
 		~CellAssign();
 	private:
+		time_t produce_timestamp(const std::string& datetime_literal);
 		std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, DebsChallenge::pair_hash> cells;
 		const static double latitude;
 		const static double longitude;
