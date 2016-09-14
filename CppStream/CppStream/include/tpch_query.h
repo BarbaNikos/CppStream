@@ -28,22 +28,24 @@ namespace Tpch
 	class QueryOne
 	{
 	public:
-		QueryOne(std::queue<Tpch::lineitem>& input_queue, std::mutex& mu, std::condition_variable& cond);
+		QueryOne(std::queue<Tpch::lineitem>* input_queue, std::mutex* mu, std::condition_variable* cond);
 		~QueryOne();
 		void operate();
 		void update(Tpch::lineitem& line_item);
 		void finalize();
 	private:
-		std::mutex& mu;
-		std::condition_variable& cond;
+		std::mutex* mu;
+		std::condition_variable* cond;
 		std::unordered_map<std::string, Tpch::query_one_result> result;
-		std::queue<Tpch::lineitem>& input_queue;
+		std::queue<Tpch::lineitem>* input_queue;
 	};
 }
 
-Tpch::QueryOne::QueryOne(std::queue<Tpch::lineitem>& input_queue, std::mutex& mu, std::condition_variable& cond) : 
-	input_queue(input_queue), mu(mu), cond(cond)
+Tpch::QueryOne::QueryOne(std::queue<Tpch::lineitem>* input_queue, std::mutex* mu, std::condition_variable* cond)
 {
+	this->mu = mu;
+	this->cond = cond;
+	this->input_queue = input_queue;
 }
 
 inline Tpch::QueryOne::~QueryOne()
@@ -55,12 +57,12 @@ inline void Tpch::QueryOne::operate()
 {
 	while (true)
 	{
-		std::unique_lock<std::mutex> locker(mu);
-		cond.wait(locker, [this]() { return input_queue.size() > 0; });
-		Tpch::lineitem line_item = input_queue.back();
-		input_queue.pop();
+		std::unique_lock<std::mutex> locker(*mu);
+		cond->wait(locker, [this]() { return input_queue->size() > 0; });
+		Tpch::lineitem line_item = input_queue->back();
+		input_queue->pop();
 		// process
-		if (line_item.l_order_key >= 0)
+		if (line_item.l_linenumber >= 0)
 		{
 			update(line_item);
 		}
@@ -68,11 +70,11 @@ inline void Tpch::QueryOne::operate()
 		{
 			finalize();
 			locker.unlock();
-			cond.notify_all();
+			cond->notify_all();
 			break;
 		}
 		locker.unlock();
-		cond.notify_all();
+		cond->notify_all();
 	}
 }
 

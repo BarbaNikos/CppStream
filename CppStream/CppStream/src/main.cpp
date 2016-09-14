@@ -93,7 +93,7 @@ void debs_partition_performance(std::string input_file_name)
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
-		std::cout << "failed to open file." << std::endl;
+		std::cout << "failed to open file.\n";
 		exit(1);
 	}
 	DebsChallenge::CellAssign cell_assign;
@@ -108,7 +108,7 @@ void debs_partition_performance(std::string input_file_name)
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
 	lines.shrink_to_fit();
 	file.close();
-	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec).\n";
 
 	PkgPartitioner pkg(tasks);
 	std::unordered_map<uint16_t, std::unordered_set<std::string>> pkg_key_per_task;
@@ -127,7 +127,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
-	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec).\n";
 
 	CardinalityAwarePolicy policy;
 	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
@@ -147,7 +147,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
-	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec).\n";
 
 	LoadAwarePolicy lag_policy;
 	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
@@ -167,7 +167,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
-	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec).\n";
 
 	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
 	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_pc_key_per_task;
@@ -186,7 +186,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
-	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec).\n";
 
 	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
 	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_pc_key_per_task;
@@ -205,7 +205,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
-	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec).\n";
 
 	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
 	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_hll_key_per_task;
@@ -224,7 +224,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
-	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec).\n";
 
 	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
 	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_hll_key_per_task;
@@ -243,7 +243,7 @@ void debs_partition_performance(std::string input_file_name)
 	}
 	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
-	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec).\n";
 
 	//std::vector<uint32_t> cag_naive_cardinality;
 	//cag_naive.get_cardinality_vector(cag_naive_cardinality);
@@ -259,7 +259,7 @@ void debs_partition_performance(std::string input_file_name)
 	//	std::cout << "task-" << i << " " << cag_naive_cardinality[i] << " " << cag_pc_cardinality[i] << " " << cag_hll_cardinality[i] << std::endl;
 	//}
 	//std::cout << "Delta-PC: " << pc_delta << ", Delta-HLL: " << hll_delta << "." << std::endl;
-	std::cout << "------ END -----" << std::endl;
+	std::cout << "------ END -----\n";
 }
 
 void card_estimate_example()
@@ -271,8 +271,8 @@ void card_estimate_example()
 		prob_count.update_bitmap(uint32_t(i));
 		hyper_loglog.update_bitmap(uint32_t(i));
 	}
-	std::cout << "Probabilistic Count: estimated cardinality: " << prob_count.cardinality_estimation() << std::endl;
-	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << std::endl;
+	std::cout << "Probabilistic Count: estimated cardinality: " << prob_count.cardinality_estimation() << "\n";
+	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << "\n";
 }
 
 void log_perf_test()
@@ -300,11 +300,11 @@ void log_perf_test()
 
 	if (sum != c_cum)
 	{
-		std::cout << "Sums do not match! sum: " << sum << ", c_sum: " << c_cum << "." << std::endl;
+		std::cout << "Sums do not match! sum: " << sum << ", c_sum: " << c_cum << ".\n";
 	}
 	std::chrono::duration<double, std::micro> std_duration = std_end - std_start;
 	std::chrono::duration<double, std::micro> custom_duration = custom_end - custom_start;
-	std::cout << "STD: " << std_duration.count() << ", Custom: " << custom_duration.count() << " (msec)." << std::endl;
+	std::cout << "STD: " << std_duration.count() << ", Custom: " << custom_duration.count() << " (msec).\n";
 }
 
 void bit_tricks_scenario()
@@ -458,7 +458,7 @@ void bit_tricks_performance_16()
 	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
 	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "low-order-16-bit :: normal: " << normal_duration.count() << ", fast: " << 
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	fast_arch_start = std::chrono::system_clock::now();
 	for (unsigned long i = 0; i < upper_limit; ++i)
 	{
@@ -467,7 +467,7 @@ void bit_tricks_performance_16()
 	}
 	fast_arch_end = std::chrono::system_clock::now();
 	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "low-order-16-bit without branch for fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	std::cout << "low-order-16-bit without branch for fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	// high-order
 	sum = 0; f_sum = 0; f_arch_sum;
 	normal_start = std::chrono::system_clock::now();
@@ -495,7 +495,7 @@ void bit_tricks_performance_16()
 	fast_duration = fast_end - fast_start;
 	fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "high-order-16-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 }
 
 void bit_tricks_performance_32()
@@ -528,7 +528,7 @@ void bit_tricks_performance_32()
 	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
 	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "low-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	// high-order
 	sum = 0; f_sum = 0; f_arch_sum;
 	normal_start = std::chrono::system_clock::now();
@@ -556,7 +556,7 @@ void bit_tricks_performance_32()
 	fast_duration = fast_end - fast_start;
 	fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "high-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 }
 
 void bit_tricks_performance_64()
@@ -589,7 +589,7 @@ void bit_tricks_performance_64()
 	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
 	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "low-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	// high-order
 	sum = 0; f_sum = 0; f_arch_sum;
 	normal_start = std::chrono::system_clock::now();
@@ -617,7 +617,7 @@ void bit_tricks_performance_64()
 	fast_duration = fast_end - fast_start;
 	fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "high-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	fast_arch_start = std::chrono::system_clock::now();
 	for (unsigned long i = 0; i < upper_limit; ++i)
 	{
@@ -626,7 +626,7 @@ void bit_tricks_performance_64()
 	}
 	fast_arch_end = std::chrono::system_clock::now();
 	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "high-order-64-bit without branch: " << fast_arch_duration.count() << " (msec)." << std::endl;
+	std::cout << "high-order-64-bit without branch: " << fast_arch_duration.count() << " (msec).\n";
 }
 
 int bit_tricks_correctness_test()
@@ -643,12 +643,12 @@ int bit_tricks_correctness_test()
 
 		if (l_16 != f_l_16 || l_16 != f_l_arch_16)
 		{
-			std::cout << "for input number: " << uint16_t(i) << ", l_16: " << l_16 << ", f_l_16: " << f_l_16 << ", f_l_arch_16: " << f_l_arch_16 << std::endl;
+			std::cout << "for input number: " << uint16_t(i) << ", l_16: " << l_16 << ", f_l_16: " << f_l_16 << ", f_l_arch_16: " << f_l_arch_16 << "\n";
 			return 1;
 		}
 		if (h_16 != f_h_16 || h_16 != f_h_arch_16)
 		{
-			std::cout << "for input number: " << uint16_t(i) << ", h_16: " << h_16 << ", f_h_16: " << f_h_16 << ", f_h_arch_16: " << f_h_arch_16 << std::endl;
+			std::cout << "for input number: " << uint16_t(i) << ", h_16: " << h_16 << ", f_h_16: " << f_h_16 << ", f_h_arch_16: " << f_h_arch_16 << "\n";
 			return 1;
 		}
 		uint32_t l_32 = BitWizard::lowest_order_bit_index_slow(uint32_t(i));
@@ -661,12 +661,12 @@ int bit_tricks_correctness_test()
 
 		if (l_32 != f_l_32 || l_32 != f_l_arch_32)
 		{
-			std::cout << "for input number: " << uint32_t(i) << ", l_32: " << l_32 << ", f_l_32: " << f_l_32 << ", f_l_arch_32: " << f_l_arch_32 << std::endl;
+			std::cout << "for input number: " << uint32_t(i) << ", l_32: " << l_32 << ", f_l_32: " << f_l_32 << ", f_l_arch_32: " << f_l_arch_32 << "\n";
 			return 1;
 		}
 		if (h_32 != f_h_32 || h_32 != f_h_arch_32)
 		{
-			std::cout << "for input number: " << uint32_t(i) << ", h_32: " << h_32 << ", f_h_32: " << f_h_32 << ", f_h_arch_32: " << f_h_arch_32 << std::endl;
+			std::cout << "for input number: " << uint32_t(i) << ", h_32: " << h_32 << ", f_h_32: " << f_h_32 << ", f_h_arch_32: " << f_h_arch_32 << "\n";
 			return 1;
 		}
 		uint64_t l_64 = BitWizard::lowest_order_bit_index_slow(uint64_t(i));
@@ -679,16 +679,16 @@ int bit_tricks_correctness_test()
 
 		if (l_64 != f_l_64 || l_64 != f_l_arch_64)
 		{
-			std::cout << "for input number: " << uint64_t(i) << ", l_64: " << l_64 << ", f_l_64: " << f_l_64 << ", f_l_arch_64: " << f_l_arch_64 << std::endl;
+			std::cout << "for input number: " << uint64_t(i) << ", l_64: " << l_64 << ", f_l_64: " << f_l_64 << ", f_l_arch_64: " << f_l_arch_64 << "\n";
 			return 1;
 		}
 		if (h_64 != f_h_64 || h_64 != f_h_arch_64)
 		{
-			std::cout << "for input number: " << uint64_t(i) << ", h_64: " << h_64 << ", f_h_64: " << f_h_64 << ", f_h_arch_64: " << f_h_arch_64 << std::endl;
+			std::cout << "for input number: " << uint64_t(i) << ", h_64: " << h_64 << ", f_h_64: " << f_h_64 << ", f_h_arch_64: " << f_h_arch_64 << "\n";
 			return 1;
 		}
 	}
-	std::cout << "All numbers passed..." << std::endl;
+	std::cout << "All numbers passed...\n";
 	return 0;
 }
 
@@ -699,7 +699,7 @@ std::vector<Tpch::lineitem> parse_tpch_lineitem(std::string input_file_name)
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
-		std::cout << "failed to open file." << std::endl;
+		std::cout << "failed to open file.\n";
 		exit(1);
 	}
 	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
@@ -713,19 +713,18 @@ std::vector<Tpch::lineitem> parse_tpch_lineitem(std::string input_file_name)
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
 	file.close();
 	lines.shrink_to_fit();
-	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec).\n";
 	return lines;
 }
 
-std::vector<Tpch::order> parse_tpch_order()
+std::vector<Tpch::order> parse_tpch_order(std::string input_file_name)
 {
 	std::vector<Tpch::order> lines;
 	std::string line;
-	std::string input_file_name = "D:\\tpch_2_17_0\\dbgen\\orders.tbl";
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
-		std::cout << "failed to open file." << std::endl;
+		std::cout << "failed to open file.\n";
 		exit(1);
 	}
 	std::chrono::high_resolution_clock::time_point scan_start = std::chrono::high_resolution_clock::now();
@@ -740,7 +739,7 @@ std::vector<Tpch::order> parse_tpch_order()
 	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
 	file.close();
 	line.shrink_to_fit();
-	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec)." << std::endl;
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec).\n";
 	return lines;
 }
 
@@ -748,7 +747,7 @@ void tpch_q1_performance(std::string input_file)
 {
 	std::vector<Tpch::lineitem> lines = parse_tpch_lineitem(input_file);
 
-	std::cout << "------- TPCH Q-1 partition performance --------" << std::endl;
+	std::cout << "------- TPCH Q-1 partition performance --------\n";
 	// PKG
 	PkgPartitioner pkg(tasks);
 	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
@@ -759,7 +758,7 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
-	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec).\n";
 	// CAG - naive
 	CardinalityAwarePolicy policy;
 	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
@@ -771,7 +770,7 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
-	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec).\n";
 	// LAG - naive
 	LoadAwarePolicy lag_policy;
 	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
@@ -783,7 +782,7 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
-	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec).\n";
 	// CAG - pc
 	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
 	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
@@ -794,7 +793,7 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
-	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec).\n";
 	// LAG - pc
 	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
 	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
@@ -805,7 +804,7 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
-	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec).\n";
 	// CAG - hll
 	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
 	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
@@ -816,7 +815,7 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
-	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec)." << std::endl;
+	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec).\n";
 	// LAG - hll
 	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
 	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
@@ -827,55 +826,460 @@ void tpch_q1_performance(std::string input_file)
 	}
 	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
-	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec)." << std::endl;
-	std::cout << "------ END -----" << std::endl;
+	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec).\n";
+	std::cout << "------ END -----\n";
 }
 
-void tpch_q1_worker(std::queue<Tpch::lineitem>& queue, std::mutex& mu, std::condition_variable& cond)
+void tpch_q1_worker(Tpch::QueryOne* query_one)
 {
-	std::cout << "Thread worker-" << std::this_thread::get_id() << " initiates execution..." << std::endl;
-	Tpch::QueryOne query_one(queue, mu, cond);
-	query_one.operate();
-	std::cout << "Thread worker-" << std::this_thread::get_id() << " concluded execution!" << std::endl;
+	query_one->operate();
 }
 
-void thread_playground()
+void pkg_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
-	// initialize buffers
-	std::vector<std::queue<Tpch::lineitem>> queues;
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
 	std::mutex* mu_xes = new std::mutex[tasks.size()];
 	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
-	std::vector<std::thread> threads;
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		queues.push_back(std::queue<Tpch::lineitem>());
-		std::thread(tpch_q1_worker, queues.back(), mu_xes[i], cond_vars[i]);
-		threads.push_back(std::thread(tpch_q1_worker, queues.back(), mu_xes[i], cond_vars[i]));
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " initiates partitioning..." << std::endl;
+	PkgPartitioner pkg(tasks);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
 	
 	// start partitioning
-
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " starts sending conclusive messages..." << std::endl;
+	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = pkg.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	
 	// send conclusive values
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		Tpch::lineitem final_lineitem;
-		final_lineitem.l_order_key = -1;
+		final_lineitem.l_linenumber = -1;
 		std::unique_lock<std::mutex> locker(mu_xes[i]);
-		queues[i].push(final_lineitem);
+		queues[i]->push(final_lineitem);
 		locker.unlock();
 		cond_vars[i].notify_all();
 	}
 	// wait for workers to join
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " starts joining worker threads." << std::endl;
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		threads[i].join();
+		threads[i]->join();
 	}
-	std::cout << "Partitioner thread is done" << std::endl;
+	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (PKG) total partition time: " << 
+		pkg_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
 	delete[] mu_xes;
 	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void cag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+{
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
+	}
+	CardinalityAwarePolicy cag_policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+
+	// start partitioning
+	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_naive.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_linenumber = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (CAG-naive) total partition time: " <<
+		cag_naive_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void lag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+{
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
+	}
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, lag_policy);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+
+	// start partitioning
+	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_naive.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_linenumber = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (LAG-naive) total partition time: " <<
+		lag_naive_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void cag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+{
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
+	}
+	CardinalityAwarePolicy cag_policy;
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, cag_policy);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+
+	// start partitioning
+	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_pc.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_linenumber = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (CAG-PC) total partition time: " <<
+		cag_pc_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void lag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+{
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
+	}
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+
+	// start partitioning
+	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = lag_pc.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_linenumber = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (LAG-PC) total partition time: " <<
+		lag_pc_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void cag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+{
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
+	}
+	CardinalityAwarePolicy cag_policy;
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, cag_policy, 5);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+
+	// start partitioning
+	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = cag_hll.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_linenumber = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (CAG-HLL) total partition time: " <<
+		cag_hll_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+{
+	// initialize shared memory
+	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Tpch::QueryOne** query_workers = new Tpch::QueryOne*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Tpch::lineitem>();
+		query_workers[i] = new Tpch::QueryOne(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
+	}
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
+	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+
+	// start partitioning
+	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		short task = lag_hll.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Tpch::lineitem final_lineitem;
+		final_lineitem.l_linenumber = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_lineitem);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
+	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (LAG-HLL) total partition time: " <<
+		lag_hll_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
 }
 
 int main(int argc, char** argv)
@@ -904,9 +1308,16 @@ int main(int argc, char** argv)
 
 	// tpch_q1_performance(lineitem_file_name);
 
-	thread_playground();
+	std::vector<Tpch::lineitem> lineitem_table = parse_tpch_lineitem(lineitem_file_name);
+	pkg_concurrent_partition(lineitem_table);
+	cag_naive_concurrent_partition(lineitem_table);
+	lag_naive_concurrent_partition(lineitem_table);
+	cag_pc_concurrent_partition(lineitem_table);
+	lag_pc_concurrent_partition(lineitem_table);
+	cag_hll_concurrent_partition(lineitem_table);
+	lag_hll_concurrent_partition(lineitem_table);
 
-	std::cout << "Press any key to continue..." << std::endl;
+	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
 
 	return 0;
