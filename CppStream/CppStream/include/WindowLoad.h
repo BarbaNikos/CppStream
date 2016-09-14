@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <cinttypes>
 
-#include "BasicWindow.h"
 #include "CircularBuffer.h"
+#include "BasicWindow.h"
 
 #ifndef WINDOW_LOAD_H_
 #define WINDOW_LOAD_H_
@@ -16,7 +16,7 @@ class WindowLoad
 public:
 	WindowLoad(uint64_t window, uint64_t slide, const std::vector<uint16_t>& tasks, size_t buffer_size);
 	~WindowLoad();
-	void add(__int64 time_t, T key, size_t key_length, uint16_t task_index);
+	void add(int64_t time_t, T key, size_t key_length, uint16_t task_index);
 	uint64_t get_max_cardinality();
 	uint64_t get_min_cardinality();
 	uint64_t get_cardinality(uint16_t task_index);
@@ -54,7 +54,7 @@ inline WindowLoad<T>::~WindowLoad()
 }
 
 template<class T>
-inline void WindowLoad<T>::add(__int64 time_t, T key, size_t key_length, uint16_t task_index)
+inline void WindowLoad<T>::add(int64_t time_t, T key, size_t key_length, uint16_t task_index)
 {
 	WindowLib::BasicWindow<T>** buffer_ref = ring_buffer.get_buffer();
 	uint16_t buffer_head = this->ring_buffer.get_head();

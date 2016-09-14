@@ -168,10 +168,6 @@ void Tpch::DataParser::parse_order(std::string order_info, Tpch::order & order)
 	order.o_orderdate.day = std::stoi(order_date_tokens[2]);
 	strcpy_s(order.o_orderpriority, sizeof order.o_orderpriority, tokens[5].c_str());
 	// clerk
-	/*str_stream = std::stringstream(tokens[6]);
-	getline(str_stream, token, '#');
-	getline(str_stream, token, '#');
-	order.o_clerk = std::stoi(token);*/
 	strcpy_s(order.o_clerk, sizeof order.o_clerk, tokens[6].c_str());
 	order.o_shippriority = std::stoi(tokens[7]);
 	strcpy_s(order.o_comment, sizeof order.o_comment, tokens[8].c_str());

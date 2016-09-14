@@ -239,17 +239,17 @@ DebsChallenge::CellAssign::~CellAssign()
 
 time_t DebsChallenge::CellAssign::produce_timestamp(const std::string & datetime_literal)
 {
-	std::tm time_info;
+	std::tm* time_info;
 	std::time_t rawtime;
 	int y = 0, m = 0, d = 0, h = 0, min = 0, sec = 0;
 	time(&rawtime);
-	sscanf_s(datetime_literal.c_str(), "%d-%d-%d %d:%d:%d", &y, &m, &d, &h, &min, &sec);
-	gmtime(&time_info, &rawtime);
-	time_info.tm_year = y - 1900;
-	time_info.tm_mon = m - 1;
-	time_info.tm_mday = d;
-	time_info.tm_hour = h;
-	time_info.tm_min = min;
-	time_info.tm_sec = sec;
-	return std::mktime(&time_info);
+	sscanf(datetime_literal.c_str(), "%d-%d-%d %d:%d:%d", &y, &m, &d, &h, &min, &sec);
+	time_info = gmtime(&rawtime);
+	time_info->tm_year = y - 1900;
+	time_info->tm_mon = m - 1;
+	time_info->tm_mday = d;
+	time_info->tm_hour = h;
+	time_info->tm_min = min;
+	time_info->tm_sec = sec;
+	return std::mktime(time_info);
 }

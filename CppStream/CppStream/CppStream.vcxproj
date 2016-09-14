@@ -135,7 +135,6 @@
     <ClCompile Include="src\debs_challenge_util.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\MurmurHash3.cpp" />
-    <ClCompile Include="src\ring_buffer_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Makefile" />

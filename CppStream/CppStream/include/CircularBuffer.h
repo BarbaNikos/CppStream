@@ -40,7 +40,7 @@ inline CircularBuffer<T>::CircularBuffer(size_t task_number, size_t buffer_size)
 	_buffer = new WindowLib::BasicWindow<T>*[buffer_size];
 	for (size_t i = 0; i < buffer_size; ++i)
 	{
-		_buffer[i] = new WindowLib::BasicWindow<T>(task_number, __int64(0), __int64(0));
+		_buffer[i] = new WindowLib::BasicWindow<T>(task_number, int64_t(0), int64_t(0));
 	}
 	this->buffer_size = buffer_size;
 	head = uint16_t(0);

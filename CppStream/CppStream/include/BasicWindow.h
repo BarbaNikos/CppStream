@@ -12,12 +12,12 @@ namespace WindowLib
 	class BasicWindow
 	{
 	public:
-		BasicWindow(size_t task_number, __int64 start_t, __int64 end_t);
+		BasicWindow(size_t task_number, int64_t start_t, int64_t end_t);
 		~BasicWindow();
-		void set_time(__int64 start_t, __int64 end_t);
+		void set_time(int64_t start_t, int64_t end_t);
 		void init();
-		__int64 start_t;
-		__int64 end_t;
+		int64_t start_t;
+		int64_t end_t;
 		std::vector<std::unordered_set<T>> cardinality;
 		std::vector<uint64_t> byte_state;
 		std::vector<uint64_t> count;
@@ -25,7 +25,7 @@ namespace WindowLib
 }
 
 template<class T>
-WindowLib::BasicWindow<T>::BasicWindow(size_t task_number, __int64 start_t, __int64 end_t) :
+WindowLib::BasicWindow<T>::BasicWindow(size_t task_number, int64_t start_t, int64_t end_t) :
 	byte_state(task_number, uint64_t(0)), count(task_number, uint64_t(0)), cardinality(task_number, std::unordered_set<T>())
 {
 	this->start_t = start_t;
@@ -38,7 +38,7 @@ WindowLib::BasicWindow<T>::~BasicWindow()
 }
 
 template<class T>
-void WindowLib::BasicWindow<T>::set_time(__int64 start_t, __int64 end_t)
+void WindowLib::BasicWindow<T>::set_time(int64_t start_t, int64_t end_t)
 {
 	this->start_t = start_t;
 	this->end_t = end_t;

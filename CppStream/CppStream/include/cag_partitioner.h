@@ -1,7 +1,9 @@
 #pragma once
+#include <iostream>
 #include <vector>
 #include <unordered_set>
 #include <cinttypes>
+#include <limits>
 
 #include "MurmurHash3.h"
 #include "CardinalityEstimator.h"

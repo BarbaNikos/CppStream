@@ -10,6 +10,7 @@
 #include <locale>
 #include <iomanip>
 #include <chrono>
+#include <vector>
 
 #ifndef DEBS_COORDINATE_HELPER_H_
 #define DEBS_COORDINATE_HELPER_H_
@@ -17,12 +18,10 @@
 #if defined(_MSC_VER)
 
 #include <ctime>
-#define gmtime(result,time)	gmtime_s(result,time)
 
 #else	// defined(_MSC_VER)
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <ctime>
-#define gmtime(result,time)	gmtime_s(time,result) 
 #endif // !defined(_MSC_VER_)
 
 namespace DebsChallenge
