@@ -1,14 +1,31 @@
+CC = g++	# Compiler to use
+FLAGS = -std=c++0x -O2 -g -Wall	# -g for debug, -O2 for optimize, -Wall additional messages
+INCLUDE_FLAGS = -I ./CppStream/include/
+LIBS = -lpthread -lm
+OBJS = BitTrickBox.o cag_partitioner.o CardinalityEstimator.o \
+	debs_challenge_util.o main.o MurmurHash3.o
 
-CardinalityEstimator.o : CardinalityEstimator.cpp CardinalityEstimator.h
-	g++ -std=c++0x -c CardinalityEstimator.cpp
+all: ${OBJS}
+	${CC} ${FLAGS} ${INCLUDES} ${OBJS} -o target_bin ${LIBS}
 
-debs_challenge_util.o : debs_challenge_util.cpp debs_challenge_util.h
-	g++ -std=c++0x -c debs_challenge_util.cpp
+cag_partitioner.o: ./CppStream/src/cag_partitioner.cpp ./CppStream/include/cag_partitioner.h
+	${CC} ${FLAGS} -c ./CppStream/src/cag_partitioner.cpp ${INCLUDE_FLAGS}
 
-MurmurHash3.o : MurmurHash3.cpp MurmurHash3.h
-	g++ -std=c++0x -c MurmurHash3.cpp
+main.o: ./CppStream/src/main.cpp
+	${CC} ${FLAGS} -c ./CppStream/src/main.cpp ${INCLUDE_FLAGS}
 
-BitTrickBox.o : BitTrickBox.cpp BitTrickBox.h
-	g++ -std=c++0x -c BitTrickBox.cpp
+CardinalityEstimator.o: ./CppStream/src/CardinalityEstimator.cpp ./CppStream/include/CardinalityEstimator.h
+	${CC} ${FLAGS} -c ./CppStream/src/CardinalityEstimator.cpp ${INCLUDE_FLAGS}
 
-clean : rm *.o
+debs_challenge_util.o: ./CppStream/src/debs_challenge_util.cpp ./CppStream/include/debs_challenge_util.h
+	${CC} ${FLAGS} -c ./CppStream/src/debs_challenge_util.cpp ${INCLUDE_FLAGS}
+
+MurmurHash3.o: ./CppStream/src/MurmurHash3.cpp ./CppStream/include/MurmurHash3.h
+	$(CC) $(FLAGS) -c ./CppStream/src/MurmurHash3.cpp ${INCLUDE_FLAGS}
+
+BitTrickBox.o: ./CppStream/src/BitTrickBox.cpp ./CppStream/include/BitTrickBox.h
+	$(CC) $(FLAGS) -c ./CppStream/src/BitTrickBox.cpp ${INCLUDE_FLAGS}
+
+clean:
+	rm -rf *.o
+	rm target_bin
