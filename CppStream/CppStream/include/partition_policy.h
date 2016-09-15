@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <cinttypes>
 
@@ -7,6 +6,7 @@
 class PartitionPolicy
 {
 public:
+	virtual ~PartitionPolicy() {}
 	virtual uint64_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality, 
 		uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality, 
 		uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality) = 0;

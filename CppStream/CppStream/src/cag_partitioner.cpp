@@ -1,4 +1,3 @@
-#pragma once
 #include "../include/cag_partitioner.h"
 
 CagPartionLib::CagNaivePartitioner::CagNaivePartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :

@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <vector>
 #include <unordered_set>
@@ -21,10 +20,10 @@ namespace CagPartionLib
 		uint16_t partition_next(const std::string& key, size_t key_len);
 		void  get_cardinality_vector(std::vector<uint32_t>& v);
 	private:
-		PartitionPolicy& policy;
 		std::vector<uint16_t> tasks;
 		std::vector<uint64_t> task_count;
 		std::vector<std::unordered_set<uint32_t>> task_cardinality;
+		PartitionPolicy& policy;
 		uint64_t max_task_count;
 		uint64_t min_task_count;
 		uint32_t max_task_cardinality;
@@ -39,8 +38,8 @@ namespace CagPartionLib
 		uint16_t partition_next(const std::string& key, size_t key_len);
 		void get_cardinality_vector(std::vector<uint32_t>& v);
 	private:
-		PartitionPolicy& policy;
 		std::vector<uint16_t> tasks;
+		PartitionPolicy& policy;
 		uint64_t* _task_count;
 		CardinalityEstimator::ProbCount** _task_cardinality;
 		uint64_t max_task_count;
@@ -57,8 +56,8 @@ namespace CagPartionLib
 		uint16_t partition_next(const std::string& key, size_t key_len);
 		void get_cardinality_vector(std::vector<uint32_t>& v);
 	private:
-		PartitionPolicy& policy;
 		std::vector<uint16_t> tasks;
+		PartitionPolicy& policy;
 		uint64_t* _task_count;
 		CardinalityEstimator::HyperLoglog** _task_cardinality;
 		uint64_t max_task_count;

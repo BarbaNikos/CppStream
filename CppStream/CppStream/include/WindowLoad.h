@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <vector>
 #include <limits>
@@ -24,16 +23,16 @@ public:
 	uint64_t get_max_count();
 	uint64_t get_min_count();
 private:
-	void remove_last_window();
-	size_t task_number;
 	CircularBuffer<T> ring_buffer;
-	uint64_t slide;
-	uint64_t window;
-	size_t buffer_size;
 	std::vector<uint16_t> tasks;
 	std::vector<uint64_t> count;
 	std::vector<uint64_t> state;
 	std::vector<std::unordered_set<T>> cardinality;
+	void remove_last_window();
+	size_t task_number;
+	uint64_t slide;
+	uint64_t window;
+	size_t buffer_size;
 };
 #endif // !WINDOW_LOAD_H_
 
@@ -181,7 +180,7 @@ inline void WindowLoad<T>::remove_last_window()
 			for (size_t i = 0; i < task_number; ++i)
 			{
 				std::unordered_set<T>& task_keys = buffer_ref[window_it]->cardinality[i];
-				for (std::unordered_set<T>::const_iterator it = task_keys.begin(); it != task_keys.end(); ++it)
+				for (auto it = task_keys.begin(); it != task_keys.end(); ++it)
 				{
 					auto pos = last_window->cardinality[i].find(*it);
 					if (pos != last_window->cardinality[i].end())

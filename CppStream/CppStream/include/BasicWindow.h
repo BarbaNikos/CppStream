@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <vector>
 #include <unordered_set>
@@ -26,7 +25,7 @@ namespace WindowLib
 
 template<class T>
 WindowLib::BasicWindow<T>::BasicWindow(size_t task_number, int64_t start_t, int64_t end_t) :
-	byte_state(task_number, uint64_t(0)), count(task_number, uint64_t(0)), cardinality(task_number, std::unordered_set<T>())
+	cardinality(task_number, std::unordered_set<T>()), byte_state(task_number, uint64_t(0)), count(task_number, uint64_t(0))
 {
 	this->start_t = start_t;
 	this->end_t = end_t;

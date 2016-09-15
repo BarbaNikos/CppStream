@@ -1,7 +1,7 @@
-#pragma once
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <ctime>
 #include <cmath>
 #include <sstream>
@@ -115,14 +115,20 @@ void Tpch::DataParser::parse_part(std::string part_info, Tpch::part & part)
 		tokens.push_back(token);
 	}
 	part.p_partkey = std::stoi(tokens[0]);
-	strcpy_s(part.p_name, sizeof part.p_name, tokens[1].c_str());
-	strcpy_s(part.p_mfgr, sizeof part.p_mfgr, tokens[2].c_str());
-	strcpy_s(part.p_brand, sizeof part.p_brand, tokens[3].c_str());
-	strcpy_s(part.p_type, sizeof part.p_type, tokens[4].c_str());
+	//strcpy_s(part.p_name, sizeof part.p_name, tokens[1].c_str());
+	strcpy(part.p_name, tokens[1].c_str());
+	//strcpy_s(part.p_mfgr, sizeof part.p_mfgr, tokens[2].c_str());
+	strcpy(part.p_mfgr, tokens[2].c_str());
+	//strcpy_s(part.p_brand, sizeof part.p_brand, tokens[3].c_str());
+	strcpy(part.p_brand, tokens[3].c_str());
+	//strcpy_s(part.p_type, sizeof part.p_type, tokens[4].c_str());
+	strcpy(part.p_type, tokens[4].c_str());
 	part.p_size = std::stoi(tokens[5]);
-	strcpy_s(part.p_container, sizeof part.p_container, tokens[6].c_str());
+	//strcpy_s(part.p_container, sizeof part.p_container, tokens[6].c_str());
+	strcpy(part.p_container, tokens[6].c_str());
 	part.p_retailprice = std::stof(tokens[7]);
-	strcpy_s(part.p_comment, sizeof part.p_comment, tokens[8].c_str());
+	//strcpy_s(part.p_comment, sizeof part.p_comment, tokens[8].c_str());
+	strcpy(part.p_comment, tokens[8].c_str());
 }
 
 void Tpch::DataParser::parse_supplier(std::string supplier_info, Tpch::supplier & supplier)
@@ -135,12 +141,16 @@ void Tpch::DataParser::parse_supplier(std::string supplier_info, Tpch::supplier 
 		tokens.push_back(token);
 	}
 	supplier.s_suppkey = std::stoi(tokens[0]);
-	strcpy_s(supplier.s_name, sizeof supplier.s_name, tokens[1].c_str());
-	strcpy_s(supplier.s_address, sizeof supplier.s_address, tokens[2].c_str());
+	//strcpy_s(supplier.s_name, sizeof supplier.s_name, tokens[1].c_str());
+	strcpy(supplier.s_name, tokens[1].c_str());
+	//strcpy_s(supplier.s_address, sizeof supplier.s_address, tokens[2].c_str());
+	strcpy(supplier.s_address, tokens[2].c_str());
 	supplier.s_nationkey = std::stoi(tokens[3]);
-	strcpy_s(supplier.s_phone, sizeof supplier.s_phone, tokens[4].c_str());
+	//strcpy_s(supplier.s_phone, sizeof supplier.s_phone, tokens[4].c_str());
+	strcpy(supplier.s_phone, tokens[4].c_str());
 	supplier.s_acctbal = std::stof(tokens[5]);
-	strcpy_s(supplier.s_comment, sizeof supplier.s_comment, tokens[6].c_str());
+	//strcpy_s(supplier.s_comment, sizeof supplier.s_comment, tokens[6].c_str());
+	strcpy(supplier.s_comment, tokens[6].c_str());
 }
 
 void Tpch::DataParser::parse_order(std::string order_info, Tpch::order & order)
@@ -158,19 +168,22 @@ void Tpch::DataParser::parse_order(std::string order_info, Tpch::order & order)
 	order.o_totalprice = std::stof(tokens[3]);
 	// order-date
 	std::vector<std::string> order_date_tokens;
-	str_stream = std::stringstream(tokens[4]);
-	while (getline(str_stream, token, '-'))
+	std::stringstream str_stream_1(tokens[4]);
+	while (getline(str_stream_1, token, '-'))
 	{
 		order_date_tokens.push_back(token);
 	}
 	order.o_orderdate.year = std::stoi(order_date_tokens[0]);
 	order.o_orderdate.month = std::stoi(order_date_tokens[1]);
 	order.o_orderdate.day = std::stoi(order_date_tokens[2]);
-	strcpy_s(order.o_orderpriority, sizeof order.o_orderpriority, tokens[5].c_str());
+	//strcpy_s(order.o_orderpriority, sizeof order.o_orderpriority, tokens[5].c_str());
+	strcpy(order.o_orderpriority, tokens[5].c_str());
 	// clerk
-	strcpy_s(order.o_clerk, sizeof order.o_clerk, tokens[6].c_str());
+	//strcpy_s(order.o_clerk, sizeof order.o_clerk, tokens[6].c_str());
+	strcpy(order.o_clerk, tokens[6].c_str());
 	order.o_shippriority = std::stoi(tokens[7]);
-	strcpy_s(order.o_comment, sizeof order.o_comment, tokens[8].c_str());
+	//strcpy_s(order.o_comment, sizeof order.o_comment, tokens[8].c_str());
+	strcpy(order.o_comment, tokens[8].c_str());
 }
 
 void Tpch::DataParser::parse_lineitem(std::string lineitem_info, lineitem& line_item)
@@ -194,8 +207,8 @@ void Tpch::DataParser::parse_lineitem(std::string lineitem_info, lineitem& line_
 	line_item.l_linestatus = tokens[9][0];
 	// ship-date
 	std::vector<std::string> ship_date_tokens;
-	str_stream = std::stringstream(tokens[10]);
-	while (getline(str_stream, token, '-'))
+	std::stringstream str_stream_1(tokens[10]);
+	while (getline(str_stream_1, token, '-'))
 	{
 		ship_date_tokens.push_back(token);
 	}
@@ -204,8 +217,8 @@ void Tpch::DataParser::parse_lineitem(std::string lineitem_info, lineitem& line_
 	line_item.l_shipdate.day = std::stoi(ship_date_tokens[2]);
 	// commit-date
 	std::vector<std::string> commit_date_tokens;
-	str_stream = std::stringstream(tokens[11]);
-	while (getline(str_stream, token, '-'))
+	std::stringstream str_stream_2(tokens[11]);
+	while (getline(str_stream_2, token, '-'))
 	{
 		commit_date_tokens.push_back(token);
 	}
@@ -214,16 +227,19 @@ void Tpch::DataParser::parse_lineitem(std::string lineitem_info, lineitem& line_
 	line_item.l_commitdate.day = std::stoi(commit_date_tokens[2]);
 	// receipt-date
 	std::vector<std::string> receipt_date_tokens;
-	str_stream = std::stringstream(tokens[12]);
-	while (getline(str_stream, token, '-'))
+	std::stringstream str_stream_3(tokens[12]);
+	while (getline(str_stream_3, token, '-'))
 	{
 		receipt_date_tokens.push_back(token);
 	}
 	line_item.l_receiptdate.year = std::stoi(receipt_date_tokens[0]);
 	line_item.l_receiptdate.month = std::stoi(receipt_date_tokens[1]);
 	line_item.l_receiptdate.day = std::stoi(receipt_date_tokens[2]);
-	strcpy_s(line_item.l_shipinstruct, sizeof line_item.l_shipinstruct, tokens[13].c_str());
-	strcpy_s(line_item.l_shipmode, sizeof line_item.l_shipmode, tokens[14].c_str());
-	strcpy_s(line_item.l_comment, sizeof line_item.l_comment, tokens[15].c_str());
+	//strcpy_s(line_item.l_shipinstruct, sizeof line_item.l_shipinstruct, tokens[13].c_str());
+	strcpy(line_item.l_shipinstruct, tokens[13].c_str());
+	//strcpy_s(line_item.l_shipmode, sizeof line_item.l_shipmode, tokens[14].c_str());
+	strcpy(line_item.l_shipmode, tokens[14].c_str());
+	//strcpy_s(line_item.l_comment, sizeof line_item.l_comment, tokens[15].c_str());
+	strcpy(line_item.l_comment, tokens[15].c_str());
 }
 #endif // !PARTITION_TPCH_UTIL_H_

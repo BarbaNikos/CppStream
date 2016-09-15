@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <vector>
 #include <ctime>
@@ -15,7 +14,7 @@ class WindowPartitioner
 public:
 	WindowPartitioner(uint64_t window, uint64_t slide, const std::vector<uint16_t> tasks, size_t buffer_size);
 	~WindowPartitioner();
-	__int16 partition_next(time_t timestamp, const T& key, size_t key_len);
+	int16_t partition_next(time_t timestamp, const T& key, size_t key_len);
 private:
 	std::vector<uint16_t> tasks;
 	WindowLoad<T> windowLoad;
@@ -24,9 +23,8 @@ private:
 
 template <class T>
 inline WindowPartitioner<T>::WindowPartitioner(uint64_t window, uint64_t slide, const std::vector<uint16_t> tasks, size_t buffer_size) : 
-	windowLoad(window, slide, tasks, buffer_size)
+	tasks(tasks), windowLoad(window, slide, tasks, buffer_size)
 {
-	this->tasks = tasks;
 }
 
 template<class T>
@@ -35,7 +33,7 @@ inline WindowPartitioner<T>::~WindowPartitioner()
 }
 
 template <class T>
-inline __int16 WindowPartitioner<T>::partition_next(time_t timestamp, const T& key, size_t key_len)
+inline int16_t WindowPartitioner<T>::partition_next(time_t timestamp, const T& key, size_t key_len)
 {
 	uint32_t first_choice, second_choice;
 	MurmurHash3_x86_32((void*) &key, key_len, 13, &first_choice);

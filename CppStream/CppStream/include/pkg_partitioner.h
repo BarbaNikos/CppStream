@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <vector>
 #include <cinttypes>
@@ -18,9 +17,9 @@ public:
 	uint64_t get_min_count();
 	uint64_t get_max_count();
 private:
-	PartitionPolicy* policy;
 	std::vector<uint16_t> tasks;
 	std::vector<uint64_t> task_count;
+	PartitionPolicy* policy;
 	uint64_t max_task_count;
 	uint64_t min_task_count;
 };

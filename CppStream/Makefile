@@ -1,7 +1,7 @@
-CC = g++	# Compiler to use
-FLAGS = -std=c++0x -O2 -g -Wall	# -g for debug, -O2 for optimize, -Wall additional messages
-INCLUDE_FLAGS = -I ./CppStream/include/
-LIBS = -lpthread -lm
+CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
+FLAGS = -std=c++11 -O2 -g -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
+INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
+LIBS = -lpthread -lm							# additional libraries
 OBJS = BitTrickBox.o cag_partitioner.o CardinalityEstimator.o \
 	debs_challenge_util.o main.o MurmurHash3.o
 

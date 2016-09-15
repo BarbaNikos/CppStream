@@ -1,5 +1,3 @@
-#pragma once
-
 #include "../include/debs_challenge_util.h"
 
 const double DebsChallenge::TaxiCoordinateHelper::R = double(6371000);
@@ -177,6 +175,8 @@ std::pair<uint16_t, uint16_t> DebsChallenge::TaxiCoordinateHelper::locate(int mi
 			}
 		}
 	}
+	auto failed_cell = std::make_pair(-1, -1);
+	return failed_cell;
 }
 
 inline double DebsChallenge::TaxiCoordinateHelper::to_degrees(double value_in_radians)
@@ -191,8 +191,6 @@ inline double DebsChallenge::TaxiCoordinateHelper::to_radians(double value_in_de
 
 void DebsChallenge::CellAssign::parse_cells(std::string ride_info, Ride& ride)
 {
-	std::tm pickup_t = {};
-	std::tm dropoff_t = {};
 	std::stringstream str_stream(ride_info);
 	std::string token;
 	std::vector<std::string> tokens;
@@ -224,12 +222,8 @@ void DebsChallenge::CellAssign::parse_cells(std::string ride_info, Ride& ride)
 
 DebsChallenge::CellAssign::CellAssign()
 {
-	std::chrono::system_clock::time_point square_start = std::chrono::system_clock::now();
 	DebsChallenge::TaxiCoordinateHelper::get_squares(CellAssign::latitude, CellAssign::longitude, 
 		CellAssign::cell_distance, CellAssign::grid_distance, cells);
-	std::chrono::system_clock::time_point square_end = std::chrono::system_clock::now();
-	std::chrono::duration<double, std::milli> square_calc_time = square_end - square_start;
-	//std::cout << "Time to calculate squares: " << square_calc_time.count() << " (msec). Total squares: " << cells.size() << std::endl;
 }
 
 DebsChallenge::CellAssign::~CellAssign()

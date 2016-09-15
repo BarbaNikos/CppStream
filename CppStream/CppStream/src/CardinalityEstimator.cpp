@@ -1,4 +1,3 @@
-#pragma once
 #include "../include/CardinalityEstimator.h"
 
 const double CardinalityEstimator::ProbCount::phi = 0.77351;

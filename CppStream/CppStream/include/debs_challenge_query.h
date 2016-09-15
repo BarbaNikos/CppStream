@@ -1,4 +1,3 @@
-#pragma once
 
 #ifndef DEBS_CHALLENGE_QUERY_H_
 #define DEBS_CHALLENGE_QUERY_H_

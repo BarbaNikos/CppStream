@@ -23,8 +23,10 @@
 #include "../include/tpch_util.h"
 #include "../include/tpch_query.h"
 
-//const std::vector<uint16_t> tasks = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
-const std::vector<uint16_t> tasks = { 1, 2, 3, 4 };
+//const std::vector<uint16_t> tasks = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
+//const std::vector<uint16_t> tasks = { 1, 2, 3, 4 };
+std::vector<uint16_t> tasks;
+uint16_t task_num;
 
 void vanilla_main()
 {
@@ -74,7 +76,7 @@ void vanilla_main()
 
 	uint64_t window = 1000;
 	uint64_t slide = 100;
-	const size_t buffer_size = (size_t)ceil(window / slide);
+	//const size_t buffer_size = (size_t)ceil(window / slide);
 	WindowPartitioner<std::string> window_partitioner(window, slide, tasks, 10);
 	start = std::chrono::high_resolution_clock::now();
 	for (std::vector<std::string>::iterator it = lines.begin(); it != lines.end(); ++it)
@@ -317,20 +319,20 @@ void bit_tricks_scenario()
 	uint64_t h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	uint64_t f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
 	
-	uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 	
 	if (l != f_l)
 	{
-		throw new std::exception("first one failed on lowest");
+		std::cout << "first one failed on lowest\n";
 	}
 	if (h != f_h)
 	{
-		throw new std::exception("first one failed on highest");
+		std::cout << "first one failed on highest\n";
 	}
 	if (h_64 != f_h_64)
 	{
-		throw new std::exception("first one failed on highest (x64)");
+		std::cout << "first one failed on highest (x64)\n";
 	}
 	i = 15; // 0x0000000f
 	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
@@ -339,15 +341,15 @@ void bit_tricks_scenario()
 	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	f_h = BitWizard::highest_order_bit_index(i);
 	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 	if (l != f_l)
 	{
-		std::cout << "second one failed on lowest" << std::endl;
+		std::cout << "second one failed on lowest\n";
 	}
 	if (h != f_h)
 	{
-		std::cout << "second one failed on highest" << std::endl;
+		std::cout << "second one failed on highest\n";
 	}
 	i = 123452; // 0x0001e23c
 	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000004
@@ -356,15 +358,15 @@ void bit_tricks_scenario()
 	f_h = BitWizard::highest_order_bit_index(i);
 	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 	if (l != f_l)
 	{
-		throw new std::exception("third one failed on lowest");
+		std::cout << "third one failed on lowest\n";
 	}
 	if (h != f_h)
 	{
-		throw new std::exception("third one failed on highest");
+		std::cout << "third one failed on highest\n";
 	}
 	i = uint32_t(0xffffffff);
 	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
@@ -373,15 +375,15 @@ void bit_tricks_scenario()
 	f_h = BitWizard::highest_order_bit_index(i);
 	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 	if (l != f_l)
 	{
-		throw new std::exception("fourth one failed on lowest");
+		std::cout << "fourth one failed on lowest\n";
 	}
 	if (h != f_h)
 	{
-		throw new std::exception("fourth one failed on highest");
+		std::cout << "fourth one failed on highest\n";
 	}
 	i = uint32_t(0x80000000);
 	l = BitWizard::lowest_order_bit_index_slow(i); // 0x800000000
@@ -390,15 +392,15 @@ void bit_tricks_scenario()
 	f_h = BitWizard::highest_order_bit_index(i);
 	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 	if (l != f_l)
 	{
-		throw new std::exception("fifth one failed on lowest");
+		std::cout << "fifth one failed on lowest\n";
 	}
 	if (h != f_h)
 	{
-		throw new std::exception("fifth one failed on highest");
+		std::cout << "fifth one failed on highest\n";
 	}
 	i = uint32_t(0x80000001);
 	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
@@ -407,15 +409,16 @@ void bit_tricks_scenario()
 	f_h = BitWizard::highest_order_bit_index(i);
 	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 	if (l != f_l)
 	{
-		throw new std::exception("sixth one failed on lowest");
+		std::cout << "sixth one failed on lowest\n";
 	}
 	if (h != f_h)
 	{
-		throw new std::exception("sixth one failed on highest");
+		std::cout << "sixth one failed on highest\n";
+		return;
 	}
 	i = uint32_t(0x00000000);
 	l = BitWizard::lowest_order_bit_index_slow(i);
@@ -424,8 +427,8 @@ void bit_tricks_scenario()
 	f_h = BitWizard::highest_order_bit_index(i);
 	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
 	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
+	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
+	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 }
 
 void bit_tricks_performance_16()
@@ -469,7 +472,7 @@ void bit_tricks_performance_16()
 	fast_arch_duration = fast_arch_end - fast_arch_start;
 	std::cout << "low-order-16-bit without branch for fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	// high-order
-	sum = 0; f_sum = 0; f_arch_sum;
+	sum = 0; f_sum = 0; f_arch_sum = 0;
 	normal_start = std::chrono::system_clock::now();
 	for (unsigned long i = 0; i < upper_limit; ++i)
 	{
@@ -530,7 +533,7 @@ void bit_tricks_performance_32()
 	std::cout << "low-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
 		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	// high-order
-	sum = 0; f_sum = 0; f_arch_sum;
+	sum = 0; f_sum = 0; f_arch_sum = 0;
 	normal_start = std::chrono::system_clock::now();
 	for (unsigned long i = 0; i < upper_limit; ++i)
 	{
@@ -591,7 +594,7 @@ void bit_tricks_performance_64()
 	std::cout << "low-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
 		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
 	// high-order
-	sum = 0; f_sum = 0; f_arch_sum;
+	sum = 0; f_sum = 0; f_arch_sum = 0;
 	normal_start = std::chrono::system_clock::now();
 	for (unsigned long i = 0; i < upper_limit; ++i)
 	{
@@ -621,7 +624,8 @@ void bit_tricks_performance_64()
 	fast_arch_start = std::chrono::system_clock::now();
 	for (unsigned long i = 0; i < upper_limit; ++i)
 	{
-		uint64_t f_l_64_arch = 0x8000000000000000 >> __lzcnt64(i);
+		//uint64_t f_l_64_arch = 0x8000000000000000 >> __lzcnt64(i);
+		uint64_t f_l_64_arch = BitWizard::highest_order_bit_index_arch(uint64_t(i));
 		f_arch_sum += f_l_64_arch;
 	}
 	fast_arch_end = std::chrono::system_clock::now();
@@ -754,7 +758,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = pkg.partition_next(key, key.length());
+		pkg.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
@@ -766,7 +770,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = cag_naive.partition_next(key, key.length());
+		cag_naive.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
@@ -778,7 +782,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = lag_naive.partition_next(key, key.length());
+		lag_naive.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
@@ -789,7 +793,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = cag_pc.partition_next(key, key.length());
+		cag_pc.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
@@ -800,7 +804,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = lag_pc.partition_next(key, key.length());
+		lag_pc.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
@@ -811,7 +815,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = cag_hll.partition_next(key, key.length());
+		cag_hll.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
@@ -822,7 +826,7 @@ void tpch_q1_performance(std::string input_file)
 	for (std::vector<Tpch::lineitem>::iterator it = lines.begin(); it != lines.end(); ++it)
 	{
 		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
-		short task = lag_hll.partition_next(key, key.length());
+		lag_hll.partition_next(key, key.length());
 	}
 	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
@@ -851,7 +855,7 @@ void pkg_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	PkgPartitioner pkg(tasks);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
 	
 	// start partitioning
 	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
@@ -882,7 +886,7 @@ void pkg_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 	}
 	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (PKG) total partition time: " << 
+	std::cout << "Partioner thread (PKG) total partition time: " << 
 		pkg_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -915,7 +919,7 @@ void cag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_
 	}
 	CardinalityAwarePolicy cag_policy;
 	CagPartionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
 	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
@@ -946,7 +950,7 @@ void cag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_
 	}
 	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (CAG-naive) total partition time: " <<
+	std::cout << "Partioner thread (CAG-naive) total partition time: " <<
 		cag_naive_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -979,7 +983,7 @@ void lag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_
 	}
 	LoadAwarePolicy lag_policy;
 	CagPartionLib::CagNaivePartitioner cag_naive(tasks, lag_policy);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
 	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
@@ -1010,7 +1014,7 @@ void lag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_
 	}
 	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (LAG-naive) total partition time: " <<
+	std::cout << "Partioner thread (LAG-naive) total partition time: " <<
 		lag_naive_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -1043,7 +1047,7 @@ void cag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_tab
 	}
 	CardinalityAwarePolicy cag_policy;
 	CagPartionLib::CagPcPartitioner cag_pc(tasks, cag_policy);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
 	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
@@ -1074,7 +1078,7 @@ void cag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_tab
 	}
 	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (CAG-PC) total partition time: " <<
+	std::cout << "Partioner thread (CAG-PC) total partition time: " <<
 		cag_pc_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -1107,7 +1111,7 @@ void lag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_tab
 	}
 	LoadAwarePolicy lag_policy;
 	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
 	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
@@ -1138,7 +1142,7 @@ void lag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_tab
 	}
 	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (LAG-PC) total partition time: " <<
+	std::cout << "Partioner thread (LAG-PC) total partition time: " <<
 		lag_pc_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -1171,7 +1175,7 @@ void cag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 	}
 	CardinalityAwarePolicy cag_policy;
 	CagPartionLib::CagHllPartitioner cag_hll(tasks, cag_policy, 5);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
 	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
@@ -1202,7 +1206,7 @@ void cag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 	}
 	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (CAG-HLL) total partition time: " <<
+	std::cout << "Partioner thread (CAG-HLL) total partition time: " <<
 		cag_hll_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -1235,7 +1239,7 @@ void lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 	}
 	LoadAwarePolicy lag_policy;
 	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
-	std::cout << "Partitioner thread-" << std::this_thread::get_id() << " INITIATES partitioning.\n";
+	std::cout << "Partitioner INITIATES partitioning.\n";
 
 	// start partitioning
 	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
@@ -1266,7 +1270,7 @@ void lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 	}
 	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
-	std::cout << "Partioner thread-" << std::this_thread::get_id() << " (LAG-HLL) total partition time: " <<
+	std::cout << "Partioner (LAG-HLL) total partition time: " <<
 		lag_hll_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -1284,10 +1288,20 @@ void lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 
 int main(int argc, char** argv)
 {
-	std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
-
-	char ch;
-	
+	// char ch;
+	if (argc < 2)
+	{
+		std::cout << "usage: <lineitem-file> <worker-num>\n";
+		exit(1);
+	}
+	//std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
+	std::string lineitem_file_name = argv[1];
+	task_num = std::stoi(argv[2]);
+	for (size_t i = 0; i < task_num; ++i)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
 	// vanilla_main();
 
 	// bit_tricks_scenario();
@@ -1304,7 +1318,7 @@ int main(int argc, char** argv)
 
 	// log_perf_test();
 
-	debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
+	// debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
 
 	// tpch_q1_performance(lineitem_file_name);
 
@@ -1317,8 +1331,8 @@ int main(int argc, char** argv)
 	cag_hll_concurrent_partition(lineitem_table);
 	lag_hll_concurrent_partition(lineitem_table);
 
-	std::cout << "Press any key to continue...\n";
-	std::cin >> ch;
+	//std::cout << "Press any key to continue...\n";
+	//std::cin >> ch;
 
 	return 0;
 }

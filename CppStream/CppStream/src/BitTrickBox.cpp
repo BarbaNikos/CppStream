@@ -1,4 +1,3 @@
-#pragma once
 #include "../include/BitTrickBox.h"
 
 const uint8_t BitWizard::MultiplyDeBruijnBitPosition2[32] =
