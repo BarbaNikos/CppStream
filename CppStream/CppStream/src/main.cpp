@@ -18,13 +18,12 @@
 #include "../include/pkg_partitioner.h"
 #include "../include/window_partitioner.h"
 #include "../include/debs_challenge_util.h"
+#include "../include/debs_challenge_query.h"
 #include "../include/BitTrickBox.h"
 #include "../include/cag_partitioner.h"
 #include "../include/tpch_util.h"
 #include "../include/tpch_query.h"
 
-//const std::vector<uint16_t> tasks = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
-//const std::vector<uint16_t> tasks = { 1, 2, 3, 4 };
 std::vector<uint16_t> tasks;
 uint16_t task_num;
 
@@ -86,6 +85,32 @@ void vanilla_main()
 	end = std::chrono::high_resolution_clock::now();
 	partition_time = end - start;
 	std::cout << "(A)-LAG Time to partition lines: " << partition_time.count() << " (microsec)." << std::endl;
+}
+
+std::vector<DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name)
+{
+	std::vector<DebsChallenge::Ride> lines;
+	std::string line;
+	std::ifstream file(input_file_name);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file.\n";
+		exit(1);
+	}
+	DebsChallenge::CellAssign cell_assign;
+	std::chrono::system_clock::time_point scan_start = std::chrono::system_clock::now();
+	while (getline(file, line))
+	{
+		DebsChallenge::Ride ride;
+		cell_assign.parse_cells(line, ride);
+		lines.push_back(ride);
+	}
+	std::chrono::system_clock::time_point scan_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> scan_time = scan_end - scan_start;
+	lines.shrink_to_fit();
+	file.close();
+	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec).\n";
+	return lines;
 }
 
 void debs_partition_performance(std::string input_file_name)
@@ -839,7 +864,7 @@ void tpch_q1_worker(Tpch::QueryOne* query_one)
 	query_one->operate();
 }
 
-void pkg_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_pkg_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -902,7 +927,7 @@ void pkg_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 	std::cout << "------END-----\n";
 }
 
-void cag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_cag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -966,7 +991,7 @@ void cag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_
 	std::cout << "------END-----\n";
 }
 
-void lag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_lag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -1030,7 +1055,7 @@ void lag_naive_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_
 	std::cout << "------END-----\n";
 }
 
-void cag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_cag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -1094,7 +1119,7 @@ void cag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_tab
 	std::cout << "------END-----\n";
 }
 
-void lag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_lag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -1158,7 +1183,7 @@ void lag_pc_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_tab
 	std::cout << "------END-----\n";
 }
 
-void cag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_cag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -1222,7 +1247,7 @@ void cag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 	std::cout << "------END-----\n";
 }
 
-void lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
+void tpch_q1_lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_table)
 {
 	// initialize shared memory
 	std::queue<Tpch::lineitem>** queues = new std::queue<Tpch::lineitem>*[tasks.size()];
@@ -1286,6 +1311,76 @@ void lag_hll_concurrent_partition(const std::vector<Tpch::lineitem>& lineitem_ta
 	std::cout << "------END-----\n";
 }
 
+void debs_frequent_route_worker(DebsChallenge::FrequentRoute* frequent_route)
+{
+	frequent_route->operate();
+}
+
+void debs_frequent_route_pkg_concurrent_partition(const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<DebsChallenge::Ride>** queues = new std::queue<DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	DebsChallenge::FrequentRoute** query_workers = new DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<DebsChallenge::Ride>();
+		query_workers[i] = new DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	PkgPartitioner pkg(tasks);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = pkg.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		DebsChallenge::Ride final_ride;
+		final_ride.trip_time_in_secs = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
+	std::cout << "Partioner thread (PKG) total partition time: " <<
+		pkg_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
 int main(int argc, char** argv)
 {
 	// char ch;
@@ -1322,15 +1417,17 @@ int main(int argc, char** argv)
 
 	// tpch_q1_performance(lineitem_file_name);
 
-	std::vector<Tpch::lineitem> lineitem_table = parse_tpch_lineitem(lineitem_file_name);
-	pkg_concurrent_partition(lineitem_table);
-	cag_naive_concurrent_partition(lineitem_table);
-	lag_naive_concurrent_partition(lineitem_table);
-	cag_pc_concurrent_partition(lineitem_table);
-	lag_pc_concurrent_partition(lineitem_table);
-	cag_hll_concurrent_partition(lineitem_table);
-	lag_hll_concurrent_partition(lineitem_table);
+	//std::vector<Tpch::lineitem> lineitem_table = parse_tpch_lineitem(lineitem_file_name);
+	//pkg_concurrent_partition(lineitem_table);
+	//cag_naive_concurrent_partition(lineitem_table);
+	//lag_naive_concurrent_partition(lineitem_table);
+	//tpch_q1_cag_pc_concurrent_partition(lineitem_table);
+	//lag_pc_concurrent_partition(lineitem_table);
+	//cag_hll_concurrent_partition(lineitem_table);
+	//lag_hll_concurrent_partition(lineitem_table);
 
+	std::vector<DebsChallenge::Ride> ride_table = parse_debs_rides(lineitem_file_name);
+	debs_frequent_route_pkg_concurrent_partition(ride_table);
 	//std::cout << "Press any key to continue...\n";
 	//std::cin >> ch;
 

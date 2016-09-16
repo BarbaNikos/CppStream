@@ -108,6 +108,7 @@ void Tpch::QueryOne::update(Tpch::lineitem& line_item)
 
 inline void Tpch::QueryOne::finalize()
 {
+	std::cout << "number of groups: " << result.size() << ".\n";
 	for (std::unordered_map<std::string, Tpch::query_one_result>::iterator it = result.begin(); it != result.end(); ++it)
 	{
 		it->second.avg_qty = it->second.avg_qty / it->second.count_order;
