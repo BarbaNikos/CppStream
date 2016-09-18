@@ -118,13 +118,11 @@
     <ClInclude Include="include\cag_partitioner.h" />
     <ClInclude Include="include\CardinalityEstimator.h" />
     <ClInclude Include="include\CircularBuffer.h" />
-    <ClInclude Include="include\debs_challenge_query.h" />
-    <ClInclude Include="include\debs_challenge_util.h" />
+    <ClInclude Include="include\DebsTaxiChallenge.h" />
     <ClInclude Include="include\MurmurHash3.h" />
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
-    <ClInclude Include="include\tpch_query.h" />
-    <ClInclude Include="include\tpch_util.h" />
+    <ClInclude Include="include\TpchExperiment.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />
   </ItemGroup>
@@ -132,7 +130,6 @@
     <ClCompile Include="src\BitTrickBox.cpp" />
     <ClCompile Include="src\cag_partitioner.cpp" />
     <ClCompile Include="src\CardinalityEstimator.cpp" />
-    <ClCompile Include="src\debs_challenge_util.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\MurmurHash3.cpp" />
   </ItemGroup>
