@@ -118,6 +118,12 @@ namespace Experiment
 			static std::vector<Experiment::DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name);
 			static void debs_partition_performance(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides);
 			static void debs_frequent_route_pkg_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
+			static void debs_frequent_route_cag_naive_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
+			static void debs_frequent_route_lag_naive_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
+			static void debs_frequent_route_cag_pc_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
+			static void debs_frequent_route_lag_pc_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
+			static void debs_frequent_route_cag_hll_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
+			static void debs_frequent_route_lag_hll_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
 		private:
 			static void debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRoute* frequent_route);
 		};
@@ -393,13 +399,12 @@ inline void Experiment::DebsChallenge::FrequentRoute::operate()
 		Experiment::DebsChallenge::Ride ride = input_queue->back();
 		input_queue->pop();
 		// process
-		if (ride.trip_time_in_secs >= 0)
+		if (ride.trip_distance >= 0)
 		{
 			update(ride);
 		}
 		else
 		{
-			std::cout << "worker-" << std::this_thread::get_id() << " time to finalize\n";
 			finalize();
 			locker.unlock();
 			cond->notify_all();
@@ -635,7 +640,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		Experiment::DebsChallenge::Ride final_ride;
-		final_ride.trip_time_in_secs = -1;
+		final_ride.trip_distance = -1;
 		std::unique_lock<std::mutex> locker(mu_xes[i]);
 		queues[i]->push(final_ride);
 		locker.unlock();
@@ -650,6 +655,402 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
 	std::cout << "Partioner thread (PKG) total partition time: " <<
 		pkg_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_naive_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = cag_naive.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
+	std::cout << "Partioner thread (CAG-naive) total partition time: " <<
+		cag_naive_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_naive_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	LoadAwarePolicy policy;
+	CagPartionLib::CagNaivePartitioner lag_naive(tasks, policy);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = lag_naive.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
+	std::cout << "Partioner thread (LAG-naive) total partition time: " <<
+		lag_naive_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_pc_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = cag_pc.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
+	std::cout << "Partioner thread (CAG-pc) total partition time: " <<
+		cag_pc_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_pc_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	LoadAwarePolicy policy;
+	CagPartionLib::CagPcPartitioner lag_pc(tasks, policy);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = lag_pc.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
+	std::cout << "Partioner thread (LAG-pc) total partition time: " <<
+		lag_pc_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_hll_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = cag_hll.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
+	std::cout << "Partioner thread (CAG-hll) total partition time: " <<
+		cag_hll_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_hll_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	LoadAwarePolicy policy;
+	CagPartionLib::CagHllPartitioner lag_hll(tasks, policy, 5);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = lag_hll.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
+	std::cout << "Partioner thread (LAG-hll) total partition time: " <<
+		lag_hll_partition_time.count() << " (msec).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		delete threads[i];
