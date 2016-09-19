@@ -510,6 +510,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> fld_partition_time = fld_end - fld_start;
 	size_t fld_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t fld_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double fld_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (fld_min_cardinality > fld_key_per_task[i].size())
@@ -520,10 +522,16 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			fld_max_cardinality = fld_key_per_task[i].size();
 		}
+		fld_average_cardinality += fld_key_per_task[i].size();
+		std::cout << fld_key_per_task[i].size() << " ";
 		fld_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	fld_average_cardinality = fld_average_cardinality / tasks.size();
 	fld_key_per_task.clear();
-	std::cout << "Time partition using FLD: " << fld_partition_time.count() << " (msec). Min: " << fld_min_cardinality << ", Max: " << fld_max_cardinality << "\n";
+	std::cout << "Time partition using FLD: " << fld_partition_time.count() << " (msec). Min: " << fld_min_cardinality << 
+		", Max: " << fld_max_cardinality << ", AVG: " << fld_average_cardinality << "\n";
+
 	
 	// PKG
 	PkgPartitioner pkg(tasks);
@@ -545,6 +553,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
 	size_t pkg_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t pkg_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double pkg_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (pkg_min_cardinality > pkg_key_per_task[i].size())
@@ -555,10 +565,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			pkg_max_cardinality = pkg_key_per_task[i].size();
 		}
+		pkg_average_cardinality += pkg_key_per_task[i].size();
+		std::cout << pkg_key_per_task[i].size() << " ";
 		pkg_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	pkg_average_cardinality = pkg_average_cardinality / tasks.size();
 	pkg_key_per_task.clear();
-	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec). Min: " << pkg_min_cardinality << ", Max: " << pkg_max_cardinality << "\n";
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec). Min: " << pkg_min_cardinality << 
+		", Max: " << pkg_max_cardinality << ", AVG: " << pkg_average_cardinality << "\n";
 
 	// CAG-Naive
 	CardinalityAwarePolicy policy;
@@ -581,6 +596,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
 	size_t cag_naive_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t cag_naive_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double cag_naive_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (cag_naive_min_cardinality > cag_naive_key_per_task[i].size())
@@ -591,10 +608,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			cag_naive_max_cardinality = cag_naive_key_per_task[i].size();
 		}
+		cag_naive_average_cardinality += cag_naive_key_per_task[i].size();
+		std::cout << cag_naive_key_per_task[i].size() << " ";
 		cag_naive_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	cag_naive_average_cardinality = cag_naive_average_cardinality / tasks.size();
 	cag_naive_key_per_task.clear();
-	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec). Min: " << cag_naive_min_cardinality << ", Max: " << cag_naive_max_cardinality << "\n";
+	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec). Min: " << cag_naive_min_cardinality << 
+		", Max: " << cag_naive_max_cardinality << ", AVG: " << cag_naive_average_cardinality << "\n";
 	// LAG-Naive
 	LoadAwarePolicy lag_policy;
 	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
@@ -616,6 +638,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
 	size_t lag_naive_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t lag_naive_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double lag_naive_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (lag_naive_min_cardinality > lag_naive_key_per_task[i].size())
@@ -626,10 +650,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			lag_naive_max_cardinality = lag_naive_key_per_task[i].size();
 		}
+		lag_naive_average_cardinality += lag_naive_key_per_task[i].size();
+		std::cout << lag_naive_key_per_task[i].size() << " ";
 		lag_naive_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	lag_naive_average_cardinality = lag_naive_average_cardinality / tasks.size();
 	lag_naive_key_per_task.clear();
-	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec). Min: " << lag_naive_min_cardinality << ", Max: " << lag_naive_max_cardinality << "\n";
+	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec). Min: " << lag_naive_min_cardinality << 
+		", Max: " << lag_naive_max_cardinality << ", AVG: " << lag_naive_average_cardinality << "\n";
 	// CAG-PC
 	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
 	std::vector<std::unordered_set<std::string>> cag_pc_key_per_task;
@@ -650,6 +679,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
 	size_t cag_pc_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t cag_pc_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double cag_pc_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (cag_pc_min_cardinality > cag_pc_key_per_task[i].size())
@@ -660,10 +691,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			cag_pc_max_cardinality = cag_pc_key_per_task[i].size();
 		}
+		cag_pc_average_cardinality += cag_pc_key_per_task[i].size();
+		std::cout << cag_pc_key_per_task[i].size() << " ";
 		cag_pc_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	cag_pc_average_cardinality = cag_pc_average_cardinality / tasks.size();
 	cag_pc_key_per_task.clear();
-	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec). Min: " << cag_pc_min_cardinality << ", Max: " << cag_pc_max_cardinality << "\n";
+	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec). Min: " << cag_pc_min_cardinality << 
+		", Max: " << cag_pc_max_cardinality << ", AVG: " << cag_pc_average_cardinality << "\n";
 	// LAG-PC
 	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
 	std::vector<std::unordered_set<std::string>> lag_pc_key_per_task;
@@ -684,6 +720,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
 	size_t lag_pc_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t lag_pc_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double lag_pc_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (lag_pc_min_cardinality > lag_pc_key_per_task[i].size())
@@ -694,10 +732,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			lag_pc_max_cardinality = lag_pc_key_per_task[i].size();
 		}
+		lag_pc_average_cardinality += lag_pc_key_per_task[i].size();
+		std::cout << lag_pc_key_per_task[i].size() << " ";
 		lag_pc_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	lag_pc_average_cardinality = lag_pc_average_cardinality / tasks.size();
 	lag_pc_key_per_task.clear();
-	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec). Min: " << lag_pc_min_cardinality << ", Max: " << lag_pc_max_cardinality << "\n";
+	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec). Min: " << lag_pc_min_cardinality << 
+		", Max: " << lag_pc_max_cardinality << ", AVG: " << lag_pc_average_cardinality << "\n";
 	// CAG-HLL
 	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
 	std::vector<std::unordered_set<std::string>> cag_hll_key_per_task;
@@ -718,6 +761,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
 	size_t cag_hll_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t cag_hll_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double cag_hll_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (cag_hll_min_cardinality > cag_hll_key_per_task[i].size())
@@ -728,10 +773,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			cag_hll_max_cardinality = cag_hll_key_per_task[i].size();
 		}
+		cag_hll_average_cardinality += cag_hll_key_per_task[i].size();
+		std::cout << cag_hll_key_per_task[i].size() << " ";
 		cag_hll_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	cag_hll_average_cardinality = cag_hll_average_cardinality / tasks.size();
 	cag_hll_key_per_task.clear();
-	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec). Min: " << cag_hll_min_cardinality << ", Max: " << cag_hll_max_cardinality << "\n";
+	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec). Min: " << cag_hll_min_cardinality << 
+		", Max: " << cag_hll_max_cardinality << ", AVG: " << cag_hll_average_cardinality << "\n";
 	// LAG-HLL
 	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
 	std::vector<std::unordered_set<std::string>> lag_hll_key_per_task;
@@ -752,6 +802,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
 	size_t lag_hll_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t lag_hll_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double lag_hll_average_cardinality = 0;
+	std::cout << "Cardinalities: ";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		if (lag_hll_min_cardinality > lag_hll_key_per_task[i].size())
@@ -762,10 +814,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		{
 			lag_hll_max_cardinality = lag_hll_key_per_task[i].size();
 		}
+		lag_hll_average_cardinality += lag_hll_key_per_task[i].size();
+		std::cout << lag_hll_key_per_task[i].size() << " ";
 		lag_hll_key_per_task[i].clear();
 	}
+	std::cout << "\n";
+	lag_hll_average_cardinality = lag_hll_average_cardinality / tasks.size();
 	lag_hll_key_per_task.clear();
-	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec). Min: " << lag_hll_min_cardinality << ", Max: " << lag_hll_max_cardinality << "\n";
+	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec). Min: " << lag_hll_min_cardinality << 
+		", Max: " << lag_hll_max_cardinality << ", AVG: " << lag_hll_average_cardinality << "\n";
 	std::cout << "------ END -----\n";
 }
 
