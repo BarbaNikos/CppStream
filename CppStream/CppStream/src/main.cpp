@@ -494,7 +494,10 @@ int main(int argc, char** argv)
 	//cag_hll_concurrent_partition(lineitem_table);
 	//lag_hll_concurrent_partition(lineitem_table);
 
+	std::cout << "size of CustomRide: " << sizeof(Experiment::DebsChallenge::CustomRide) << " bytes.\n";
 	std::vector<Experiment::DebsChallenge::Ride> ride_table = Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(lineitem_file_name);
+	Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
+	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_fld_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_naive_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_naive_concurrent_partition(tasks, ride_table);

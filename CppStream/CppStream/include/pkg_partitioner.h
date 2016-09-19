@@ -1,5 +1,3 @@
-#pragma once
-#include <iostream>
 #include <vector>
 #include <cinttypes>
 
@@ -25,8 +23,6 @@ private:
 	uint64_t min_task_count;
 };
 
-#endif // !PKG_PARTITIONER_H_
-
 PkgPartitioner::PkgPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), task_count(tasks.size(), uint64_t(0))
 {
 	policy = new CountAwarePolicy();
@@ -46,7 +42,7 @@ uint16_t PkgPartitioner::partition_next(const std::string& key, size_t key_len)
 	MurmurHash3_x86_32(key.c_str(), key_len, 17, &second_choice);
 	first_choice = first_choice % tasks.size();
 	second_choice = second_choice % tasks.size();
-	uint16_t selected_choice = policy->get_score(first_choice, task_count[first_choice], 0, 
+	uint16_t selected_choice = policy->get_score(first_choice, task_count[first_choice], 0,
 		second_choice, task_count[second_choice], 0, min_task_count, max_task_count, 0, 0);
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
@@ -54,12 +50,15 @@ uint16_t PkgPartitioner::partition_next(const std::string& key, size_t key_len)
 	return selected_choice;
 }
 
-inline uint64_t PkgPartitioner::get_min_count()
+uint64_t PkgPartitioner::get_min_count()
 {
 	return min_task_count;
 }
 
-inline uint64_t PkgPartitioner::get_max_count()
+uint64_t PkgPartitioner::get_max_count()
 {
 	return max_task_count;
 }
+
+
+#endif // !PKG_PARTITIONER_H_

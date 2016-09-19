@@ -406,6 +406,17 @@ std::vector<Experiment::Tpch::order> Experiment::Tpch::QueryOnePartition::parse_
 void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<uint16_t>& tasks, const std::vector<Experiment::Tpch::lineitem>& lineitem_table)
 {
 	std::cout << "------- TPCH Q-1 partition performance --------\n";
+	// FLD
+	HashFieldPartitioner fld(tasks);
+	std::chrono::system_clock::time_point fld_start = std::chrono::system_clock::now();
+	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->l_returnflag) + "." + std::to_string(it->l_linestatus);
+		fld.partition_next(key, key.length());
+	}
+	std::chrono::system_clock::time_point fld_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> fld_partition_time = fld_end - fld_start;
+	std::cout << "Time partition using FLD: " << fld_partition_time.count() << " (msec).\n";
 	// PKG
 	PkgPartitioner pkg(tasks);
 	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();

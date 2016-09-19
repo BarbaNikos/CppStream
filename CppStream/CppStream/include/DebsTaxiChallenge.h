@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "partition_policy.h"
+#include "hash_fld_partitioner.h"
 #include "pkg_partitioner.h"
 #include "cag_partitioner.h"
 
@@ -60,6 +61,25 @@ namespace Experiment
 
 		typedef struct
 		{
+			char medallion[32];
+			char hack_license[32];
+			std::time_t pickup_datetime;
+			std::time_t dropoff_datetime;
+			uint8_t trip_time_in_secs;
+			float_t trip_distance;
+			std::pair<uint8_t, uint8_t> pickup_cell;
+			std::pair<uint8_t, uint8_t> dropoff_cell;
+			char payment_type[3];
+			float_t fare_amount;
+			float_t surcharge;
+			float_t mta_tax;
+			float_t tip_amount;
+			float_t tolls_amount;
+			float_t total_amount;
+		}CustomRide;
+
+		typedef struct
+		{
 			std::string medallion;
 			std::string hack_license;
 			std::time_t pickup_datetime;
@@ -106,6 +126,7 @@ namespace Experiment
 			void update(DebsChallenge::Ride& ride);
 			void finalize();
 		private:
+			std::time_t* oldest_time;
 			std::mutex* mu;
 			std::condition_variable* cond;
 			std::unordered_map<std::string, Experiment::DebsChallenge::frequent_route_result> result;
@@ -117,6 +138,7 @@ namespace Experiment
 		public:
 			static std::vector<Experiment::DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name);
 			static void debs_partition_performance(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides);
+			static void debs_frequent_route_fld_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
 			static void debs_frequent_route_pkg_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
 			static void debs_frequent_route_cag_naive_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
 			static void debs_frequent_route_lag_naive_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
@@ -421,6 +443,7 @@ void Experiment::DebsChallenge::FrequentRoute::update(Experiment::DebsChallenge:
 		std::to_string(ride.pickup_cell.second) +
 		std::to_string(ride.dropoff_cell.first) +
 		std::to_string(ride.dropoff_cell.second);
+	// update counts
 	std::unordered_map<std::string, DebsChallenge::frequent_route_result>::iterator it = result.find(key);
 	if (it != result.end())
 	{
@@ -436,7 +459,7 @@ void Experiment::DebsChallenge::FrequentRoute::update(Experiment::DebsChallenge:
 
 void Experiment::DebsChallenge::FrequentRoute::finalize()
 {
-	std::cout << "number of groups: " << result.size() << ".\n";
+	//std::cout << "number of groups: " << result.size() << ".\n";
 }
 
 std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(const std::string input_file_name)
@@ -467,11 +490,47 @@ std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::Frequent
 
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides)
 {
-	PkgPartitioner pkg(tasks);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> pkg_key_per_task;
+	// FLD
+	HashFieldPartitioner fld(tasks);
+	std::vector<std::unordered_set<std::string>> fld_key_per_task;
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		pkg_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		fld_key_per_task.push_back(std::unordered_set<std::string>());
+	}
+	std::chrono::system_clock::time_point fld_start = std::chrono::system_clock::now();
+	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = fld.partition_next(key, key.length());
+		fld_key_per_task[task].insert(key);
+	}
+	std::chrono::system_clock::time_point fld_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> fld_partition_time = fld_end - fld_start;
+	size_t fld_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t fld_max_cardinality = std::numeric_limits<uint64_t>::min();
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		if (fld_min_cardinality > fld_key_per_task[i].size())
+		{
+			fld_min_cardinality = fld_key_per_task[i].size();
+		}
+		if (fld_max_cardinality < fld_key_per_task[i].size())
+		{
+			fld_max_cardinality = fld_key_per_task[i].size();
+		}
+		fld_key_per_task[i].clear();
+	}
+	fld_key_per_task.clear();
+	std::cout << "Time partition using FLD: " << fld_partition_time.count() << " (msec). Min: " << fld_min_cardinality << ", Max: " << fld_max_cardinality << "\n";
+	
+	// PKG
+	PkgPartitioner pkg(tasks);
+	std::vector<std::unordered_set<std::string>> pkg_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		pkg_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point pkg_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -480,18 +539,34 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = pkg.partition_next(key, key.length());
-		pkg_key_per_task[tasks[task]].insert(key);
+		pkg_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point pkg_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> pkg_partition_time = pkg_end - pkg_start;
-	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec).\n";
-
-	CardinalityAwarePolicy policy;
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_naive_key_per_task;
+	size_t pkg_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t pkg_max_cardinality = std::numeric_limits<uint64_t>::min();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		cag_naive_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		if (pkg_min_cardinality > pkg_key_per_task[i].size())
+		{
+			pkg_min_cardinality = pkg_key_per_task[i].size();
+		}
+		if (pkg_max_cardinality < pkg_key_per_task[i].size())
+		{
+			pkg_max_cardinality = pkg_key_per_task[i].size();
+		}
+		pkg_key_per_task[i].clear();
+	}
+	pkg_key_per_task.clear();
+	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec). Min: " << pkg_min_cardinality << ", Max: " << pkg_max_cardinality << "\n";
+
+	// CAG-Naive
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	std::vector<std::unordered_set<std::string>> cag_naive_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_naive_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -500,18 +575,33 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = cag_naive.partition_next(key, key.length());
-		cag_naive_key_per_task[tasks[task]].insert(key);
+		cag_naive_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point cag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_naive_partition_time = cag_naive_end - cag_naive_start;
-	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec).\n";
-
-	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_naive_key_per_task;
+	size_t cag_naive_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t cag_naive_max_cardinality = std::numeric_limits<uint64_t>::min();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		lag_naive_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		if (cag_naive_min_cardinality > cag_naive_key_per_task[i].size())
+		{
+			cag_naive_min_cardinality = cag_naive_key_per_task[i].size();
+		}
+		if (cag_naive_max_cardinality < cag_naive_key_per_task[i].size())
+		{
+			cag_naive_max_cardinality = cag_naive_key_per_task[i].size();
+		}
+		cag_naive_key_per_task[i].clear();
+	}
+	cag_naive_key_per_task.clear();
+	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec). Min: " << cag_naive_min_cardinality << ", Max: " << cag_naive_max_cardinality << "\n";
+	// LAG-Naive
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
+	std::vector<std::unordered_set<std::string>> lag_naive_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		lag_naive_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -520,17 +610,32 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = lag_naive.partition_next(key, key.length());
-		lag_naive_key_per_task[tasks[task]].insert(key);
+		lag_naive_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point lag_naive_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
-	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec).\n";
-
-	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_pc_key_per_task;
+	size_t lag_naive_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t lag_naive_max_cardinality = std::numeric_limits<uint64_t>::min();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		cag_pc_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		if (lag_naive_min_cardinality > lag_naive_key_per_task[i].size())
+		{
+			lag_naive_min_cardinality = lag_naive_key_per_task[i].size();
+		}
+		if (lag_naive_max_cardinality < lag_naive_key_per_task[i].size())
+		{
+			lag_naive_max_cardinality = lag_naive_key_per_task[i].size();
+		}
+		lag_naive_key_per_task[i].clear();
+	}
+	lag_naive_key_per_task.clear();
+	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec). Min: " << lag_naive_min_cardinality << ", Max: " << lag_naive_max_cardinality << "\n";
+	// CAG-PC
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	std::vector<std::unordered_set<std::string>> cag_pc_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_pc_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -539,17 +644,32 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = cag_pc.partition_next(key, key.length());
-		cag_pc_key_per_task[tasks[task]].insert(key);
+		cag_pc_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point cag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
-	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec).\n";
-
-	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_pc_key_per_task;
+	size_t cag_pc_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t cag_pc_max_cardinality = std::numeric_limits<uint64_t>::min();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		lag_pc_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		if (cag_pc_min_cardinality > cag_pc_key_per_task[i].size())
+		{
+			cag_pc_min_cardinality = cag_pc_key_per_task[i].size();
+		}
+		if (cag_pc_max_cardinality < cag_pc_key_per_task[i].size())
+		{
+			cag_pc_max_cardinality = cag_pc_key_per_task[i].size();
+		}
+		cag_pc_key_per_task[i].clear();
+	}
+	cag_pc_key_per_task.clear();
+	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec). Min: " << cag_pc_min_cardinality << ", Max: " << cag_pc_max_cardinality << "\n";
+	// LAG-PC
+	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	std::vector<std::unordered_set<std::string>> lag_pc_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		lag_pc_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -558,17 +678,32 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = lag_pc.partition_next(key, key.length());
-		lag_pc_key_per_task[tasks[task]].insert(key);
+		lag_pc_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point lag_pc_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
-	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec).\n";
-
-	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> cag_hll_key_per_task;
+	size_t lag_pc_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t lag_pc_max_cardinality = std::numeric_limits<uint64_t>::min();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		cag_hll_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		if (lag_pc_min_cardinality > lag_pc_key_per_task[i].size())
+		{
+			lag_pc_min_cardinality = lag_pc_key_per_task[i].size();
+		}
+		if (lag_pc_max_cardinality < lag_pc_key_per_task[i].size())
+		{
+			lag_pc_max_cardinality = lag_pc_key_per_task[i].size();
+		}
+		lag_pc_key_per_task[i].clear();
+	}
+	lag_pc_key_per_task.clear();
+	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec). Min: " << lag_pc_min_cardinality << ", Max: " << lag_pc_max_cardinality << "\n";
+	// CAG-HLL
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
+	std::vector<std::unordered_set<std::string>> cag_hll_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_hll_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -577,17 +712,32 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = cag_hll.partition_next(key, key.length());
-		cag_hll_key_per_task[tasks[task]].insert(key);
+		cag_hll_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point cag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
-	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec).\n";
-
-	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
-	std::unordered_map<uint16_t, std::unordered_set<std::string>> lag_hll_key_per_task;
+	size_t cag_hll_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t cag_hll_max_cardinality = std::numeric_limits<uint64_t>::min();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		lag_hll_key_per_task[tasks[i]] = std::unordered_set<std::string>();
+		if (cag_hll_min_cardinality > cag_hll_key_per_task[i].size())
+		{
+			cag_hll_min_cardinality = cag_hll_key_per_task[i].size();
+		}
+		if (cag_hll_max_cardinality < cag_hll_key_per_task[i].size())
+		{
+			cag_hll_max_cardinality = cag_hll_key_per_task[i].size();
+		}
+		cag_hll_key_per_task[i].clear();
+	}
+	cag_hll_key_per_task.clear();
+	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec). Min: " << cag_hll_min_cardinality << ", Max: " << cag_hll_max_cardinality << "\n";
+	// LAG-HLL
+	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
+	std::vector<std::unordered_set<std::string>> lag_hll_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		lag_hll_key_per_task.push_back(std::unordered_set<std::string>());
 	}
 	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
@@ -596,12 +746,92 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "," + dropoff_cell;
 		short task = lag_hll.partition_next(key, key.length());
-		lag_hll_key_per_task[tasks[task]].insert(key);
+		lag_hll_key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point lag_hll_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> lag_hll_partition_time = lag_hll_end - lag_hll_start;
-	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec).\n";
+	size_t lag_hll_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t lag_hll_max_cardinality = std::numeric_limits<uint64_t>::min();
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		if (lag_hll_min_cardinality > lag_hll_key_per_task[i].size())
+		{
+			lag_hll_min_cardinality = lag_hll_key_per_task[i].size();
+		}
+		if (lag_hll_max_cardinality < lag_hll_key_per_task[i].size())
+		{
+			lag_hll_max_cardinality = lag_hll_key_per_task[i].size();
+		}
+		lag_hll_key_per_task[i].clear();
+	}
+	lag_hll_key_per_task.clear();
+	std::cout << "Time partition using LAG(hll): " << lag_hll_partition_time.count() << " (msec). Min: " << lag_hll_min_cardinality << ", Max: " << lag_hll_max_cardinality << "\n";
 	std::cout << "------ END -----\n";
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_fld_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
+{
+	// initialize shared memory
+	std::queue<Experiment::DebsChallenge::Ride>** queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	std::mutex* mu_xes = new std::mutex[tasks.size()];
+	std::condition_variable* cond_vars = new std::condition_variable[tasks.size()];
+	std::thread** threads = new std::thread*[tasks.size()];
+	Experiment::DebsChallenge::FrequentRoute** query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
+	}
+	HashFieldPartitioner fld(tasks);
+	std::cout << "Partitioner thread INITIATES partitioning.\n";
+	// start partitioning
+	std::chrono::system_clock::time_point fld_start = std::chrono::system_clock::now();
+	for (std::vector<DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = std::to_string(it->pickup_cell.first) + "." +
+			std::to_string(it->pickup_cell.second) + "," +
+			std::to_string(it->dropoff_cell.first) + "." +
+			std::to_string(it->dropoff_cell.second);
+		short task = fld.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << "Partitioner thread SENT ALL rides.\n";
+	// send conclusive values
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point fld_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> fld_partition_time = fld_end - fld_start;
+	std::cout << "Partioner thread (FLD) total partition time: " <<
+		fld_partition_time.count() << " (msec).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table)
