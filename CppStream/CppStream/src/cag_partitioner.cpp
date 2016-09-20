@@ -75,6 +75,35 @@ CagPartionLib::CagPcPartitioner::~CagPcPartitioner()
 	delete[] _task_count;
 }
 
+//uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, size_t key_len)
+//{
+//	uint32_t hash_one, hash_two;
+//	uint32_t first_choice, second_choice;
+//	MurmurHash3_x86_32(key.c_str(), key_len, 13, &hash_one);
+//	MurmurHash3_x86_32(key.c_str(), key_len, 17, &hash_two);
+//	first_choice = hash_one % tasks.size();
+//	second_choice = hash_two % tasks.size();
+//	uint32_t first_cardinality = _task_cardinality[first_choice]->cardinality_estimation();
+//	uint32_t second_cardinality = _task_cardinality[second_choice]->cardinality_estimation();
+//	//uint32_t choice_cardinality = BitWizard::min_uint32(first_cardinality, second_cardinality);
+//	// decision
+//	uint16_t selected_choice = policy.get_score(first_choice, _task_count[first_choice], first_cardinality,
+//		second_choice, _task_count[second_choice], second_cardinality, min_task_count, max_task_count,
+//		min_task_cardinality, max_task_cardinality);
+//	//update metrics
+//	_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
+//	uint32_t selected_cardinality = _task_cardinality[selected_choice]->cardinality_estimation();
+//	// way to overcome getting stuck at 661
+//	//_task_cardinality[selected_choice]->set_bitmap(BitWizard::max_uint32(choice_cardinality + 1, selected_cardinality));
+//	//selected_cardinality = BitWizard::max_uint32(choice_cardinality + 1, selected_cardinality);
+//	_task_count[selected_choice] += 1;
+//	max_task_count = BitWizard::max_uint64(max_task_count, _task_count[selected_choice]);
+//	min_task_count = BitWizard::min_uint64(min_task_count, _task_count[selected_choice]);
+//	max_task_cardinality = BitWizard::max_uint32(max_task_cardinality, selected_cardinality);
+//	min_task_cardinality = BitWizard::min_uint64(min_task_cardinality, selected_cardinality);
+//	return selected_choice;
+//}
+
 uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, size_t key_len)
 {
 	uint32_t hash_one, hash_two;
@@ -85,26 +114,17 @@ uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key
 	second_choice = hash_two % tasks.size();
 	uint32_t first_cardinality = _task_cardinality[first_choice]->cardinality_estimation();
 	uint32_t second_cardinality = _task_cardinality[second_choice]->cardinality_estimation();
+	uint32_t choice_cardinality = BitWizard::min_uint32(first_cardinality, second_cardinality);
 	// decision
 	uint16_t selected_choice = policy.get_score(first_choice, _task_count[first_choice], first_cardinality,
 		second_choice, _task_count[second_choice], second_cardinality, min_task_count, max_task_count,
 		min_task_cardinality, max_task_cardinality);
 	//update metrics
-	if (second_choice == 4 && second_cardinality == 165)
-	{
-		_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
-	}
-	else
-	{
-		_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
-	}
+	_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
 	uint32_t selected_cardinality = _task_cardinality[selected_choice]->cardinality_estimation();
-	if (selected_choice == 4 && selected_cardinality == 661)
-	{
-		std::cout << "PC: first: " << first_choice << ", first-card: " << first_cardinality <<
-			", second: " << second_choice << ", second-card: " << second_cardinality <<
-			", selected: " << selected_choice << ", selected-card: " << selected_cardinality << "\n";
-	}
+	// way to overcome getting stuck
+	selected_cardinality = BitWizard::max_uint32(choice_cardinality + 1, selected_cardinality);
+	_task_cardinality[selected_choice]->set_bitmap(selected_cardinality);
 	_task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, _task_count[selected_choice]);
 	min_task_count = BitWizard::min_uint64(min_task_count, _task_count[selected_choice]);

@@ -446,21 +446,22 @@ int bit_tricks_correctness_test()
 
 int main(int argc, char** argv)
 {
-	char ch;
+	//char ch;
 	if (argc < 2)
 	{
-		std::cout << "usage: <lineitem-file> <worker-num>\n";
+		std::cout << "usage: <input-file> <worker-num>\n";
 		exit(1);
 	}
 	//std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
 	std::string lineitem_file_name = argv[1];
 	uint16_t task_num = std::stoi(argv[2]);
 	std::vector<uint16_t> tasks;
-	for (size_t i = 0; i < task_num; ++i)
+	for (uint16_t i = 0; i < task_num; ++i)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
+
 	// bit_tricks_scenario();
 
 	// card_estimate_example();
@@ -489,8 +490,8 @@ int main(int argc, char** argv)
 	// std::cout << "size of CustomRide: " << sizeof(Experiment::DebsChallenge::CustomRide) << " bytes.\n";
 	std::vector<Experiment::DebsChallenge::Ride> ride_table = Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(lineitem_file_name);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(tasks, ride_table);
-	/*Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_fld_concurrent_partition(tasks, ride_table);
+	//Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
+	/*Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_fld_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_naive_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_naive_concurrent_partition(tasks, ride_table);
@@ -498,8 +499,9 @@ int main(int argc, char** argv)
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_pc_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_hll_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_hll_concurrent_partition(tasks, ride_table);*/
-	std::cout << "Press any key to continue...\n";
+	
+	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
-
+*/
 	return 0;
 }

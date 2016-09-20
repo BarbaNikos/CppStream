@@ -65,10 +65,10 @@
     <ClCompile Include="src\cag_partitioner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\CardinalityEstimator.cpp">
+    <ClCompile Include="src\BitTrickBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\BitTrickBox.cpp">
+    <ClCompile Include="src\CardinalityEstimator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
