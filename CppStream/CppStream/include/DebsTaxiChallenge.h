@@ -137,6 +137,7 @@ namespace Experiment
 		{
 		public:
 			static std::vector<Experiment::DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name);
+			static void debs_compare_cag_correctness(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides);
 			static void debs_partition_performance(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides);
 			static void debs_frequent_route_fld_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
 			static void debs_frequent_route_pkg_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<DebsChallenge::Ride>& route_table);
@@ -486,6 +487,71 @@ std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::Frequent
 	file.close();
 	std::cout << "Time to scan and serialize file: " << scan_time.count() << " (msec).\n";
 	return lines;
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides)
+{
+	// CAG-Naive
+	CardinalityAwarePolicy policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	// CAG-PC
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	std::vector<std::unordered_set<std::string>> cag_pc_key_per_task;
+	std::vector<std::unordered_set<std::string>> cag_naive_key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		cag_naive_key_per_task.push_back(std::unordered_set<std::string>());
+		cag_pc_key_per_task.push_back(std::unordered_set<std::string>());
+	}
+	cag_naive_key_per_task.shrink_to_fit();
+	cag_pc_key_per_task.shrink_to_fit();
+	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "," + dropoff_cell;
+		short task = cag_naive.partition_next(key, key.length());
+		short task_1 = cag_pc.partition_next(key, key.length());
+		cag_naive_key_per_task[task].insert(key);
+		cag_pc_key_per_task[task_1].insert(key);
+	}
+	size_t cag_naive_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t cag_pc_min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t cag_naive_max_cardinality = std::numeric_limits<uint64_t>::min();
+	size_t cag_pc_max_cardinality = std::numeric_limits<uint64_t>::min();
+	double cag_naive_average_cardinality = 0;
+	double cag_pc_average_cardinality = 0;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		if (cag_naive_min_cardinality > cag_naive_key_per_task[i].size())
+		{
+			cag_naive_min_cardinality = cag_naive_key_per_task[i].size();
+		}
+		if (cag_pc_min_cardinality > cag_pc_key_per_task[i].size())
+		{
+			cag_pc_min_cardinality = cag_pc_key_per_task[i].size();
+		}
+		if (cag_naive_max_cardinality < cag_naive_key_per_task[i].size())
+		{
+			cag_naive_max_cardinality = cag_naive_key_per_task[i].size();
+		}
+		if (cag_pc_max_cardinality < cag_pc_key_per_task[i].size())
+		{
+			cag_pc_max_cardinality = cag_pc_key_per_task[i].size();
+		}
+		cag_naive_average_cardinality += cag_naive_key_per_task[i].size();
+		cag_pc_average_cardinality += cag_pc_key_per_task[i].size();
+		cag_naive_key_per_task[i].clear();
+		cag_pc_key_per_task[i].clear();
+	}
+	cag_naive_average_cardinality = cag_naive_average_cardinality / tasks.size();
+	cag_pc_average_cardinality = cag_pc_average_cardinality / tasks.size();
+	cag_naive_key_per_task.clear();
+	cag_pc_key_per_task.clear();
+	std::cout << "Time partition using CAG(naive) - Min: " << cag_naive_min_cardinality <<
+		", Max: " << cag_naive_max_cardinality << ", AVG: " << cag_naive_average_cardinality << "\n";
+	std::cout << "Time partition using CAG(pc) - Min: " << cag_pc_min_cardinality <<
+		", Max: " << cag_pc_max_cardinality << ", AVG: " << cag_pc_average_cardinality << "\n";
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride> rides)

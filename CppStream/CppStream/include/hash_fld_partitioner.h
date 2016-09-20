@@ -30,6 +30,6 @@ uint16_t HashFieldPartitioner::partition_next(const std::string& key, size_t key
 {
 	uint32_t choice;
 	MurmurHash3_x86_32(key.c_str(), key_len, 13, &choice);
-	return choice % tasks.size();
+	return uint16_t(choice % tasks.size());
 }
 #endif // !HASH_FLD_PARTITIONER_H_

@@ -30,6 +30,9 @@ uint16_t CagPartionLib::CagNaivePartitioner::partition_next(const std::string & 
 		min_task_cardinality, max_task_cardinality);
 	task_cardinality[selected_choice].insert(hash_one);
 	uint32_t selected_cardinality = task_cardinality[selected_choice].size();
+	/*std::cout << "NAIVE: first: " << first_choice << ", first-card: " << first_cardinality <<
+		", second: " << second_choice << ", second-card: " << second_cardinality <<
+		", selected: " << selected_choice << ", selected-card: " << selected_cardinality << "\n";*/
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
 	min_task_count = BitWizard::min_uint64(min_task_count, task_count[selected_choice]);
@@ -87,8 +90,21 @@ uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key
 		second_choice, _task_count[second_choice], second_cardinality, min_task_count, max_task_count,
 		min_task_cardinality, max_task_cardinality);
 	//update metrics
-	_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
+	if (second_choice == 4 && second_cardinality == 165)
+	{
+		_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
+	}
+	else
+	{
+		_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
+	}
 	uint32_t selected_cardinality = _task_cardinality[selected_choice]->cardinality_estimation();
+	if (selected_choice == 4 && selected_cardinality == 661)
+	{
+		std::cout << "PC: first: " << first_choice << ", first-card: " << first_cardinality <<
+			", second: " << second_choice << ", second-card: " << second_cardinality <<
+			", selected: " << selected_choice << ", selected-card: " << selected_cardinality << "\n";
+	}
 	_task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, _task_count[selected_choice]);
 	min_task_count = BitWizard::min_uint64(min_task_count, _task_count[selected_choice]);

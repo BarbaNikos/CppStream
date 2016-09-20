@@ -20,47 +20,41 @@
 
 void card_estimate_example()
 {
+	std::unordered_set<uint32_t> naive_set;
 	CardinalityEstimator::ProbCount prob_count;
-	CardinalityEstimator::HyperLoglog hyper_loglog(10);
-	for (size_t i = 0; i < 1000000000; ++i)
+	CardinalityEstimator::HyperLoglog hyper_loglog(5);
+	for (size_t i = 0; i < 1000000; ++i)
 	{
+		size_t naive_diff = naive_set.size();
+		naive_set.insert(uint32_t(i));
+		naive_diff = naive_set.size() - naive_diff;
+		size_t pc_prev = prob_count.cardinality_estimation();
 		prob_count.update_bitmap(uint32_t(i));
+		size_t pc_diff = prob_count.cardinality_estimation() - pc_prev;
+		size_t hll_prev = hyper_loglog.cardinality_estimation();
 		hyper_loglog.update_bitmap(uint32_t(i));
+		size_t hll_diff = hyper_loglog.cardinality_estimation() - hll_prev;
+		if (naive_diff < 0)
+		{
+			std::cout << "non-monotonicity detected in naive set\n";
+			exit(1);
+		}
+		if (pc_diff < 0)
+		{
+			std::cout << "non-monotonicity detected in pc! value: " << i << ", previous: " << 
+				pc_prev << ", new: " << prob_count.cardinality_estimation() << ", diff: " << pc_diff << ".\n";
+			exit(1);
+		}
+		if (hll_diff < 0)
+		{
+			std::cout << "non-monotonicity detected in HLL! value: " << i << ", previous: " <<
+				hll_prev << ", new: " << hyper_loglog.cardinality_estimation() << ", diff: " << hll_diff << ".\n";
+			exit(1);
+		}
 	}
+	std::cout << "Actual cardinality: " << naive_set.size() << "\n";
 	std::cout << "Probabilistic Count: estimated cardinality: " << prob_count.cardinality_estimation() << "\n";
 	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << "\n";
-}
-
-void log_perf_test()
-{
-	uint32_t value = 2;
-	const uint32_t upper_limit = UINT32_MAX / 32;
-	uint32_t sum = 0;
-	std::chrono::system_clock::time_point std_start = std::chrono::system_clock::now();
-	while (value < upper_limit)
-	{
-		sum += std::log2(value);
-		value *= 2;
-	}
-	std::chrono::system_clock::time_point std_end = std::chrono::system_clock::now();
-
-	uint32_t c_value = 2;
-	uint32_t c_cum = 0;
-	std::chrono::system_clock::time_point custom_start = std::chrono::system_clock::now();
-	while (c_value < upper_limit)
-	{
-		c_cum += BitWizard::log_base_2_of_power_of_2_uint(c_value);
-		c_value *= 2;
-	}
-	std::chrono::system_clock::time_point custom_end = std::chrono::system_clock::now();
-
-	if (sum != c_cum)
-	{
-		std::cout << "Sums do not match! sum: " << sum << ", c_sum: " << c_cum << ".\n";
-	}
-	std::chrono::duration<double, std::micro> std_duration = std_end - std_start;
-	std::chrono::duration<double, std::micro> custom_duration = custom_end - custom_start;
-	std::cout << "STD: " << std_duration.count() << ", Custom: " << custom_duration.count() << " (msec).\n";
 }
 
 void bit_tricks_scenario()
@@ -452,7 +446,7 @@ int bit_tricks_correctness_test()
 
 int main(int argc, char** argv)
 {
-	// char ch;
+	char ch;
 	if (argc < 2)
 	{
 		std::cout << "usage: <lineitem-file> <worker-num>\n";
@@ -479,8 +473,6 @@ int main(int argc, char** argv)
 
 	// bit_tricks_performance_64();
 
-	// log_perf_test();
-
 	// debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
 
 	// tpch_q1_performance(lineitem_file_name);
@@ -494,9 +486,10 @@ int main(int argc, char** argv)
 	//cag_hll_concurrent_partition(lineitem_table);
 	//lag_hll_concurrent_partition(lineitem_table);
 
-	std::cout << "size of CustomRide: " << sizeof(Experiment::DebsChallenge::CustomRide) << " bytes.\n";
+	// std::cout << "size of CustomRide: " << sizeof(Experiment::DebsChallenge::CustomRide) << " bytes.\n";
 	std::vector<Experiment::DebsChallenge::Ride> ride_table = Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(lineitem_file_name);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
+	Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(tasks, ride_table);
+	/*Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_fld_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_naive_concurrent_partition(tasks, ride_table);
@@ -504,9 +497,9 @@ int main(int argc, char** argv)
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_pc_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_pc_concurrent_partition(tasks, ride_table);
 	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_hll_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_hll_concurrent_partition(tasks, ride_table);
-	//std::cout << "Press any key to continue...\n";
-	//std::cin >> ch;
+	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_hll_concurrent_partition(tasks, ride_table);*/
+	std::cout << "Press any key to continue...\n";
+	std::cin >> ch;
 
 	return 0;
 }
