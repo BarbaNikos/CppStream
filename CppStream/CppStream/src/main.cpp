@@ -453,7 +453,7 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 	//std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
-	std::string lineitem_file_name = argv[1];
+	std::string input_file_name = argv[1];
 	uint16_t task_num = std::stoi(argv[2]);
 	std::vector<uint16_t> tasks;
 	for (uint16_t i = 0; i < task_num; ++i)
@@ -486,22 +486,33 @@ int main(int argc, char** argv)
 	//lag_pc_concurrent_partition(lineitem_table);
 	//cag_hll_concurrent_partition(lineitem_table);
 	//lag_hll_concurrent_partition(lineitem_table);
+	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment;
 
-	// std::cout << "size of CustomRide: " << sizeof(Experiment::DebsChallenge::CustomRide) << " bytes.\n";
-	std::vector<Experiment::DebsChallenge::Ride> ride_table = Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(lineitem_file_name);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(tasks, ride_table);
+	std::vector<Experiment::DebsChallenge::Ride> ride_table = debs_experiment.parse_debs_rides(input_file_name);
+
+	//Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(tasks, ride_table);
 	//Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
-	/*Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_fld_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_pkg_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_naive_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_naive_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_pc_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_pc_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_cag_hll_concurrent_partition(tasks, ride_table);
-	Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_lag_hll_concurrent_partition(tasks, ride_table);*/
 	
+	HashFieldPartitioner fld_partitioner(tasks);
+	PkgPartitioner pkg_partitioner(tasks);
+	CardinalityAwarePolicy cag_policy;
+	CagPartionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
+	LoadAwarePolicy lag_policy;
+	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
+	CagPartionLib::CagPcPartitioner cag_pc(tasks, cag_policy);
+	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	CagPartionLib::CagHllPartitioner cag_hll(tasks, cag_policy, 10);
+	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 10);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, pkg_partitioner, "PKG", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive, "CAG-naive", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive, "LAG-naive", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc, "CAG-pc", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc, "LAG-pc", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll, "CAG-hll", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll, "LAG-hll", 100);
+
 	/*std::cout << "Press any key to continue...\n";
-	std::cin >> ch;
-*/
+	std::cin >> ch;*/
 	return 0;
 }

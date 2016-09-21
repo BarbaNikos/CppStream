@@ -123,6 +123,7 @@
     <ClInclude Include="include\DebsTaxiChallenge.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
     <ClInclude Include="include\MurmurHash3.h" />
+    <ClInclude Include="include\partitioner.h" />
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
     <ClInclude Include="include\TpchExperiment.h" />

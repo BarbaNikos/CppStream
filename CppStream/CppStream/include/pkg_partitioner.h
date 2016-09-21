@@ -1,18 +1,19 @@
 #include <vector>
 #include <cinttypes>
 
+#include "partitioner.h"
 #include "MurmurHash3.h"
 #include "BitTrickBox.h"
 #include "partition_policy.h"
 
 #ifndef PKG_PARTITIONER_H_
 #define PKG_PARTITIONER_H_
-class PkgPartitioner
+class PkgPartitioner : public Partitioner
 {
 public:
 	PkgPartitioner(const std::vector<uint16_t>& tasks);
 	~PkgPartitioner();
-	uint16_t partition_next(const std::string& key, size_t key_len);
+	uint16_t partition_next(const std::string& key, const size_t key_len);
 	uint64_t get_min_count();
 	uint64_t get_max_count();
 private:
@@ -35,7 +36,7 @@ PkgPartitioner::~PkgPartitioner()
 	delete policy;
 }
 
-uint16_t PkgPartitioner::partition_next(const std::string& key, size_t key_len)
+uint16_t PkgPartitioner::partition_next(const std::string& key, const size_t key_len)
 {
 	uint32_t first_choice, second_choice;
 	MurmurHash3_x86_32(key.c_str(), key_len, 13, &first_choice);

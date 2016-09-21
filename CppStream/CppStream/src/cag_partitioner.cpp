@@ -15,7 +15,7 @@ CagPartionLib::CagNaivePartitioner::~CagNaivePartitioner()
 {
 }
 
-uint16_t CagPartionLib::CagNaivePartitioner::partition_next(const std::string & key, size_t key_len)
+uint16_t CagPartionLib::CagNaivePartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
@@ -75,7 +75,7 @@ CagPartionLib::CagPcPartitioner::~CagPcPartitioner()
 	delete[] _task_count;
 }
 
-//uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, size_t key_len)
+//uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, const size_t key_len)
 //{
 //	uint32_t hash_one, hash_two;
 //	uint32_t first_choice, second_choice;
@@ -104,7 +104,7 @@ CagPartionLib::CagPcPartitioner::~CagPcPartitioner()
 //	return selected_choice;
 //}
 
-uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, size_t key_len)
+uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
@@ -167,7 +167,7 @@ CagPartionLib::CagHllPartitioner::~CagHllPartitioner()
 	delete[] _task_count;
 }
 
-uint16_t CagPartionLib::CagHllPartitioner::partition_next(const std::string & key, size_t key_len)
+uint16_t CagPartionLib::CagHllPartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
