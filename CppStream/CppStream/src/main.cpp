@@ -113,17 +113,45 @@ void debs_check_hash_result_values(const std::string& out_file_name, const std::
 	std::cout << "wrote hash frequencies on both files.\n";
 }
 
+void debs_cardinality_estimation(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
+{
+	std::unordered_set<uint32_t> actual_cardinality;
+	CardinalityEstimator::ProbCount prob_count;
+	CardinalityEstimator::HyperLoglog hyper_loglog_s(5);
+	CardinalityEstimator::HyperLoglog hyper_loglog_l(10);
+	uint64_t counter = 0;
+	std::ofstream output_file_2(out_file_name);
+	for (auto it = ride_table.cbegin(); it != ride_table.cend(); ++it)
+	{
+		uint32_t value_1;
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "-" + dropoff_cell;
+		MurmurHash3_x86_32(key.c_str(), key.length(), 13, &value_1);
+		actual_cardinality.insert(value_1);
+		prob_count.update_bitmap(value_1);
+		hyper_loglog_s.update_bitmap(value_1);
+		hyper_loglog_l.update_bitmap(value_1);
+		output_file_2 << counter << "," << actual_cardinality.size() << "," << prob_count.cardinality_estimation() << "," <<
+			hyper_loglog_s.cardinality_estimation() << "," << hyper_loglog_l.cardinality_estimation() << "\n";
+		counter++;
+	}
+	output_file_2.flush();
+	output_file_2.close();
+}
+
 int main(int argc, char** argv)
 {
 	//char ch;
-	if (argc < 2)
+	if (argc < 4)
 	{
-		std::cout << "usage: <input-file> <worker-num>\n";
+		std::cout << "usage: <input-file> <worker-num> <max-queue-size>\n";
 		exit(1);
 	}
 	//std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
 	std::string input_file_name = argv[1];
 	uint16_t task_num = std::stoi(argv[2]);
+	size_t max_queue_size = std::stoi(argv[3]);
 	std::vector<uint16_t> tasks;
 	for (uint16_t i = 0; i < task_num; ++i)
 	{
@@ -159,7 +187,11 @@ int main(int argc, char** argv)
 
 	std::vector<Experiment::DebsChallenge::Ride> ride_table = debs_experiment.parse_debs_rides(input_file_name);
 
+	// debs_experiment.debs_compare_cag_correctness(tasks, ride_table);
+
 	// debs_check_hash_result_values("hash_result.csv", ride_table);
+
+	// debs_cardinality_estimation("cardinality_est_perf.csv", ride_table);
 	
 	HashFieldPartitioner fld_partitioner(tasks);
 	PkgPartitioner pkg_partitioner(tasks);
@@ -181,14 +213,14 @@ int main(int argc, char** argv)
 	/*
 	 * End-to-end Performance
 	 */
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, pkg_partitioner, "PKG", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive_partitioner, "CAG-naive", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive_partitioner, "LAG-naive", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc_partitioner, "CAG-pc", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc_partitioner, "LAG-pc", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll_partitioner, "CAG-hll", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll_partitioner, "LAG-hll", 100);
+	/*debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, pkg_partitioner, "PKG", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);*/
 
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/

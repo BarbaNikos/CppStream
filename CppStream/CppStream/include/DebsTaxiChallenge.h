@@ -123,7 +123,7 @@ namespace Experiment
 			FrequentRoutePartition();
 			~FrequentRoutePartition();
 			std::vector<Experiment::DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name);
-			static void debs_compare_cag_correctness(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& rides);
+			void debs_compare_cag_correctness(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& rides);
 			void debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner, const std::string partioner_name, std::vector<Experiment::DebsChallenge::Ride>& rides);
 			void debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& route_table, Partitioner& partitioner, 
 				const std::string partitioner_name, const size_t max_queue_size);
@@ -547,6 +547,7 @@ std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::Frequent
 
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& rides)
 {
+	// std::ofstream output_file("decision_timeline.csv");
 	// CAG-Naive
 	CardinalityAwarePolicy policy;
 	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
@@ -561,16 +562,48 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correct
 	}
 	cag_naive_key_per_task.shrink_to_fit();
 	cag_pc_key_per_task.shrink_to_fit();
-	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
+	uint64_t t = 0;
+	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.cbegin(); it != rides.cend(); ++it)
 	{
+		// form key
 		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "-" + dropoff_cell;
+		// each partitioner takes a decision
 		short task = cag_naive.partition_next(key, key.length());
 		short task_1 = cag_pc.partition_next(key, key.length());
+		// the accurate structures track the exact cardinalities
 		cag_naive_key_per_task[task].insert(key);
 		cag_pc_key_per_task[task_1].insert(key);
+		// calculating statistics at this point
+		double cag_naive_max_card = 0;
+		double cag_naive_avg_card = 0;
+		double cag_pc_max_card_real = 0;
+		double cag_pc_avg_card_real = 0;
+		double cag_pc_max_card_est = cag_pc.get_max_cardinality();
+		double cag_pc_avg_card_est = cag_pc.get_average_cardinality();
+		for (size_t i = 0; i < tasks.size(); ++i)
+		{
+			cag_naive_max_card = cag_naive_max_card < cag_naive_key_per_task[i].size() ? cag_naive_key_per_task[i].size() : cag_naive_max_card;
+			cag_naive_avg_card += cag_naive_key_per_task[i].size();
+			cag_pc_max_card_real = cag_pc_max_card_real < cag_pc_key_per_task[i].size() ? cag_pc_key_per_task[i].size() : cag_pc_max_card_real;
+			cag_pc_avg_card_real += cag_pc_key_per_task[i].size();
+		}
+		cag_naive_avg_card = cag_naive_avg_card / double(tasks.size());
+		cag_pc_avg_card_real = cag_pc_avg_card_real / double(tasks.size());
+		long cag_naive_imbalance = cag_naive_max_card - cag_naive_avg_card;
+		long cag_pc_real_imbalance = cag_pc_max_card_real - cag_pc_avg_card_real;
+		if (cag_naive_imbalance < 0 || cag_pc_real_imbalance < 0)
+		{
+			std::cout << "naive-imb: " << cag_naive_imbalance << "(max: " << cag_naive_max_card << ", avg: " << 
+				cag_naive_avg_card << "), pc-real-imb: " << cag_pc_real_imbalance << "(max: " << cag_pc_max_card_real << ", avg: " << cag_pc_avg_card_real << ")\n";
+		}
+		/*output_file << t << "," << cag_naive_imbalance << "," << cag_pc_real_imbalance << "," <<
+			cag_pc_max_card_est - cag_pc_avg_card_est << "\n";*/
+		t++;
 	}
+	/*output_file.flush();
+	output_file.close();*/
 	size_t cag_naive_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t cag_pc_min_cardinality = std::numeric_limits<uint64_t>::max();
 	size_t cag_naive_max_cardinality = std::numeric_limits<uint64_t>::min();

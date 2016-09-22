@@ -133,7 +133,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\BitTrickBox.cpp" />
-    <ClCompile Include="src\cag_partitioner.cpp" />
     <ClCompile Include="src\CardinalityEstimator.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\MurmurHash3.cpp" />
