@@ -159,7 +159,7 @@ int main(int argc, char** argv)
 
 	std::vector<Experiment::DebsChallenge::Ride> ride_table = debs_experiment.parse_debs_rides(input_file_name);
 
-	debs_check_hash_result_values("hash_result.csv", ride_table);
+	// debs_check_hash_result_values("hash_result.csv", ride_table);
 	
 	HashFieldPartitioner fld_partitioner(tasks);
 	PkgPartitioner pkg_partitioner(tasks);
@@ -181,14 +181,14 @@ int main(int argc, char** argv)
 	/*
 	 * End-to-end Performance
 	 */
-	/*debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, pkg_partitioner, "PKG", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive_partitioner, "CAG-naive", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive_partitioner, "LAG-naive", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc_partitioner, "CAG-pc", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc_partitioner, "LAG-pc", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll_partitioner, "CAG-hll", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll_partitioner, "LAG-hll", 100);*/
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll_partitioner, "LAG-hll", 100);
 
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/
