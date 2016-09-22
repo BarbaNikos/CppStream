@@ -12,6 +12,7 @@
 #include <queue>
 #include <thread>
 #include <future>
+#include <fstream>
 
 #include "../include/BitTrickBox.h"
 #include "../include/cag_partitioner.h"
@@ -57,391 +58,59 @@ void card_estimate_example()
 	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << "\n";
 }
 
-void bit_tricks_scenario()
+void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
 {
-	uint32_t i = 8; // 0x00000008
-	uint32_t l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000008
-	uint32_t f_l = BitWizard::lowest_order_bit_index(i);
-	uint32_t h = BitWizard::highest_order_bit_index_slow(i); // 0x00000008
-	uint32_t f_h = BitWizard::highest_order_bit_index(i);
-	uint64_t h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	uint64_t f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	
-	//uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-	
-	if (l != f_l)
+	std::string out_hash_one = out_file_name + "_" + std::to_string(13);
+	std::string out_hash_two = out_file_name + "_" + std::to_string(17);
+	std::ofstream output_file_1(out_hash_one);
+	std::ofstream output_file_2(out_hash_two);
+	if (output_file_1.is_open() == false || output_file_2.is_open() == false)
 	{
-		std::cout << "first one failed on lowest\n";
+		std::cout << "failed to create " << out_file_name << " file.\n";
+		exit(1);
 	}
-	if (h != f_h)
+	std::map<uint32_t, uint32_t> hash_frequency_1;
+	std::map<uint32_t, uint32_t> hash_frequency_2;
+	for (auto it = ride_table.cbegin(); it != ride_table.cend(); ++it)
 	{
-		std::cout << "first one failed on highest\n";
-	}
-	if (h_64 != f_h_64)
-	{
-		std::cout << "first one failed on highest (x64)\n";
-	}
-	i = 15; // 0x0000000f
-	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
-	f_l = BitWizard::lowest_order_bit_index(i);
-	h = BitWizard::highest_order_bit_index_slow(i); // 0x00000008
-	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	f_h = BitWizard::highest_order_bit_index(i);
-	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-	if (l != f_l)
-	{
-		std::cout << "second one failed on lowest\n";
-	}
-	if (h != f_h)
-	{
-		std::cout << "second one failed on highest\n";
-	}
-	i = 123452; // 0x0001e23c
-	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000004
-	f_l = BitWizard::lowest_order_bit_index(i);
-	h = BitWizard::highest_order_bit_index_slow(i); // 0x00010000
-	f_h = BitWizard::highest_order_bit_index(i);
-	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-	if (l != f_l)
-	{
-		std::cout << "third one failed on lowest\n";
-	}
-	if (h != f_h)
-	{
-		std::cout << "third one failed on highest\n";
-	}
-	i = uint32_t(0xffffffff);
-	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
-	f_l = BitWizard::lowest_order_bit_index(i);
-	h = BitWizard::highest_order_bit_index_slow(i); // 0x80000000
-	f_h = BitWizard::highest_order_bit_index(i);
-	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-	if (l != f_l)
-	{
-		std::cout << "fourth one failed on lowest\n";
-	}
-	if (h != f_h)
-	{
-		std::cout << "fourth one failed on highest\n";
-	}
-	i = uint32_t(0x80000000);
-	l = BitWizard::lowest_order_bit_index_slow(i); // 0x800000000
-	f_l = BitWizard::lowest_order_bit_index(i);
-	h = BitWizard::highest_order_bit_index_slow(i); // 0x80000000
-	f_h = BitWizard::highest_order_bit_index(i);
-	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-	if (l != f_l)
-	{
-		std::cout << "fifth one failed on lowest\n";
-	}
-	if (h != f_h)
-	{
-		std::cout << "fifth one failed on highest\n";
-	}
-	i = uint32_t(0x80000001);
-	l = BitWizard::lowest_order_bit_index_slow(i); // 0x00000001
-	f_l = BitWizard::lowest_order_bit_index(i);
-	h = BitWizard::highest_order_bit_index_slow(i); // 0x80000000
-	f_h = BitWizard::highest_order_bit_index(i);
-	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-	if (l != f_l)
-	{
-		std::cout << "sixth one failed on lowest\n";
-	}
-	if (h != f_h)
-	{
-		std::cout << "sixth one failed on highest\n";
-		return;
-	}
-	i = uint32_t(0x00000000);
-	l = BitWizard::lowest_order_bit_index_slow(i);
-	f_l = BitWizard::lowest_order_bit_index(i);
-	h = BitWizard::highest_order_bit_index_slow(i);
-	f_h = BitWizard::highest_order_bit_index(i);
-	h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-	f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-	//f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-	//f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-}
-
-void bit_tricks_performance_16()
-{
-	const unsigned long upper_limit = ULONG_MAX / 32;
-	size_t sum = 0, f_sum = 0, f_arch_sum = 0;
-	std::chrono::system_clock::time_point normal_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t l_16 = BitWizard::lowest_order_bit_index_slow(uint16_t(i));
-		sum += l_16;
-	}
-	std::chrono::system_clock::time_point normal_end = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point fast_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t f_l_16 = BitWizard::lowest_order_bit_index(uint16_t(i));
-		f_sum += f_l_16;
-	}
-	std::chrono::system_clock::time_point fast_end = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t f_l_16_arch = BitWizard::lowest_order_bit_index_arch(uint16_t(i));
-		f_arch_sum += f_l_16_arch;
-	}
-	std::chrono::system_clock::time_point fast_arch_end = std::chrono::system_clock::now();
-
-	std::chrono::duration<double, std::milli> normal_duration = normal_end - normal_start;
-	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
-	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "low-order-16-bit :: normal: " << normal_duration.count() << ", fast: " << 
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-	fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t f_l_16_arch = BitWizard::lowest_order_bit_index_arch(uint16_t(i));
-		f_arch_sum += f_l_16_arch;
-	}
-	fast_arch_end = std::chrono::system_clock::now();
-	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "low-order-16-bit without branch for fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-	// high-order
-	sum = 0; f_sum = 0; f_arch_sum = 0;
-	normal_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t l_16 = BitWizard::highest_order_bit_index_slow(uint16_t(i));
-		sum += l_16;
-	}
-	normal_end = std::chrono::system_clock::now();
-	fast_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t f_l_16 = BitWizard::highest_order_bit_index(uint16_t(i));
-		f_sum += f_l_16;
-	}
-	fast_end = std::chrono::system_clock::now();
-	fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint16_t f_l_16_arch = BitWizard::highest_order_bit_index_arch(uint16_t(i));
-		f_arch_sum += f_l_16_arch;
-	}
-	fast_arch_end = std::chrono::system_clock::now();
-	normal_duration = normal_end - normal_start;
-	fast_duration = fast_end - fast_start;
-	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "high-order-16-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-}
-
-void bit_tricks_performance_32()
-{
-	const unsigned long upper_limit = ULONG_MAX / 32;
-	size_t sum = 0, f_sum = 0, f_arch_sum = 0;
-	std::chrono::system_clock::time_point normal_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint32_t l_32 = BitWizard::lowest_order_bit_index_slow(uint32_t(i));
-		sum += l_32;
-	}
-	std::chrono::system_clock::time_point normal_end = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point fast_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint32_t f_l_32 = BitWizard::lowest_order_bit_index(uint32_t(i));
-		f_sum += f_l_32;
-	}
-	std::chrono::system_clock::time_point fast_end = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint32_t f_l_32_arch = BitWizard::lowest_order_bit_index_arch(uint32_t(i));
-		f_arch_sum += f_l_32_arch;
-	}
-	std::chrono::system_clock::time_point fast_arch_end = std::chrono::system_clock::now();
-
-	std::chrono::duration<double, std::milli> normal_duration = normal_end - normal_start;
-	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
-	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "low-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-	// high-order
-	sum = 0; f_sum = 0; f_arch_sum = 0;
-	normal_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint32_t l_32 = BitWizard::highest_order_bit_index_slow(uint32_t(i));
-		sum += l_32;
-	}
-	normal_end = std::chrono::system_clock::now();
-	fast_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint32_t f_l_32 = BitWizard::highest_order_bit_index(uint32_t(i));
-		f_sum += f_l_32;
-	}
-	fast_end = std::chrono::system_clock::now();
-	fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint32_t f_l_32_arch = BitWizard::highest_order_bit_index_arch(uint32_t(i));
-		f_arch_sum += f_l_32_arch;
-	}
-	fast_arch_end = std::chrono::system_clock::now();
-	normal_duration = normal_end - normal_start;
-	fast_duration = fast_end - fast_start;
-	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "high-order-32-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-}
-
-void bit_tricks_performance_64()
-{
-	const unsigned long upper_limit = ULONG_MAX / 32;
-	size_t sum = 0, f_sum = 0, f_arch_sum = 0;
-	std::chrono::system_clock::time_point normal_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint64_t l_64 = BitWizard::lowest_order_bit_index_slow(uint64_t(i));
-		sum += l_64;
-	}
-	std::chrono::system_clock::time_point normal_end = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point fast_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint64_t f_l_64 = BitWizard::lowest_order_bit_index(uint64_t(i));
-		f_sum += f_l_64;
-	}
-	std::chrono::system_clock::time_point fast_end = std::chrono::system_clock::now();
-	std::chrono::system_clock::time_point fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint64_t f_l_64_arch = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-		f_arch_sum += f_l_64_arch;
-	}
-	std::chrono::system_clock::time_point fast_arch_end = std::chrono::system_clock::now();
-
-	std::chrono::duration<double, std::milli> normal_duration = normal_end - normal_start;
-	std::chrono::duration<double, std::milli> fast_duration = fast_end - fast_start;
-	std::chrono::duration<double, std::milli> fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "low-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-	// high-order
-	sum = 0; f_sum = 0; f_arch_sum = 0;
-	normal_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint64_t l_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-		sum += l_64;
-	}
-	normal_end = std::chrono::system_clock::now();
-	fast_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint64_t f_l_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-		f_sum += f_l_64;
-	}
-	fast_end = std::chrono::system_clock::now();
-	fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		uint64_t f_l_64_arch = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-		f_arch_sum += f_l_64_arch;
-	}
-	fast_arch_end = std::chrono::system_clock::now();
-	normal_duration = normal_end - normal_start;
-	fast_duration = fast_end - fast_start;
-	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "high-order-64-bit :: normal: " << normal_duration.count() << ", fast: " <<
-		fast_duration.count() << ", fast-arch: " << fast_arch_duration.count() << " (msec).\n";
-	fast_arch_start = std::chrono::system_clock::now();
-	for (unsigned long i = 0; i < upper_limit; ++i)
-	{
-		//uint64_t f_l_64_arch = 0x8000000000000000 >> __lzcnt64(i);
-		uint64_t f_l_64_arch = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-		f_arch_sum += f_l_64_arch;
-	}
-	fast_arch_end = std::chrono::system_clock::now();
-	fast_arch_duration = fast_arch_end - fast_arch_start;
-	std::cout << "high-order-64-bit without branch: " << fast_arch_duration.count() << " (msec).\n";
-}
-
-int bit_tricks_correctness_test()
-{
-	for (unsigned long i = 0; i < ULONG_MAX; ++i)
-	{
-		uint16_t l_16 = BitWizard::lowest_order_bit_index_slow(uint16_t(i));
-		uint16_t f_l_16 = BitWizard::lowest_order_bit_index(uint16_t(i));
-		uint16_t f_l_arch_16 = BitWizard::lowest_order_bit_index_arch(uint16_t(i));
-
-		uint16_t h_16 = BitWizard::highest_order_bit_index_slow(uint16_t(i));
-		uint16_t f_h_16 = BitWizard::highest_order_bit_index(uint16_t(i));
-		uint16_t f_h_arch_16 = BitWizard::highest_order_bit_index_arch(uint16_t(i));
-
-		if (l_16 != f_l_16 || l_16 != f_l_arch_16)
+		uint32_t value_1, value_2;
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "-" + dropoff_cell;
+		MurmurHash3_x86_32(key.c_str(), key.length(), 13, &value_1);
+		MurmurHash3_x86_32(key.c_str(), key.length(), 17, &value_2);
+		auto it_1 = hash_frequency_1.find(value_1);
+		auto it_2 = hash_frequency_2.find(value_2);
+		if (it_1 != hash_frequency_1.end())
 		{
-			std::cout << "for input number: " << uint16_t(i) << ", l_16: " << l_16 << ", f_l_16: " << f_l_16 << ", f_l_arch_16: " << f_l_arch_16 << "\n";
-			return 1;
+			it_1->second++;
 		}
-		if (h_16 != f_h_16 || h_16 != f_h_arch_16)
+		else
 		{
-			std::cout << "for input number: " << uint16_t(i) << ", h_16: " << h_16 << ", f_h_16: " << f_h_16 << ", f_h_arch_16: " << f_h_arch_16 << "\n";
-			return 1;
+			hash_frequency_1[value_1] = uint32_t(1);
 		}
-		uint32_t l_32 = BitWizard::lowest_order_bit_index_slow(uint32_t(i));
-		uint32_t f_l_32 = BitWizard::lowest_order_bit_index(uint32_t(i));
-		uint32_t f_l_arch_32 = BitWizard::lowest_order_bit_index_arch(uint32_t(i));
-
-		uint32_t h_32 = BitWizard::highest_order_bit_index_slow(uint32_t(i));
-		uint32_t f_h_32 = BitWizard::highest_order_bit_index(uint32_t(i));
-		uint32_t f_h_arch_32 = BitWizard::highest_order_bit_index_arch(uint32_t(i));
-
-		if (l_32 != f_l_32 || l_32 != f_l_arch_32)
+		if (it_2 != hash_frequency_2.end())
 		{
-			std::cout << "for input number: " << uint32_t(i) << ", l_32: " << l_32 << ", f_l_32: " << f_l_32 << ", f_l_arch_32: " << f_l_arch_32 << "\n";
-			return 1;
+			it_2->second++;
 		}
-		if (h_32 != f_h_32 || h_32 != f_h_arch_32)
+		else
 		{
-			std::cout << "for input number: " << uint32_t(i) << ", h_32: " << h_32 << ", f_h_32: " << f_h_32 << ", f_h_arch_32: " << f_h_arch_32 << "\n";
-			return 1;
-		}
-		uint64_t l_64 = BitWizard::lowest_order_bit_index_slow(uint64_t(i));
-		uint64_t f_l_64 = BitWizard::lowest_order_bit_index(uint64_t(i));
-		uint64_t f_l_arch_64 = BitWizard::lowest_order_bit_index_arch(uint64_t(i));
-
-		uint64_t h_64 = BitWizard::highest_order_bit_index_slow(uint64_t(i));
-		uint64_t f_h_64 = BitWizard::highest_order_bit_index(uint64_t(i));
-		uint64_t f_h_arch_64 = BitWizard::highest_order_bit_index_arch(uint64_t(i));
-
-		if (l_64 != f_l_64 || l_64 != f_l_arch_64)
-		{
-			std::cout << "for input number: " << uint64_t(i) << ", l_64: " << l_64 << ", f_l_64: " << f_l_64 << ", f_l_arch_64: " << f_l_arch_64 << "\n";
-			return 1;
-		}
-		if (h_64 != f_h_64 || h_64 != f_h_arch_64)
-		{
-			std::cout << "for input number: " << uint64_t(i) << ", h_64: " << h_64 << ", f_h_64: " << f_h_64 << ", f_h_arch_64: " << f_h_arch_64 << "\n";
-			return 1;
+			hash_frequency_2[value_2] = uint32_t(1);
 		}
 	}
-	std::cout << "All numbers passed...\n";
-	return 0;
+	for (auto it = hash_frequency_1.cbegin(); it != hash_frequency_1.cend(); ++it)
+	{
+		output_file_1 << it->first << "," << it->second << "\n";
+	}
+	output_file_1.flush();
+	output_file_1.close();
+	for (auto it = hash_frequency_2.cbegin(); it != hash_frequency_2.cend(); ++it)
+	{
+		output_file_2 << it->first << "," << it->second << "\n";
+	}
+	output_file_2.flush();
+	output_file_2.close();
+	std::cout << "wrote hash frequencies on both files.\n";
 }
 
 int main(int argc, char** argv)
@@ -490,27 +159,36 @@ int main(int argc, char** argv)
 
 	std::vector<Experiment::DebsChallenge::Ride> ride_table = debs_experiment.parse_debs_rides(input_file_name);
 
-	//Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correctness(tasks, ride_table);
-	//Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(tasks, ride_table);
+	debs_check_hash_result_values("hash_result.csv", ride_table);
 	
 	HashFieldPartitioner fld_partitioner(tasks);
 	PkgPartitioner pkg_partitioner(tasks);
 	CardinalityAwarePolicy cag_policy;
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
+	CagPartionLib::CagNaivePartitioner cag_naive_partitioner(tasks, cag_policy);
 	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
-	CagPartionLib::CagPcPartitioner cag_pc(tasks, cag_policy);
-	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
-	CagPartionLib::CagHllPartitioner cag_hll(tasks, cag_policy, 10);
-	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 10);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", 100);
+	CagPartionLib::CagNaivePartitioner lag_naive_partitioner(tasks, lag_policy);
+	CagPartionLib::CagPcPartitioner cag_pc_partitioner(tasks, cag_policy);
+	CagPartionLib::CagPcPartitioner lag_pc_partitioner(tasks, lag_policy);
+	CagPartionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
+	CagPartionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
+	/*
+	 * Partition latency
+	 */
+	/*debs_experiment.debs_partition_performance(tasks, fld_partitioner, "FLD", ride_table);
+	debs_experiment.debs_partition_performance(tasks, pkg_partitioner, "PKG", ride_table);
+	debs_experiment.debs_partition_performance(tasks, cag_naive_partitioner, "CAG-naive", ride_table);
+	debs_experiment.debs_partition_performance(tasks, lag_naive_partitioner, "LAG-naive", ride_table);*/
+	/*
+	 * End-to-end Performance
+	 */
+	/*debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", 100);
 	debs_experiment.debs_concurrent_partition(tasks, ride_table, pkg_partitioner, "PKG", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive, "CAG-naive", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive, "LAG-naive", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc, "CAG-pc", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc, "LAG-pc", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll, "CAG-hll", 100);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll, "LAG-hll", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive_partitioner, "CAG-naive", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive_partitioner, "LAG-naive", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc_partitioner, "CAG-pc", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc_partitioner, "LAG-pc", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll_partitioner, "CAG-hll", 100);
+	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll_partitioner, "LAG-hll", 100);*/
 
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/

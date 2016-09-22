@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClInclude Include="include\BasicWindow.h" />
     <ClInclude Include="include\BitTrickBox.h" />
+    <ClInclude Include="include\BitWizardTestSuite.h" />
     <ClInclude Include="include\cag_partitioner.h" />
     <ClInclude Include="include\CardinalityEstimator.h" />
     <ClInclude Include="include\CircularBuffer.h" />
