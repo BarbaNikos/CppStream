@@ -30,6 +30,7 @@ namespace CardinalityEstimator
 		HyperLoglog(uint8_t k);
 		~HyperLoglog();
 		void update_bitmap_with_hashed_value(uint32_t hashed_value);
+		uint32_t new_cardinality_estimate(uint32_t hashed_value);
 		void update_bitmap(uint32_t value);
 		uint32_t cardinality_estimation();
 	private:
@@ -102,7 +103,8 @@ inline CardinalityEstimator::HyperLoglog::~HyperLoglog()
 
 inline void CardinalityEstimator::HyperLoglog::update_bitmap_with_hashed_value(uint32_t hashed_value)
 {
-	uint32_t j = BitWizard::isolate_bits_32(32 - k, k, hashed_value) >> (32 - k);	// isolate k highest order bits
+	//uint32_t j = BitWizard::isolate_bits_32(32 - k, k, hashed_value) >> (32 - k);	// isolate k highest order bits
+	uint32_t j = hashed_value >> (32 - k);	// isolate k highest order bits
 	uint32_t w = BitWizard::isolate_bits_32(0, 32 - k, hashed_value);				// isolate 32-k lowest order bits
 	uint32_t lob = BitWizard::lowest_order_bit_index(w);
 	uint32_t leftmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(lob);
@@ -113,6 +115,21 @@ inline void CardinalityEstimator::HyperLoglog::update_bitmap_with_hashed_value(u
 	buckets[j] = BitWizard::max_uint32(current, leftmost_bit);
 	//_current_sum += (double(1) / std::pow(2, buckets[j]));
 	_current_sum += (double(1) / double(1 << buckets[j]));
+}
+
+inline uint32_t CardinalityEstimator::HyperLoglog::new_cardinality_estimate(uint32_t hashed_value)
+{
+	//uint32_t j = BitWizard::isolate_bits_32(32 - k, k, hashed_value) >> (32 - k);	// isolate k highest order bits
+	uint32_t j = hashed_value >> (32 - k);	// isolate k highest order bits
+	uint32_t w = BitWizard::isolate_bits_32(0, 32 - k, hashed_value);				// isolate 32-k lowest order bits
+	uint32_t lob = BitWizard::lowest_order_bit_index(w);
+	uint32_t leftmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(lob);
+	uint32_t current = buckets[j];
+	double _estimate_sum = _current_sum - (double(1) / double(1 << buckets[j]));
+	uint32_t new_bucket_value = BitWizard::max_uint32(current, leftmost_bit);
+	_estimate_sum += (double(1) / double(1 << new_bucket_value));
+	double E = _multiplier / _estimate_sum;
+	return (uint32_t)E;
 }
 
 inline void CardinalityEstimator::HyperLoglog::update_bitmap(uint32_t value)

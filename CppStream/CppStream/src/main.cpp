@@ -58,6 +58,50 @@ void card_estimate_example()
 	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << "\n";
 }
 
+void debs_hll_partition_performance_estimate(const std::vector<uint16_t>& tasks, CagPartionLib::CagHllPartitioner& partitioner,
+	const std::string partioner_name, std::vector<Experiment::DebsChallenge::Ride>& rides)
+{
+	std::vector<std::unordered_set<std::string>> key_per_task;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		key_per_task.push_back(std::unordered_set<std::string>());
+	}
+	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "-" + dropoff_cell;
+		short task = partitioner.partition_next_with_estimate(key, key.length());
+		key_per_task[task].insert(key);
+	}
+	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> partition_time = part_end - part_start;
+	size_t min_cardinality = std::numeric_limits<uint64_t>::max();
+	size_t max_cardinality = std::numeric_limits<uint64_t>::min();
+	double average_cardinality = 0;
+	std::cout << "Cardinalities: ";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		if (min_cardinality > key_per_task[i].size())
+		{
+			min_cardinality = key_per_task[i].size();
+		}
+		if (max_cardinality < key_per_task[i].size())
+		{
+			max_cardinality = key_per_task[i].size();
+		}
+		average_cardinality += key_per_task[i].size();
+		std::cout << key_per_task[i].size() << " ";
+		key_per_task[i].clear();
+	}
+	std::cout << "\n";
+	average_cardinality = average_cardinality / tasks.size();
+	key_per_task.clear();
+	std::cout << "Time partition using " << partioner_name << ": " << partition_time.count() << " (msec). Min: " << min_cardinality <<
+		", Max: " << max_cardinality << ", AVG: " << average_cardinality << "\n";
+}
+
 void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
 {
 	std::string out_hash_one = out_file_name + "_" + std::to_string(13);
@@ -206,10 +250,15 @@ int main(int argc, char** argv)
 	/*
 	 * Partition latency
 	 */
-	/*debs_experiment.debs_partition_performance(tasks, fld_partitioner, "FLD", ride_table);
+	debs_experiment.debs_partition_performance(tasks, fld_partitioner, "FLD", ride_table);
 	debs_experiment.debs_partition_performance(tasks, pkg_partitioner, "PKG", ride_table);
 	debs_experiment.debs_partition_performance(tasks, cag_naive_partitioner, "CAG-naive", ride_table);
-	debs_experiment.debs_partition_performance(tasks, lag_naive_partitioner, "LAG-naive", ride_table);*/
+	debs_experiment.debs_partition_performance(tasks, lag_naive_partitioner, "LAG-naive", ride_table);
+	debs_experiment.debs_partition_performance(tasks, cag_pc_partitioner, "CAG-pc", ride_table);
+	debs_experiment.debs_partition_performance(tasks, lag_pc_partitioner, "LAG-pc", ride_table);
+	debs_experiment.debs_partition_performance(tasks, cag_hll_partitioner, "CAG-hll", ride_table);
+	debs_experiment.debs_partition_performance(tasks, lag_hll_partitioner, "LAG-hll", ride_table);
+	//debs_hll_partition_performance_estimate(tasks, cag_hll_partitioner, "CAG-hll", ride_table);
 	/*
 	 * End-to-end Performance
 	 */

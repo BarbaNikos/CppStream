@@ -121,6 +121,7 @@
     <ClInclude Include="include\cag_partitioner.h" />
     <ClInclude Include="include\CardinalityEstimator.h" />
     <ClInclude Include="include\CircularBuffer.h" />
+    <ClInclude Include="include\c_hll.h" />
     <ClInclude Include="include\DebsTaxiChallenge.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
     <ClInclude Include="include\MurmurHash3.h" />
