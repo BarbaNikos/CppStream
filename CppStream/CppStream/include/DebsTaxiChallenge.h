@@ -5,6 +5,13 @@
 #include <map>
 #include <sstream>
 #include <cstring>
+#include <unordered_map>
+#include <vector>
+#include <ctime>
+#include <queue>
+#include <thread>
+#include <future>
+#include <algorithm>
 
 #include "partition_policy.h"
 #include "partitioner.h"
@@ -122,7 +129,7 @@ namespace Experiment
 		public:
 			FrequentRoutePartition();
 			~FrequentRoutePartition();
-			std::vector<Experiment::DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name);
+			std::vector<Experiment::DebsChallenge::Ride> parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			void debs_compare_cag_correctness(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& rides);
 			void debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner, const std::string partioner_name, std::vector<Experiment::DebsChallenge::Ride>& rides);
 			void debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& route_table, Partitioner& partitioner, 
@@ -134,6 +141,40 @@ namespace Experiment
 			std::condition_variable* cond_vars;
 			std::thread** threads;
 			Experiment::DebsChallenge::FrequentRoute** query_workers;
+			size_t max_queue_size;
+		};
+
+		class ProfitableArea
+		{
+		public:
+			ProfitableArea(std::queue<Experiment::DebsChallenge::Ride>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			~ProfitableArea();
+			void operate();
+			void update(DebsChallenge::Ride& ride);
+			void finalize();
+		private:
+			std::time_t* oldest_time;
+			std::mutex* mu;
+			std::condition_variable* cond;
+			std::unordered_map<std::string, std::vector<float>> fare_map;
+			std::unordered_map<std::string, std::string> dropoff_cell;
+			std::queue<DebsChallenge::Ride>* input_queue;
+		};
+
+		class ProfitableAreaPartition
+		{
+		public:
+			ProfitableAreaPartition();
+			~ProfitableAreaPartition();
+			void debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& route_table, Partitioner& partitioner,
+				const std::string partitioner_name, const size_t max_queue_size);
+		private:
+			static void debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area);
+			std::queue<Experiment::DebsChallenge::Ride>** queues;
+			std::mutex* mu_xes;
+			std::condition_variable* cond_vars;
+			std::thread** threads;
+			Experiment::DebsChallenge::ProfitableArea** query_workers;
 			size_t max_queue_size;
 		};
 	}
@@ -494,11 +535,19 @@ inline Experiment::DebsChallenge::FrequentRoutePartition::FrequentRoutePartition
 {
 }
 
+inline Experiment::DebsChallenge::ProfitableAreaPartition::ProfitableAreaPartition()
+{
+}
+
 inline Experiment::DebsChallenge::FrequentRoutePartition::~FrequentRoutePartition()
 {
 }
 
-std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(const std::string input_file_name)
+inline Experiment::DebsChallenge::ProfitableAreaPartition::~ProfitableAreaPartition()
+{
+}
+
+std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells)
 {
 	std::vector<Experiment::DebsChallenge::Ride> lines;
 	std::string line;
@@ -509,7 +558,7 @@ std::vector<Experiment::DebsChallenge::Ride> Experiment::DebsChallenge::Frequent
 		std::cout << "failed to open file.\n";
 		exit(1);
 	}
-	Experiment::DebsChallenge::DebsCellAssignment cell_assign(500, 300);
+	Experiment::DebsChallenge::DebsCellAssignment cell_assign(cell_side_size, grid_side_size_in_cells);
 	std::chrono::system_clock::time_point scan_start = std::chrono::system_clock::now();
 	while (getline(file, line))
 	{
@@ -703,7 +752,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partitio
 		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
 		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
 	}
-	std::cout << partitioner_name << " thread INITIATES partitioning.\n";
+	std::cout << partitioner_name << " thread INITIATES partitioning (frequent-route).\n";
 	// start partitioning
 	std::chrono::system_clock::time_point partition_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
@@ -719,7 +768,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partitio
 		locker.unlock();
 		cond_vars[task].notify_all();
 	}
-	std::cout << partitioner_name << " thread SENT all rides.\n";
+	std::cout << partitioner_name << " thread SENT all rides (frequent-route).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		Experiment::DebsChallenge::Ride final_ride;
@@ -737,7 +786,69 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partitio
 	}
 	std::chrono::system_clock::time_point partition_end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> partition_time = partition_end - partition_start;
-	std::cout << partitioner_name << " total partition time: " << partition_time.count() << " (msec).\n";
+	std::cout << partitioner_name << " total partition time: " << partition_time.count() << " (msec) (frequent-route).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete threads[i];
+		delete query_workers[i];
+		delete queues[i];
+	}
+	delete[] threads;
+	delete[] query_workers;
+	delete[] queues;
+	delete[] mu_xes;
+	delete[] cond_vars;
+	std::cout << "------END-----\n";
+}
+
+void Experiment::DebsChallenge::ProfitableAreaPartition::debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::Ride>& route_table,
+	Partitioner& partitioner, const std::string partitioner_name, const size_t max_queue_size)
+{
+	// initialize shared memory
+	queues = new std::queue<Experiment::DebsChallenge::Ride>*[tasks.size()];
+	mu_xes = new std::mutex[tasks.size()];
+	cond_vars = new std::condition_variable[tasks.size()];
+	threads = new std::thread*[tasks.size()];
+	query_workers = new Experiment::DebsChallenge::ProfitableArea*[tasks.size()];
+	this->max_queue_size = max_queue_size;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		queues[i] = new std::queue<Experiment::DebsChallenge::Ride>();
+		query_workers[i] = new Experiment::DebsChallenge::ProfitableArea(queues[i], &mu_xes[i], &cond_vars[i]);
+		threads[i] = new std::thread(debs_profitable_area_worker, query_workers[i]);
+	}
+	std::cout << partitioner_name << " thread INITIATES partitioning (profit-areas).\n";
+	// start partitioning
+	std::chrono::system_clock::time_point partition_start = std::chrono::system_clock::now();
+	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = route_table.begin(); it != route_table.end(); ++it)
+	{
+		std::string key = it->medallion;
+		short task = partitioner.partition_next(key, key.length());
+		std::unique_lock<std::mutex> locker(mu_xes[task]);
+		cond_vars[task].wait(locker, [this, task, max_queue_size]() { return queues[task]->size() < max_queue_size; });
+		queues[task]->push(*it);
+		locker.unlock();
+		cond_vars[task].notify_all();
+	}
+	std::cout << partitioner_name << " thread SENT all rides (profit-areas).\n";
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::DebsChallenge::Ride final_ride;
+		final_ride.trip_distance = -1;
+		std::unique_lock<std::mutex> locker(mu_xes[i]);
+		cond_vars[i].wait(locker, [this, i, max_queue_size]() { return queues[i]->size() < max_queue_size; });
+		queues[i]->push(final_ride);
+		locker.unlock();
+		cond_vars[i].notify_all();
+	}
+	// wait for workers to join
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		threads[i]->join();
+	}
+	std::chrono::system_clock::time_point partition_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> partition_time = partition_end - partition_start;
+	std::cout << partitioner_name << " total partition time: " << partition_time.count() << " (msec) (profit-areas).\n";
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		delete threads[i];
@@ -755,6 +866,153 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partitio
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRoute* frequent_route)
 {
 	frequent_route->operate();
+}
+
+void Experiment::DebsChallenge::ProfitableAreaPartition::debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area)
+{
+	profitable_area->operate();
+}
+
+Experiment::DebsChallenge::ProfitableArea::ProfitableArea(std::queue<Experiment::DebsChallenge::Ride>* input_queue, std::mutex* mu, std::condition_variable* cond)
+{
+	this->mu = mu;
+	this->cond = cond;
+	this->input_queue = input_queue;
+}
+
+Experiment::DebsChallenge::ProfitableArea::~ProfitableArea()
+{
+	fare_map.clear();
+	dropoff_cell.clear();
+}
+
+void Experiment::DebsChallenge::ProfitableArea::operate()
+{
+	while (true)
+	{
+		std::unique_lock<std::mutex> locker(*mu);
+		cond->wait(locker, [this]() { return input_queue->size() > 0; });
+		Experiment::DebsChallenge::Ride ride = input_queue->back();
+		input_queue->pop();
+		// process
+		if (ride.trip_distance >= 0)
+		{
+			update(ride);
+		}
+		else
+		{
+			finalize();
+			locker.unlock();
+			cond->notify_all();
+			break;
+		}
+		locker.unlock();
+		cond->notify_all();
+	}
+}
+
+void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::Ride & ride)
+{
+	// update fare table
+	float total = ride.fare_amount + ride.tip_amount;
+	std::string pickup_cell = std::to_string(ride.pickup_cell.first) + "." +
+		std::to_string(ride.pickup_cell.second);
+	auto it = this->fare_map.find(pickup_cell);
+	if (it != this->fare_map.end())
+	{
+		it->second.push_back(total);
+	}
+	else
+	{
+		std::vector<float> fares;
+		fares.push_back(total);
+		this->fare_map[pickup_cell] = fares;
+	}
+	// update area cell
+	auto medallion_it = this->dropoff_cell.find(ride.medallion);
+	if (medallion_it != this->dropoff_cell.end())
+	{
+		medallion_it->second = std::to_string(ride.dropoff_cell.first) + "." +
+			std::to_string(ride.dropoff_cell.second);
+	}
+	else
+	{
+		this->dropoff_cell[ride.medallion] = std::to_string(ride.dropoff_cell.first) + "." +
+			std::to_string(ride.dropoff_cell.second);
+	}
+}
+
+void Experiment::DebsChallenge::ProfitableArea::finalize()
+{
+	// calculate # of empty taxis per area
+	std::unordered_map<std::string, uint32_t> empty_taxi_count;
+	std::map<double, std::vector<std::string>> most_profitable_areas;
+	for (auto it = this->dropoff_cell.cbegin(); it != this->dropoff_cell.cend(); ++it)
+	{
+		auto cell_it = empty_taxi_count.find(it->second);
+		if (cell_it != empty_taxi_count.end())
+		{
+			cell_it->second++;
+		}
+		else
+		{
+			empty_taxi_count[it->second] = uint32_t(1);
+		}
+	}
+	// for each cell that has # of empty taxis > 0
+	for (auto cell_it = empty_taxi_count.cbegin(); cell_it != empty_taxi_count.cend(); ++cell_it)
+	{
+		auto fare_it = this->fare_map.find(cell_it->first);
+		if (fare_it != this->fare_map.end())
+		{
+			// calculate median
+			double median = 0;
+			if (fare_it->second.size() % 2 != 0)
+			{
+				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2,
+					fare_it->second.end());
+				median = fare_it->second[fare_it->second.size() / 2];
+			}
+			else
+			{
+				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2,
+					fare_it->second.end());
+				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2 + 1,
+					fare_it->second.end());
+				median = (fare_it->second[fare_it->second.size() / 2] + fare_it->second[fare_it->second.size() / 2 + 1]) / 2;
+			}
+			auto mpa_it = most_profitable_areas.find(median);
+			if (mpa_it != most_profitable_areas.end())
+			{
+				mpa_it->second.push_back(cell_it->first);
+			}
+			else
+			{
+				most_profitable_areas[median] = std::vector<std::string>();
+				most_profitable_areas[median].push_back(cell_it->first);
+			}
+		}
+	}
+	// get the top-10
+	if (most_profitable_areas.size() > 0)
+	{
+		std::vector<std::string> top_10_areas;
+		std::vector<double> top_10_profit;
+		auto it = most_profitable_areas.cend();
+		do
+		{
+			it--;
+			for (size_t i = 0; i < it->second.size(); ++i)
+			{
+				top_10_areas.push_back(it->second[i]);
+				top_10_profit.push_back(it->first);
+				if (top_10_areas.size() >= 10)
+				{
+					return;
+				}
+			}
+		} while (it != most_profitable_areas.cbegin());
+	}
 }
 
 #endif // !EXPERIMENT_DEBS_H_
