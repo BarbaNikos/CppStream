@@ -599,9 +599,9 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correct
 	// std::ofstream output_file("decision_timeline.csv");
 	// CAG-Naive
 	CardinalityAwarePolicy policy;
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, policy);
 	// CAG-PC
-	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	CagPartitionLib::CagPcPartitioner cag_pc(tasks, policy);
 	std::vector<std::unordered_set<std::string>> cag_pc_key_per_task;
 	std::vector<std::unordered_set<std::string>> cag_naive_key_per_task;
 	for (size_t i = 0; i < tasks.size(); ++i)

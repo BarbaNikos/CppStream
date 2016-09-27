@@ -58,7 +58,7 @@ void card_estimate_example()
 	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << "\n";
 }
 
-void debs_hll_partition_performance_estimate(const std::vector<uint16_t>& tasks, CagPartionLib::CagHllPartitioner& partitioner,
+void debs_hll_partition_performance_estimate(const std::vector<uint16_t>& tasks, CagPartitionLib::CagHllEstPartitioner& partitioner,
 	const std::string partioner_name, std::vector<Experiment::DebsChallenge::Ride>& rides)
 {
 	std::vector<std::unordered_set<std::string>> key_per_task;
@@ -72,7 +72,7 @@ void debs_hll_partition_performance_estimate(const std::vector<uint16_t>& tasks,
 		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "-" + dropoff_cell;
-		short task = partitioner.partition_next_with_estimate(key, key.length());
+		short task = partitioner.partition_next(key, key.length());
 		key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
@@ -203,22 +203,9 @@ int main(int argc, char** argv)
 	}
 	tasks.shrink_to_fit();
 
-	// bit_tricks_scenario();
-
-	// card_estimate_example();
-
-	// bit_tricks_correctness_test();
-
-	// bit_tricks_performance_16();
-
-	// bit_tricks_performance_32();
-
-	// bit_tricks_performance_64();
-
-	// debs_partition_performance("D:\\Downloads\\DEBS2015-Challenge\\test_set_small.csv");
-
-	// tpch_q1_performance(lineitem_file_name);
-
+	/*
+	 * TPC-H query
+	 */
 	//std::vector<Tpch::lineitem> lineitem_table = parse_tpch_lineitem(lineitem_file_name);
 	//pkg_concurrent_partition(lineitem_table);
 	//cag_naive_concurrent_partition(lineitem_table);
@@ -227,30 +214,30 @@ int main(int argc, char** argv)
 	//lag_pc_concurrent_partition(lineitem_table);
 	//cag_hll_concurrent_partition(lineitem_table);
 	//lag_hll_concurrent_partition(lineitem_table);
+
+	/*
+	 * DEBS query
+	 */
 	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-
 	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_area;
-
-	//std::vector<Experiment::DebsChallenge::Ride> ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
-
-	std::vector<Experiment::DebsChallenge::Ride> profit_area_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
+	std::vector<Experiment::DebsChallenge::Ride> frequent_ride_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
+	std::vector < Experiment::DebsChallenge::Ride> profitable_area_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
 
 	// debs_experiment.debs_compare_cag_correctness(tasks, ride_table);
-
 	// debs_check_hash_result_values("hash_result.csv", ride_table);
-
 	// debs_cardinality_estimation("cardinality_est_perf.csv", ride_table);
 	
+	CardinalityAwarePolicy cag_policy;
+	LoadAwarePolicy lag_policy;
 	HashFieldPartitioner fld_partitioner(tasks);
 	PkgPartitioner pkg_partitioner(tasks);
-	CardinalityAwarePolicy cag_policy;
-	CagPartionLib::CagNaivePartitioner cag_naive_partitioner(tasks, cag_policy);
-	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagNaivePartitioner lag_naive_partitioner(tasks, lag_policy);
-	CagPartionLib::CagPcPartitioner cag_pc_partitioner(tasks, cag_policy);
-	CagPartionLib::CagPcPartitioner lag_pc_partitioner(tasks, lag_policy);
-	CagPartionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
-	CagPartionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
+	CagPartitionLib::CagNaivePartitioner cag_naive_partitioner(tasks, cag_policy);
+	CagPartitionLib::CagNaivePartitioner lag_naive_partitioner(tasks, lag_policy);
+	CagPartitionLib::CagPcPartitioner cag_pc_partitioner(tasks, cag_policy);
+	CagPartitionLib::CagPcPartitioner lag_pc_partitioner(tasks, lag_policy);
+	CagPartitionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
+	CagPartitionLib::CagHllEstPartitioner cag_hll_est_partitioner(tasks, 10);
+	CagPartitionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
 	/*
 	 * Partition latency
 	 */
@@ -261,29 +248,58 @@ int main(int argc, char** argv)
 	debs_experiment_frequent_route.debs_partition_performance(tasks, cag_pc_partitioner, "CAG-pc", ride_table);
 	debs_experiment_frequent_route.debs_partition_performance(tasks, lag_pc_partitioner, "LAG-pc", ride_table);
 	debs_experiment_frequent_route.debs_partition_performance(tasks, cag_hll_partitioner, "CAG-hll", ride_table);
+	debs_hll_partition_performance_estimate(tasks, cag_hll_est_partitioner, "CAG-hll-est", ride_table);
 	debs_experiment_frequent_route.debs_partition_performance(tasks, lag_hll_partitioner, "LAG-hll", ride_table);*/
-	//debs_hll_partition_performance_estimate(tasks, cag_hll_partitioner, "CAG-hll", ride_table);
 	/*
 	 * End-to-end Performance
 	 */
-	/*debs_experiment.debs_concurrent_partition(tasks, ride_table, fld_partitioner, "FLD", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, pkg_partitioner, "PKG", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
-	debs_experiment.debs_concurrent_partition(tasks, ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);*/
-
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, fld_partitioner, "FLD", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, pkg_partitioner, "PKG", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
-	debs_experiment_profit_area.debs_concurrent_partition(tasks, profit_area_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
-
+	std::cout << "***** FREQUENT ROUTE ****\n";
+	for (size_t i = 5; i <= 20; i = i + 5)
+	{
+		tasks.clear();
+		for (uint16_t j = 0; j < i; ++j)
+		{
+			tasks.push_back(j);
+		}
+		tasks.shrink_to_fit();
+		std::cout << "Tasks: " << tasks.size() << ".\n";
+		for (size_t iter = 0; iter < 4; ++iter)
+		{
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, fld_partitioner, "FLD", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, pkg_partitioner, "PKG", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_hll_est_partitioner, "CAG-hll-est", max_queue_size);
+			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
+		}
+	}
+	std::cout << "***** PROFITABLE AREA ****\n";
+	for (size_t i = 5; i <= 20; i = i + 5)
+	{
+		tasks.clear();
+		for (uint16_t j = 0; j < i; ++j)
+		{
+			tasks.push_back(j);
+		}
+		tasks.shrink_to_fit();
+		std::cout << "Tasks: " << tasks.size() << ".\n";
+		for (size_t i = 0; i < 4; ++i)
+		{
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, fld_partitioner, "FLD", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, pkg_partitioner, "PKG", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_hll_est_partitioner, "CAG-hll-est", max_queue_size);
+			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
+		}
+	}
+	std::cout << "**** DONE ****\n";
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/
 	return 0;

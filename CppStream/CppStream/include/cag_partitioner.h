@@ -12,7 +12,7 @@
 
 #ifndef CAG_PARTITIONER_H_
 #define CAG_PARTITIONER_H_
-namespace CagPartionLib
+namespace CagPartitionLib
 {
 	class CagNaivePartitioner : public Partitioner
 	{
@@ -58,7 +58,6 @@ namespace CagPartionLib
 		CagHllPartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k);
 		~CagHllPartitioner();
 		uint16_t partition_next(const std::string& key, const size_t key_len);
-		uint16_t partition_next_with_estimate(const std::string& key, const size_t key_len);
 		void get_cardinality_vector(std::vector<uint32_t>& v);
 	private:
 		std::vector<uint16_t> tasks;
@@ -70,9 +69,26 @@ namespace CagPartionLib
 		uint32_t max_task_cardinality;
 		uint32_t min_task_cardinality;
 	};
+
+	class CagHllEstPartitioner : public Partitioner
+	{
+	public:
+		CagHllEstPartitioner(const std::vector<uint16_t>& tasks, uint8_t k);
+		~CagHllEstPartitioner();
+		uint16_t partition_next(const std::string& key, const size_t key_len);
+		void get_cardinality_vector(std::vector<uint32_t>& v);
+	private:
+		std::vector<uint16_t> tasks;
+		uint64_t* _task_count;
+		CardinalityEstimator::HyperLoglog** _task_cardinality;
+		uint64_t max_task_count;
+		uint64_t min_task_count;
+		uint32_t max_task_cardinality;
+		uint32_t min_task_cardinality;
+	};
 }
 
-CagPartionLib::CagNaivePartitioner::CagNaivePartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
+CagPartitionLib::CagNaivePartitioner::CagNaivePartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
 	tasks(tasks), task_count(tasks.size(), uint64_t(0)),
 	task_cardinality(tasks.size(), std::unordered_set<uint32_t>()),
 	policy(policy)
@@ -83,11 +99,11 @@ CagPartionLib::CagNaivePartitioner::CagNaivePartitioner(const std::vector<uint16
 	min_task_cardinality = std::numeric_limits<uint32_t>::max();
 }
 
-CagPartionLib::CagNaivePartitioner::~CagNaivePartitioner()
+CagPartitionLib::CagNaivePartitioner::~CagNaivePartitioner()
 {
 }
 
-inline uint16_t CagPartionLib::CagNaivePartitioner::partition_next(const std::string & key, const size_t key_len)
+inline uint16_t CagPartitionLib::CagNaivePartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
@@ -113,15 +129,16 @@ inline uint16_t CagPartionLib::CagNaivePartitioner::partition_next(const std::st
 	return selected_choice;
 }
 
-inline void CagPartionLib::CagNaivePartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
+inline void CagPartitionLib::CagNaivePartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
 {
 	for (size_t i = 0; i < this->task_cardinality.size(); ++i)
 	{
 		v.push_back((uint32_t)task_cardinality[i].size());
 	}
+	v.shrink_to_fit();
 }
 
-CagPartionLib::CagPcPartitioner::CagPcPartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
+CagPartitionLib::CagPcPartitioner::CagPcPartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
 	tasks(tasks), policy(policy)
 {
 	_task_count = new uint64_t[tasks.size()];
@@ -137,7 +154,7 @@ CagPartionLib::CagPcPartitioner::CagPcPartitioner(const std::vector<uint16_t>& t
 	min_task_cardinality = std::numeric_limits<uint32_t>::max();
 }
 
-CagPartionLib::CagPcPartitioner::~CagPcPartitioner()
+CagPartitionLib::CagPcPartitioner::~CagPcPartitioner()
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -180,7 +197,7 @@ CagPartionLib::CagPcPartitioner::~CagPcPartitioner()
 /**
  * Pessimistic version with the blind increase in cardinality. (CAG-PC*)
  */
-inline uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::string & key, const size_t key_len)
+inline uint16_t CagPartitionLib::CagPcPartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
@@ -209,20 +226,21 @@ inline uint16_t CagPartionLib::CagPcPartitioner::partition_next(const std::strin
 	return selected_choice;
 }
 
-void CagPartionLib::CagPcPartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
+void CagPartitionLib::CagPcPartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		v.push_back(_task_cardinality[i]->cardinality_estimation());
 	}
+	v.shrink_to_fit();
 }
 
-inline uint64_t CagPartionLib::CagPcPartitioner::get_max_cardinality()
+inline uint64_t CagPartitionLib::CagPcPartitioner::get_max_cardinality()
 {
 	return max_task_cardinality;
 }
 
-inline double CagPartionLib::CagPcPartitioner::get_average_cardinality()
+inline double CagPartitionLib::CagPcPartitioner::get_average_cardinality()
 {
 	double avg_cardinality = 0;
 	for (size_t i = 0; i < tasks.size(); ++i)
@@ -232,7 +250,7 @@ inline double CagPartionLib::CagPcPartitioner::get_average_cardinality()
 	return avg_cardinality / tasks.size();
 }
 
-CagPartionLib::CagHllPartitioner::CagHllPartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k) :
+CagPartitionLib::CagHllPartitioner::CagHllPartitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k) :
 	tasks(tasks), policy(policy)
 {
 	_task_cardinality = new CardinalityEstimator::HyperLoglog*[tasks.size()];
@@ -248,7 +266,7 @@ CagPartionLib::CagHllPartitioner::CagHllPartitioner(const std::vector<uint16_t>&
 	min_task_cardinality = std::numeric_limits<uint32_t>::max();
 }
 
-CagPartionLib::CagHllPartitioner::~CagHllPartitioner()
+CagPartitionLib::CagHllPartitioner::~CagHllPartitioner()
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -258,7 +276,7 @@ CagPartionLib::CagHllPartitioner::~CagHllPartitioner()
 	delete[] _task_count;
 }
 
-inline uint16_t CagPartionLib::CagHllPartitioner::partition_next(const std::string & key, const size_t key_len)
+inline uint16_t CagPartitionLib::CagHllPartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
@@ -283,7 +301,42 @@ inline uint16_t CagPartionLib::CagHllPartitioner::partition_next(const std::stri
 	return selected_choice;
 }
 
-inline uint16_t CagPartionLib::CagHllPartitioner::partition_next_with_estimate(const std::string& key, const size_t key_len)
+void CagPartitionLib::CagHllPartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
+{
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		v.push_back(_task_cardinality[i]->cardinality_estimation());
+	}
+	v.shrink_to_fit();
+}
+
+CagPartitionLib::CagHllEstPartitioner::CagHllEstPartitioner(const std::vector<uint16_t>& tasks, uint8_t k) :
+	tasks(tasks)
+{
+	_task_cardinality = new CardinalityEstimator::HyperLoglog*[tasks.size()];
+	_task_count = new uint64_t[tasks.size()];
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		_task_cardinality[i] = new CardinalityEstimator::HyperLoglog(k);
+		_task_count[i] = uint64_t(0);
+	}
+	max_task_count = uint64_t(0);
+	min_task_count = std::numeric_limits<uint64_t>::max();
+	max_task_cardinality = uint32_t(0);
+	min_task_cardinality = std::numeric_limits<uint32_t>::max();
+}
+
+CagPartitionLib::CagHllEstPartitioner::~CagHllEstPartitioner()
+{
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete _task_cardinality[i];
+	}
+	delete[] _task_cardinality;
+	delete[] _task_count;
+}
+
+inline uint16_t CagPartitionLib::CagHllEstPartitioner::partition_next(const std::string & key, const size_t key_len)
 {
 	uint32_t hash_one, hash_two;
 	uint32_t first_choice, second_choice;
@@ -319,9 +372,7 @@ inline uint16_t CagPartionLib::CagHllPartitioner::partition_next_with_estimate(c
 	{
 		// behave like CAG: send the tuple to the worker with the smallest 
 		// cardinality at that point
-		uint16_t selected_choice = policy.get_score(first_choice, _task_count[first_choice], first_card,
-			second_choice, _task_count[second_choice], second_card, min_task_count, max_task_count,
-			min_task_cardinality, max_task_cardinality);
+		uint16_t selected_choice = first_card < second_card ? first_choice : second_choice;
 		// update metrics
 		_task_cardinality[selected_choice]->update_bitmap_with_hashed_value(hash_one);
 		uint32_t selected_cardinality = _task_cardinality[selected_choice]->cardinality_estimation();
@@ -334,11 +385,12 @@ inline uint16_t CagPartionLib::CagHllPartitioner::partition_next_with_estimate(c
 	}
 }
 
-void CagPartionLib::CagHllPartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
+inline void CagPartitionLib::CagHllEstPartitioner::get_cardinality_vector(std::vector<uint32_t>& v)
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		v.push_back(_task_cardinality[i]->cardinality_estimation());
 	}
+	v.shrink_to_fit();
 }
 #endif // !CAG_PARTITIONER_H_

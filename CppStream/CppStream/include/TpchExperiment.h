@@ -430,7 +430,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<
 	std::cout << "Time partition using PKG: " << pkg_partition_time.count() << " (msec).\n";
 	// CAG - naive
 	CardinalityAwarePolicy policy;
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks, policy);
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, policy);
 	std::chrono::system_clock::time_point cag_naive_start = std::chrono::system_clock::now();
 	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
 	{
@@ -442,7 +442,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<
 	std::cout << "Time partition using CAG(naive): " << cag_naive_partition_time.count() << " (msec).\n";
 	// LAG - naive
 	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
+	CagPartitionLib::CagNaivePartitioner lag_naive(tasks, lag_policy);
 	std::chrono::system_clock::time_point lag_naive_start = std::chrono::system_clock::now();
 	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
 	{
@@ -453,7 +453,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<
 	std::chrono::duration<double, std::milli> lag_naive_partition_time = lag_naive_end - lag_naive_start;
 	std::cout << "Time partition using LAG(naive): " << lag_naive_partition_time.count() << " (msec).\n";
 	// CAG - pc
-	CagPartionLib::CagPcPartitioner cag_pc(tasks, policy);
+	CagPartitionLib::CagPcPartitioner cag_pc(tasks, policy);
 	std::chrono::system_clock::time_point cag_pc_start = std::chrono::system_clock::now();
 	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
 	{
@@ -464,7 +464,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<
 	std::chrono::duration<double, std::milli> cag_pc_partition_time = cag_pc_end - cag_pc_start;
 	std::cout << "Time partition using CAG(pc): " << cag_pc_partition_time.count() << " (msec).\n";
 	// LAG - pc
-	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	CagPartitionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
 	std::chrono::system_clock::time_point lag_pc_start = std::chrono::system_clock::now();
 	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
 	{
@@ -475,7 +475,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<
 	std::chrono::duration<double, std::milli> lag_pc_partition_time = lag_pc_end - lag_pc_start;
 	std::cout << "Time partition using LAG(pc): " << lag_pc_partition_time.count() << " (msec).\n";
 	// CAG - hll
-	CagPartionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
+	CagPartitionLib::CagHllPartitioner cag_hll(tasks, policy, 5);
 	std::chrono::system_clock::time_point cag_hll_start = std::chrono::system_clock::now();
 	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
 	{
@@ -486,7 +486,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_performance(const std::vector<
 	std::chrono::duration<double, std::milli> cag_hll_partition_time = cag_hll_end - cag_hll_start;
 	std::cout << "Time partition using CAG(hll): " << cag_hll_partition_time.count() << " (msec).\n";
 	// LAG - hll
-	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
+	CagPartitionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
 	std::chrono::system_clock::time_point lag_hll_start = std::chrono::system_clock::now();
 	for (std::vector<Tpch::lineitem>::const_iterator it = lineitem_table.begin(); it != lineitem_table.end(); ++it)
 	{
@@ -577,7 +577,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_cag_naive_concurrent_partition
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	CardinalityAwarePolicy cag_policy;
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
 	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
@@ -641,7 +641,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_lag_naive_concurrent_partition
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagNaivePartitioner cag_naive(tasks, lag_policy);
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, lag_policy);
 	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
@@ -705,7 +705,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_cag_pc_concurrent_partition(co
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	CardinalityAwarePolicy cag_policy;
-	CagPartionLib::CagPcPartitioner cag_pc(tasks, cag_policy);
+	CagPartitionLib::CagPcPartitioner cag_pc(tasks, cag_policy);
 	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
@@ -769,7 +769,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_lag_pc_concurrent_partition(co
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
+	CagPartitionLib::CagPcPartitioner lag_pc(tasks, lag_policy);
 	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
@@ -833,7 +833,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_cag_hll_concurrent_partition(c
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	CardinalityAwarePolicy cag_policy;
-	CagPartionLib::CagHllPartitioner cag_hll(tasks, cag_policy, 5);
+	CagPartitionLib::CagHllPartitioner cag_hll(tasks, cag_policy, 5);
 	std::cout << "Partitioner thread INITIATES partitioning.\n";
 
 	// start partitioning
@@ -897,7 +897,7 @@ void Experiment::Tpch::QueryOnePartition::tpch_q1_lag_hll_concurrent_partition(c
 		threads[i] = new std::thread(tpch_q1_worker, query_workers[i]);
 	}
 	LoadAwarePolicy lag_policy;
-	CagPartionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
+	CagPartitionLib::CagHllPartitioner lag_hll(tasks, lag_policy, 5);
 	std::cout << "Partitioner INITIATES partitioning.\n";
 
 	// start partitioning
