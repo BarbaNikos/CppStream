@@ -171,6 +171,50 @@ namespace Experiment
 			float_t tip_amount;
 		}CompactRide;
 
+		typedef struct frequent_route_str
+		{
+			frequent_route_str() : route(), count(0) {}
+			frequent_route_str(const frequent_route_str& o)
+			{
+				route = o.route;
+				count = o.count;
+			}
+			~frequent_route_str() {}
+			frequent_route_str& operator= (const frequent_route_str& o)
+			{
+				if (this != &o)
+				{
+					route = o.route;
+					count = o.count;
+				}
+				return *this;
+			}
+			std::string route;
+			uint64_t count;
+		}frequent_route;
+
+		typedef struct most_profitable_cell_str
+		{
+			most_profitable_cell_str() : cell(), profit(0) {}
+			most_profitable_cell_str(const most_profitable_cell_str& o)
+			{
+				cell = o.cell;
+				profit = o.profit;
+			}
+			~most_profitable_cell_str() {}
+			most_profitable_cell_str& operator= (const most_profitable_cell_str& o)
+			{
+				if (this != &o)
+				{
+					cell = o.cell;
+					profit = o.profit;
+				}
+				return *this;
+			}
+			std::string cell;
+			double profit;
+		};
+
 		class DebsCellAssignment
 		{
 		public:
@@ -191,17 +235,35 @@ namespace Experiment
 		class FrequentRoute
 		{
 		public:
-			FrequentRoute(std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			FrequentRoute(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
+				std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
 			~FrequentRoute();
 			void operate();
 			void update(DebsChallenge::CompactRide& ride);
 			void finalize();
 		private:
-			std::time_t* oldest_time;
+			std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue;
+			std::mutex* aggr_mu; 
+			std::condition_variable* aggr_cond;
 			std::mutex* mu;
 			std::condition_variable* cond;
 			std::unordered_map<std::string, uint64_t> result;
 			std::queue<DebsChallenge::CompactRide>* input_queue;
+		};
+
+		class FrequentRouteAggregator
+		{
+		public:
+			FrequentRouteAggregator(std::queue<Experiment::DebsChallenge::frequent_route>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			~FrequentRouteAggregator();
+			void operate();
+			void update(Experiment::DebsChallenge::frequent_route& frequent_route);
+			void finalize();
+		private:
+			std::mutex* mu;
+			std::condition_variable* cond;
+			std::unordered_map<std::string, uint64_t> result;
+			std::queue<DebsChallenge::frequent_route>* input_queue;
 		};
 
 		class FrequentRoutePartition
@@ -239,6 +301,21 @@ namespace Experiment
 			std::unordered_map<std::string, std::vector<float>> fare_map;
 			std::unordered_map<std::string, std::string> dropoff_cell;
 			std::queue<DebsChallenge::CompactRide>* input_queue;
+		};
+
+		class ProfitableAreaAggregator
+		{
+		public:
+			ProfitableAreaAggregator(std::queue<Experiment::DebsChallenge::most_profitable_cell_str>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			~ProfitableAreaAggregator();
+			void operate();
+			void update(Experiment::DebsChallenge::most_profitable_cell_str& most_profitable_cell);
+			void finalize();
+		private:
+			std::mutex* mu;
+			std::condition_variable* cond;
+			std::unordered_map<std::string, uint64_t> result;
+			std::queue<DebsChallenge::frequent_route>* input_queue;
 		};
 
 		class ProfitableAreaPartition
@@ -568,8 +645,21 @@ time_t Experiment::DebsChallenge::DebsCellAssignment::produce_timestamp(const st
 
 // FrequentRoute
 
-Experiment::DebsChallenge::FrequentRoute::FrequentRoute(std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond)
+Experiment::DebsChallenge::FrequentRoute::FrequentRoute(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, 
+	std::condition_variable* aggr_cond, std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond)
 {
+	if (aggregator_queue != nullptr)
+	{
+		this->aggregator_queue = aggregator_queue;
+		this->aggr_mu = aggr_mu;
+		this->aggr_cond = aggr_cond;
+	}
+	else
+	{
+		this->aggregator_queue = nullptr;
+		this->aggr_mu = nullptr;
+		this->aggr_cond = nullptr;
+	}
 	this->mu = mu;
 	this->cond = cond;
 	this->input_queue = input_queue;
@@ -625,7 +715,104 @@ inline void Experiment::DebsChallenge::FrequentRoute::update(Experiment::DebsCha
 
 inline void Experiment::DebsChallenge::FrequentRoute::finalize()
 {
-	//std::cout << "number of groups: " << result.size() << ".\n";
+	
+	std::map<uint64_t, std::vector<std::string>> count_to_keys_map;
+	std::vector<uint64_t> top_counts;
+	std::vector<std::string> top_routes;
+	if (aggregator_queue == nullptr)
+	{
+		for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
+		{
+			auto top_iter = count_to_keys_map.find(it->second);
+			if (top_iter == count_to_keys_map.end())
+			{
+				std::vector<std::string> buffer;
+				buffer.push_back(it->first);
+				count_to_keys_map.insert(std::make_pair(it->second, buffer));
+			}
+			else
+			{
+				count_to_keys_map[it->second].push_back(it->first);
+			}
+		}
+		if (count_to_keys_map.size() > 0)
+		{
+			std::map<uint64_t, std::vector<std::string>>::const_iterator reverse_iter = count_to_keys_map.cend();
+			do
+			{
+				reverse_iter--;
+				for (size_t i = 0; i < reverse_iter->second.size(); ++i)
+				{
+					top_routes.push_back(reverse_iter->second[i]);
+					top_counts.push_back(reverse_iter->first);
+					if (top_routes.size() >= 10)
+					{
+						return;
+					}
+				}
+			} while (reverse_iter != count_to_keys_map.cbegin());
+		}
+	}
+	else
+	{
+		// start feeding partial aggregations to the aggregator
+
+	}
+}
+
+Experiment::DebsChallenge::FrequentRouteAggregator::FrequentRouteAggregator(std::queue<Experiment::DebsChallenge::frequent_route>* input_queue, std::mutex* mu, std::condition_variable* cond)
+{
+	this->mu = mu;
+	this->cond = cond;
+	this->input_queue = input_queue;
+}
+
+inline Experiment::DebsChallenge::FrequentRouteAggregator::~FrequentRouteAggregator()
+{
+	result.clear();
+}
+
+inline void Experiment::DebsChallenge::FrequentRouteAggregator::operate()
+{
+	while (true)
+	{
+		std::unique_lock<std::mutex> locker(*mu);
+		cond->wait(locker, [this]() { return input_queue->size() > 0; });
+		Experiment::DebsChallenge::frequent_route freq_route = input_queue->back();
+		input_queue->pop();
+		// process
+		if (freq_route.count >= 0)
+		{
+			update(freq_route);
+		}
+		else
+		{
+			finalize();
+			locker.unlock();
+			cond->notify_all();
+			break;
+		}
+		locker.unlock();
+		cond->notify_all();
+	}
+}
+
+inline void Experiment::DebsChallenge::FrequentRouteAggregator::update(Experiment::DebsChallenge::frequent_route & frequent_route)
+{
+	// update counts
+	std::unordered_map<std::string, uint64_t>::iterator it = result.find(frequent_route.route);
+	if (it != result.end())
+	{
+		it->second += 1;
+	}
+	else
+	{
+		result.insert(std::make_pair(frequent_route.route, frequent_route.count));
+	}
+}
+
+inline void Experiment::DebsChallenge::FrequentRouteAggregator::finalize()
+{
 	std::map<uint64_t, std::vector<std::string>> count_to_keys_map;
 	std::vector<uint64_t> top_counts;
 	std::vector<std::string> top_routes;
@@ -661,6 +848,7 @@ inline void Experiment::DebsChallenge::FrequentRoute::finalize()
 		} while (reverse_iter != count_to_keys_map.cbegin());
 	}
 }
+
 
 // FrequentRoutePartition
 
@@ -882,7 +1070,7 @@ double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partit
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		queues[i] = new std::queue<Experiment::DebsChallenge::CompactRide>();
-		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(queues[i], &mu_xes[i], &cond_vars[i]);
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(nullptr, nullptr, nullptr, queues[i], &mu_xes[i], &cond_vars[i]);
 		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
 	}
 	//std::cout << partitioner_name << " thread INITIATES partitioning (frequent-route).\n";
