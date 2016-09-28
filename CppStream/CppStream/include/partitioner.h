@@ -8,7 +8,7 @@ class Partitioner
 {
 public:
 	Partitioner();
-	~Partitioner();
+	virtual ~Partitioner();
 	virtual uint16_t partition_next(const std::string& key, const size_t key_len) = 0;
 };
 
