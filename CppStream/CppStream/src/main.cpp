@@ -184,40 +184,12 @@ void debs_cardinality_estimation(const std::string& out_file_name, const std::ve
 	output_file_2.close();
 }
 
-int main(int argc, char** argv)
+void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 {
-	//char ch;
-	if (argc < 4)
-	{
-		std::cout << "usage: <input-file> <worker-num> <max-queue-size>\n";
-		exit(1);
-	}
-	//std::string lineitem_file_name = "D:\\tpch_2_17_0\\lineitem_sample.tbl";
-	std::string input_file_name = argv[1];
-	uint16_t task_num = std::stoi(argv[2]);
-	size_t max_queue_size = std::stoi(argv[3]);
 	std::vector<uint16_t> tasks;
-	for (uint16_t i = 0; i < task_num; ++i)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-
 	/*
-	 * TPC-H query
-	 */
-	//std::vector<Tpch::lineitem> lineitem_table = parse_tpch_lineitem(lineitem_file_name);
-	//pkg_concurrent_partition(lineitem_table);
-	//cag_naive_concurrent_partition(lineitem_table);
-	//lag_naive_concurrent_partition(lineitem_table);
-	//tpch_q1_cag_pc_concurrent_partition(lineitem_table);
-	//lag_pc_concurrent_partition(lineitem_table);
-	//cag_hll_concurrent_partition(lineitem_table);
-	//lag_hll_concurrent_partition(lineitem_table);
-
-	/*
-	 * DEBS query
-	 */
+	* DEBS query
+	*/
 	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_area;
 	std::vector<Experiment::DebsChallenge::Ride> frequent_ride_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
@@ -226,21 +198,11 @@ int main(int argc, char** argv)
 	// debs_experiment.debs_compare_cag_correctness(tasks, ride_table);
 	// debs_check_hash_result_values("hash_result.csv", ride_table);
 	// debs_cardinality_estimation("cardinality_est_perf.csv", ride_table);
+
 	
-	CardinalityAwarePolicy cag_policy;
-	LoadAwarePolicy lag_policy;
-	HashFieldPartitioner fld_partitioner(tasks);
-	PkgPartitioner pkg_partitioner(tasks);
-	CagPartitionLib::CagNaivePartitioner cag_naive_partitioner(tasks, cag_policy);
-	CagPartitionLib::CagNaivePartitioner lag_naive_partitioner(tasks, lag_policy);
-	CagPartitionLib::CagPcPartitioner cag_pc_partitioner(tasks, cag_policy);
-	CagPartitionLib::CagPcPartitioner lag_pc_partitioner(tasks, lag_policy);
-	CagPartitionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
-	CagPartitionLib::CagHllEstPartitioner cag_hll_est_partitioner(tasks, 10);
-	CagPartitionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
 	/*
-	 * Partition latency
-	 */
+	* Partition latency
+	*/
 	/*debs_experiment_frequent_route.debs_partition_performance(tasks, fld_partitioner, "FLD", ride_table);
 	debs_experiment_frequent_route.debs_partition_performance(tasks, pkg_partitioner, "PKG", ride_table);
 	debs_experiment_frequent_route.debs_partition_performance(tasks, cag_naive_partitioner, "CAG-naive", ride_table);
@@ -251,8 +213,8 @@ int main(int argc, char** argv)
 	debs_hll_partition_performance_estimate(tasks, cag_hll_est_partitioner, "CAG-hll-est", ride_table);
 	debs_experiment_frequent_route.debs_partition_performance(tasks, lag_hll_partitioner, "LAG-hll", ride_table);*/
 	/*
-	 * End-to-end Performance
-	 */
+	* End-to-end Performance
+	*/
 	std::cout << "***** FREQUENT ROUTE ****\n";
 	for (size_t i = 5; i <= 20; i = i + 5)
 	{
@@ -263,6 +225,17 @@ int main(int argc, char** argv)
 		}
 		tasks.shrink_to_fit();
 		std::cout << "Tasks: " << tasks.size() << ".\n";
+		CardinalityAwarePolicy cag_policy;
+		LoadAwarePolicy lag_policy;
+		HashFieldPartitioner fld_partitioner(tasks);
+		PkgPartitioner pkg_partitioner(tasks);
+		CagPartitionLib::CagNaivePartitioner cag_naive_partitioner(tasks, cag_policy);
+		CagPartitionLib::CagNaivePartitioner lag_naive_partitioner(tasks, lag_policy);
+		CagPartitionLib::CagPcPartitioner cag_pc_partitioner(tasks, cag_policy);
+		CagPartitionLib::CagPcPartitioner lag_pc_partitioner(tasks, lag_policy);
+		CagPartitionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
+		CagPartitionLib::CagHllEstPartitioner cag_hll_est_partitioner(tasks, 10);
+		CagPartitionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
 		for (size_t iter = 0; iter < 4; ++iter)
 		{
 			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, fld_partitioner, "FLD", max_queue_size);
@@ -286,6 +259,17 @@ int main(int argc, char** argv)
 		}
 		tasks.shrink_to_fit();
 		std::cout << "Tasks: " << tasks.size() << ".\n";
+		CardinalityAwarePolicy cag_policy;
+		LoadAwarePolicy lag_policy;
+		HashFieldPartitioner fld_partitioner(tasks);
+		PkgPartitioner pkg_partitioner(tasks);
+		CagPartitionLib::CagNaivePartitioner cag_naive_partitioner(tasks, cag_policy);
+		CagPartitionLib::CagNaivePartitioner lag_naive_partitioner(tasks, lag_policy);
+		CagPartitionLib::CagPcPartitioner cag_pc_partitioner(tasks, cag_policy);
+		CagPartitionLib::CagPcPartitioner lag_pc_partitioner(tasks, lag_policy);
+		CagPartitionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
+		CagPartitionLib::CagHllEstPartitioner cag_hll_est_partitioner(tasks, 10);
+		CagPartitionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
 		for (size_t i = 0; i < 4; ++i)
 		{
 			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, fld_partitioner, "FLD", max_queue_size);
@@ -300,7 +284,33 @@ int main(int argc, char** argv)
 		}
 	}
 	std::cout << "**** DONE ****\n";
-	/*std::cout << "Press any key to continue...\n";
-	std::cin >> ch;*/
+}
+
+int main(int argc, char** argv)
+{
+	char ch;
+	if (argc < 4)
+	{
+		std::cout << "usage: <input-file> <worker-num> <max-queue-size>\n";
+		exit(1);
+	}
+	std::string input_file_name = argv[1];
+	uint16_t task_num = std::stoi(argv[2]);
+	size_t max_queue_size = std::stoi(argv[3]);
+	std::vector<uint16_t> tasks;
+	for (uint16_t i = 0; i < task_num; ++i)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+
+	/*
+	 * TPC-H query
+	 */
+	Experiment::Tpch::DataParser::parse_all_files_test("C:\\Users\\nickk\\Documents\\tpc_h_2_17\\dbgen");
+
+	
+	std::cout << "Press any key to continue...\n";
+	std::cin >> ch;
 	return 0;
 }
