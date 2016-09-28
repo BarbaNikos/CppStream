@@ -191,15 +191,11 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 	* DEBS query
 	*/
 	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_area;
-	std::vector<Experiment::DebsChallenge::Ride> frequent_ride_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
-	std::vector < Experiment::DebsChallenge::Ride> profitable_area_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
-
+	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
+	std::cout << "Parsed frequent-ride table.\n";
 	// debs_experiment.debs_compare_cag_correctness(tasks, ride_table);
 	// debs_check_hash_result_values("hash_result.csv", ride_table);
 	// debs_cardinality_estimation("cardinality_est_perf.csv", ride_table);
-
-	
 	/*
 	* Partition latency
 	*/
@@ -224,7 +220,7 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 			tasks.push_back(j);
 		}
 		tasks.shrink_to_fit();
-		std::cout << "Tasks: " << tasks.size() << ".\n";
+		std::cout << "# of tasks: " << tasks.size() << ".\n";
 		CardinalityAwarePolicy cag_policy;
 		LoadAwarePolicy lag_policy;
 		HashFieldPartitioner fld_partitioner(tasks);
@@ -236,19 +232,41 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 		CagPartitionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
 		CagPartitionLib::CagHllEstPartitioner cag_hll_est_partitioner(tasks, 10);
 		CagPartitionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
+		double avg_runtime[9];
+		for (size_t i = 0; i < 9; ++i)
+		{
+			avg_runtime[i] = 0;
+		}
 		for (size_t iter = 0; iter < 4; ++iter)
 		{
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, fld_partitioner, "FLD", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, pkg_partitioner, "PKG", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_hll_est_partitioner, "CAG-hll-est", max_queue_size);
-			debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
+			avg_runtime[0] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, fld_partitioner, "FLD", max_queue_size);
+			avg_runtime[1] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, pkg_partitioner, "PKG", max_queue_size);
+			avg_runtime[2] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
+			avg_runtime[3] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
+			avg_runtime[4] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
+			avg_runtime[5] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
+			avg_runtime[6] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
+			avg_runtime[7] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, cag_hll_est_partitioner, "CAG-hll-est", max_queue_size);
+			avg_runtime[8] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
 		}
+		for (size_t i = 0; i < 9; ++i)
+		{
+			avg_runtime[i] = avg_runtime[i] / 4;
+		}
+		std::cout << "FLD total partition time: " << avg_runtime[0] << " (msec) (frequent-routes).\n";
+		std::cout << "PKG total partition time: " << avg_runtime[1] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-naive total partition time: " << avg_runtime[2] << " (msec) (frequent-routes).\n";
+		std::cout << "LAG-naive total partition time: " << avg_runtime[3] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-pc* total partition time: " << avg_runtime[4] << " (msec) (frequent-routes).\n";
+		std::cout << "LAG-pc* total partition time: " << avg_runtime[5] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-hll total partition time: " << avg_runtime[6] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-hll-est total partition time: " << avg_runtime[7] << " (msec) (frequent-routes).\n";
+		std::cout << "LAG-hll total partition time: " << avg_runtime[8] << " (msec) (frequent-routes).\n";
 	}
+	frequent_ride_ride_table.clear();
+
+	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_area;
+	std::vector < Experiment::DebsChallenge::CompactRide> profitable_area_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
 	std::cout << "***** PROFITABLE AREA ****\n";
 	for (size_t i = 5; i <= 20; i = i + 5)
 	{
@@ -258,7 +276,7 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 			tasks.push_back(j);
 		}
 		tasks.shrink_to_fit();
-		std::cout << "Tasks: " << tasks.size() << ".\n";
+		std::cout << "# of tasks: " << tasks.size() << ".\n";
 		CardinalityAwarePolicy cag_policy;
 		LoadAwarePolicy lag_policy;
 		HashFieldPartitioner fld_partitioner(tasks);
@@ -270,18 +288,36 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 		CagPartitionLib::CagHllPartitioner cag_hll_partitioner(tasks, cag_policy, 10);
 		CagPartitionLib::CagHllEstPartitioner cag_hll_est_partitioner(tasks, 10);
 		CagPartitionLib::CagHllPartitioner lag_hll_partitioner(tasks, lag_policy, 10);
+		double avg_runtime[9];
+		for (size_t i = 0; i < 9; ++i)
+		{
+			avg_runtime[i] = 0;
+		}
 		for (size_t i = 0; i < 4; ++i)
 		{
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, fld_partitioner, "FLD", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, pkg_partitioner, "PKG", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_hll_est_partitioner, "CAG-hll-est", max_queue_size);
-			debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
+			avg_runtime[0] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, fld_partitioner, "FLD", max_queue_size);
+			avg_runtime[1] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, pkg_partitioner, "PKG", max_queue_size);
+			avg_runtime[2] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_naive_partitioner, "CAG-naive", max_queue_size);
+			avg_runtime[3] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_naive_partitioner, "LAG-naive", max_queue_size);
+			avg_runtime[4] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_pc_partitioner, "CAG-pc", max_queue_size);
+			avg_runtime[5] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_pc_partitioner, "LAG-pc", max_queue_size);
+			avg_runtime[6] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_hll_partitioner, "CAG-hll", max_queue_size);
+			avg_runtime[7] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, cag_hll_est_partitioner, "CAG-hll-est", max_queue_size);
+			avg_runtime[8] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, lag_hll_partitioner, "LAG-hll", max_queue_size);
 		}
+		for (size_t i = 0; i < 9; ++i)
+		{
+			avg_runtime[i] = avg_runtime[i] / 4;
+		}
+		std::cout << "FLD total partition time: " << avg_runtime[0] << " (msec) (frequent-routes).\n";
+		std::cout << "PKG total partition time: " << avg_runtime[1] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-naive total partition time: " << avg_runtime[2] << " (msec) (frequent-routes).\n";
+		std::cout << "LAG-naive total partition time: " << avg_runtime[3] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-pc* total partition time: " << avg_runtime[4] << " (msec) (frequent-routes).\n";
+		std::cout << "LAG-pc* total partition time: " << avg_runtime[5] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-hll total partition time: " << avg_runtime[6] << " (msec) (frequent-routes).\n";
+		std::cout << "CAG-hll-est total partition time: " << avg_runtime[7] << " (msec) (frequent-routes).\n";
+		std::cout << "LAG-hll total partition time: " << avg_runtime[8] << " (msec) (frequent-routes).\n";
 	}
 	std::cout << "**** DONE ****\n";
 }
@@ -291,24 +327,20 @@ int main(int argc, char** argv)
 	char ch;
 	if (argc < 4)
 	{
-		std::cout << "usage: <input-file> <worker-num> <max-queue-size>\n";
+		std::cout << "usage: <input-file> <max-queue-size>\n";
 		exit(1);
 	}
 	std::string input_file_name = argv[1];
-	uint16_t task_num = std::stoi(argv[2]);
-	size_t max_queue_size = std::stoi(argv[3]);
-	std::vector<uint16_t> tasks;
-	for (uint16_t i = 0; i < task_num; ++i)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
+	size_t max_queue_size = std::stoi(argv[2]);
 
 	/*
 	 * TPC-H query
 	 */
-	Experiment::Tpch::DataParser::parse_all_files_test("C:\\Users\\nickk\\Documents\\tpc_h_2_17\\dbgen");
-
+	// Experiment::Tpch::DataParser::parse_all_files_test("C:\\Users\\nickk\\Documents\\tpc_h_2_17\\dbgen");
+	/*
+	 * DEBS queries
+	 */
+	debs_all_test(input_file_name, max_queue_size);
 	
 	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
