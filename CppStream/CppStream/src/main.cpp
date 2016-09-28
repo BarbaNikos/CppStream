@@ -325,7 +325,7 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 int main(int argc, char** argv)
 {
 	char ch;
-	if (argc < 4)
+	if (argc < 3)
 	{
 		std::cout << "usage: <input-file> <max-queue-size>\n";
 		exit(1);
