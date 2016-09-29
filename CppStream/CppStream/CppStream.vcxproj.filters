@@ -63,6 +63,9 @@
     <ClInclude Include="include\c_hll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\LognormalSimulation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\MurmurHash3.cpp">

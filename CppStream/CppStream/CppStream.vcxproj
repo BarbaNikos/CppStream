@@ -124,6 +124,7 @@
     <ClInclude Include="include\c_hll.h" />
     <ClInclude Include="include\DebsTaxiChallenge.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
+    <ClInclude Include="include\LognormalSimulation.h" />
     <ClInclude Include="include\MurmurHash3.h" />
     <ClInclude Include="include\partitioner.h" />
     <ClInclude Include="include\partition_policy.h" />

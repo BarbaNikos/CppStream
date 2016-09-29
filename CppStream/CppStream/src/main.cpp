@@ -18,6 +18,7 @@
 #include "../include/cag_partitioner.h"
 #include "../include/DebsTaxiChallenge.h"
 #include "../include/TpchExperiment.h"
+#include "../include/LognormalSimulation.h"
 
 void card_estimate_example()
 {
@@ -340,6 +341,25 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 	std::cout << "**** DONE ****\n";
 }
 
+void log_normal_simulation(std::string input_file)
+{
+	Experiment::LogNormalSimulation simulation;
+	simulation.sort_to_plot(input_file);
+	/*uint16_t task_num[] = { 5, 10, 50, 100 };
+	for (size_t i = 0; i < 4; i++)
+	{
+		std::vector<uint16_t> tasks;
+		for (size_t j = 0; j < task_num[i]; j++)
+		{
+			tasks.push_back(j);
+		}
+		tasks.shrink_to_fit();
+		std::cout << "## Tasks: " << task_num[i] << ".\n";
+		simulation.simulate(tasks, input_file);
+	}
+	std::cout << "********* END ***********\n";*/
+}
+
 int main(int argc, char** argv)
 {
 	char ch;
@@ -358,8 +378,8 @@ int main(int argc, char** argv)
 	/*
 	 * DEBS queries
 	 */
-	debs_all_test(input_file_name, max_queue_size);
-	
+	//debs_all_test(input_file_name, max_queue_size);
+	log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
 	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
 	return 0;
