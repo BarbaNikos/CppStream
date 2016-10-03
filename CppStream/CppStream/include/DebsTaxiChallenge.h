@@ -625,6 +625,9 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	catch (const std::invalid_argument&)
 	{
 		std::cerr << "pickup-longitude argument is invalid: " << tokens[6] << ".\n";
+		std::cerr << "parsed line: {" << ride_info << "}\n";
+		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
+		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
 	}
 	try
 	{
@@ -633,6 +636,10 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	catch (const std::exception&)
 	{
 		std::cerr << "pickup-latitude argument is invalid: " << tokens[7] << ".\n";
+		std::cerr << "parsed line: {" << ride_info << "}\n";
+		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
+		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
+		std::cerr << "pickup-longitude: " << pickup_longitude << "\n";
 	}
 	try
 	{
@@ -641,6 +648,10 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	catch (const std::exception&)
 	{
 		std::cerr << "dropoff-longitude argument is invalid: " << tokens[8] << ".\n";
+		std::cerr << "parsed line: {" << ride_info << "}\n";
+		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
+		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
+		std::cerr << "pickup-longitude: " << pickup_longitude << ", pickup-latitude: " << pickup_latitude << "\n";
 	}
 	try
 	{
@@ -649,6 +660,11 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	catch (const std::exception&)
 	{
 		std::cerr << "dropoff-latitude argument is invalid: " << tokens[9] << ".\n";
+		std::cerr << "parsed line: {" << ride_info << "}\n";
+		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
+		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
+		std::cerr << "pickup-longitude: " << pickup_longitude << ", pickup-latitude: " << pickup_latitude << "\n";
+		std::cerr << "dropoff-longitude: " << dropoff_longitude << "\n";
 	}
 	ride.pickup_cell = Experiment::DebsChallenge::TaxiCoordinateHelper::recursive_location(1, grid_distance, 1, grid_distance, cells, pickup_latitude, pickup_longitude);
 	ride.dropoff_cell = Experiment::DebsChallenge::TaxiCoordinateHelper::recursive_location(1, grid_distance, 1, grid_distance, cells, dropoff_latitude, dropoff_longitude);
