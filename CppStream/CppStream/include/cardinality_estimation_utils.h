@@ -1,13 +1,22 @@
+#pragma once
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
 #include <cinttypes>
 
-#include "MurmurHash3.h"
-#include "BitTrickBox.h"
+#ifndef MURMURHASH_3_H_
+#include "murmurhash_3.h"
+#endif // !MURMURHASH_3_H_
 
-#ifndef CARDINALITY_ESTIMATOR_
-#define CARDINALITY_ESTIMATOR_
+
+#ifndef BIT_TRICK_UTILS_H_
+#include "bit_trick_utils.h"
+#endif // !BIT_TRICK_UTILS_H_
+
+
+#ifndef CARDINALITY_ESTIMATION_UTILS_H_
+#define CARDINALITY_ESTIMATION_UTILS_H_
+
 namespace CardinalityEstimator
 {
 	class ProbCount
@@ -45,6 +54,7 @@ namespace CardinalityEstimator
 		double _multiplier;
 	};
 }
+#endif // !CARDINALITY_ESTIMATION_UTILS_H_
 
 inline CardinalityEstimator::ProbCount::ProbCount()
 {
@@ -144,4 +154,3 @@ inline uint32_t CardinalityEstimator::HyperLoglog::cardinality_estimation()
 	double E = _multiplier / _current_sum;
 	return (uint32_t)E;
 }
-#endif // !CARDINALITY_ESTIMATOR_

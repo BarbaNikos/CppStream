@@ -1,10 +1,22 @@
 #include <vector>
 #include <cinttypes>
 
+#ifndef PARTITIONER_H_
 #include "partitioner.h"
-#include "MurmurHash3.h"
-#include "BitTrickBox.h"
+#endif // !PARTITIONER_H_
+
+#ifndef MURMURHASH_3_H_
+#include "murmurhash_3.h"
+#endif // !MURMURHASH_3_H_
+
+#ifndef BIT_TRICK_UTILS_H_
+#include "bit_trick_utils.h"
+#endif // !BIT_TRICK_UTILS_H_
+
+#ifndef PARTITION_POLICY_H_
 #include "partition_policy.h"
+#endif // !PARTITION_POLICY_H_
+
 
 #ifndef PKG_PARTITIONER_H_
 #define PKG_PARTITIONER_H_

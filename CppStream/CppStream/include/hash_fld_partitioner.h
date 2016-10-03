@@ -2,8 +2,14 @@
 #include <vector>
 #include <cinttypes>
 
+#ifndef PARTITIONER_H_
 #include "partitioner.h"
-#include "MurmurHash3.h"
+#endif // !PARTITIONER_H_
+
+#ifndef MURMURHASH_3_H_
+#include "murmurhash_3.h"
+#endif // !MURMURHASH_3_H_
+
 
 #ifndef HASH_FLD_PARTITIONER_H_
 #define HASH_FLD_PARTITIONER_H_

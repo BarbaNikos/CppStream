@@ -2,8 +2,8 @@ CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
 FLAGS = -std=c++11 -O2 -g -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
 LIBS = -lpthread -lm							# additional libraries
-OBJS = BitTrickBox.o CardinalityEstimator.o \
-	main.o MurmurHash3.o
+OBJS = bit_trick_utils.o cardinality_estimation_utils.o \
+	main.o murmurhash_3.o
 
 all: ${OBJS}
 	${CC} ${FLAGS} ${INCLUDES} ${OBJS} -o target_bin ${LIBS}
@@ -14,14 +14,14 @@ all: ${OBJS}
 main.o: ./CppStream/src/main.cpp
 	${CC} ${FLAGS} -c ./CppStream/src/main.cpp ${INCLUDE_FLAGS}
 
-CardinalityEstimator.o: ./CppStream/src/CardinalityEstimator.cpp ./CppStream/include/CardinalityEstimator.h
-	${CC} ${FLAGS} -c ./CppStream/src/CardinalityEstimator.cpp ${INCLUDE_FLAGS}
+CardinalityEstimator.o: ./CppStream/src/CardinalityEstimator.cpp ./CppStream/include/cardinality_estimation_utils.h
+	${CC} ${FLAGS} -c ./CppStream/src/cardinality_estimation_utils.cpp ${INCLUDE_FLAGS}
 
-MurmurHash3.o: ./CppStream/src/MurmurHash3.cpp ./CppStream/include/MurmurHash3.h
-	$(CC) $(FLAGS) -c ./CppStream/src/MurmurHash3.cpp ${INCLUDE_FLAGS}
+MurmurHash3.o: ./CppStream/src/MurmurHash3.cpp ./CppStream/include/murmurhash_3.h
+	$(CC) $(FLAGS) -c ./CppStream/src/murmurhash_3.cpp ${INCLUDE_FLAGS}
 
-BitTrickBox.o: ./CppStream/src/BitTrickBox.cpp ./CppStream/include/BitTrickBox.h
-	$(CC) $(FLAGS) -c ./CppStream/src/BitTrickBox.cpp ${INCLUDE_FLAGS}
+BitTrickBox.o: ./CppStream/src/BitTrickBox.cpp ./CppStream/include/bit_trick_utils.h
+	$(CC) $(FLAGS) -c ./CppStream/src/bit_trick_utils.cpp ${INCLUDE_FLAGS}
 
 clean:
 	rm -rf *.o

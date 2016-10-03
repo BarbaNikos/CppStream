@@ -7,7 +7,9 @@
 // compile and run any of them on any platform, but your performance with the
 // non-native version will be less than optimal.
 
-#include "../include/MurmurHash3.h"
+#ifndef MURMURHASH_3_H_
+#include "../include/murmurhash_3.h"
+#endif // !MURMURHASH_3_H_
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros

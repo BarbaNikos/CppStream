@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -5,10 +6,21 @@
 #include <cinttypes>
 #include <limits>
 
-#include "partitioner.h"
-#include "MurmurHash3.h"
-#include "CardinalityEstimator.h"
+#ifndef PARTITION_POLICY_H_
 #include "partition_policy.h"
+#endif // !PARTITION_POLICY_H_
+
+#ifndef PARTITIONER_H_
+#include "partitioner.h"
+#endif // !PARTITIONER_H_
+
+#ifndef MURMURHASH_3_H_
+#include "murmurhash_3.h"
+#endif // !MURMURHASH_3_H_
+
+#ifndef CARDINALITY_ESTIMATION_UTILS_H_
+#include "cardinality_estimation_utils.h"
+#endif // !CARDINALITY_ESTIMATION_UTILS_H_
 
 #ifndef CAG_PARTITIONER_H_
 #define CAG_PARTITIONER_H_

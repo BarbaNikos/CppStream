@@ -18,19 +18,10 @@
     <ClInclude Include="include\BasicWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\BitTrickBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\cag_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\CardinalityEstimator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\CircularBuffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\MurmurHash3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\partition_policy.h">
@@ -45,39 +36,51 @@
     <ClInclude Include="include\WindowLoad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\TpchExperiment.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\DebsTaxiChallenge.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\hash_fld_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\BitWizardTestSuite.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\c_hll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\LognormalSimulation.h">
+    <ClInclude Include="include\debs_cell_coordinate_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\debs_structure_lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\debs_query_lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lognormal_experiment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\bit_trick_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\murmurhash_3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cardinality_estimation_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tpch_experiment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\MurmurHash3.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\BitTrickBox.cpp">
+    <ClCompile Include="src\bit_trick_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\CardinalityEstimator.cpp">
+    <ClCompile Include="src\murmurhash_3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cardinality_estimation_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

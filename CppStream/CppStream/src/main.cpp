@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <ctime>
 #include <fstream>
@@ -14,11 +15,25 @@
 #include <future>
 #include <fstream>
 
-#include "../include/BitTrickBox.h"
+#ifndef DEBS_QUERY_LIB_H_
+#include "../include/debs_query_lib.h"
+#endif // !DEBS_QUERY_LIB_H_
+
+#ifndef HASH_FLD_PARTITIONER_H_
+#include "../include/hash_fld_partitioner.h"
+#endif // !HASH_FLD_PARTITIONER_H_
+
+#ifndef PKG_PARTITIONER_H_
+#include "../include/pkg_partitioner.h"
+#endif // !PKG_PARTITIONER_H_
+
+#ifndef CAG_PARTITIONER_H_
 #include "../include/cag_partitioner.h"
-#include "../include/DebsTaxiChallenge.h"
-#include "../include/TpchExperiment.h"
-#include "../include/LognormalSimulation.h"
+#endif // !CAG_PARTITIONER_H_
+
+#ifndef EXPERIMENT_LOGNORMAL_SIMULATION_H_
+#include "../include/lognormal_experiment.h"
+#endif // !EXPERIMENT_LOGNORMAL_SIMULATION_H_
 
 void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
 {
@@ -370,9 +385,10 @@ int main(int argc, char** argv)
 	//debs_all_test(input_file_name, max_queue_size);
 	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
-	auto lines = experiment.parse_debs_rides(input_file_name, 500, 300);
+	// auto lines = experiment.parse_debs_rides(input_file_name, 500, 300);
+	experiment.produce_compact_ride_file(input_file_name, "frequent_compact_rides.csv", 500, 300);
 	std::cout << "scanned and parsed the whole life..\n";
-
+/*
 	std::vector<uint16_t> tasks;
 	for (size_t i = 0; i < 5; i++)
 	{
@@ -428,7 +444,7 @@ int main(int argc, char** argv)
 	delete fld;
 	delete cag_naive;
 	tasks.clear();
-
+*/
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/
 	return 0;

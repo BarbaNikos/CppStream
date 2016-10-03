@@ -4,7 +4,10 @@
 #include <cmath>
 #include <climits>
 
-#include "BitTrickBox.h"
+#ifndef BIT_TRICK_UTILS_H_
+#include "bit_trick_utils.h"
+#endif // !BIT_TRICK_UTILS_H_
+
 
 const double a_16 = 0.673;
 

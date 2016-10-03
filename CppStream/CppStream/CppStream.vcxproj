@@ -116,28 +116,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\BasicWindow.h" />
-    <ClInclude Include="include\BitTrickBox.h" />
-    <ClInclude Include="include\BitWizardTestSuite.h" />
+    <ClInclude Include="include\bit_trick_utils.h" />
     <ClInclude Include="include\cag_partitioner.h" />
-    <ClInclude Include="include\CardinalityEstimator.h" />
+    <ClInclude Include="include\cardinality_estimation_utils.h" />
     <ClInclude Include="include\CircularBuffer.h" />
     <ClInclude Include="include\c_hll.h" />
-    <ClInclude Include="include\DebsTaxiChallenge.h" />
+    <ClInclude Include="include\debs_query_lib.h" />
+    <ClInclude Include="include\debs_cell_coordinate_util.h" />
+    <ClInclude Include="include\debs_structure_lib.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
-    <ClInclude Include="include\LognormalSimulation.h" />
-    <ClInclude Include="include\MurmurHash3.h" />
+    <ClInclude Include="include\lognormal_experiment.h" />
+    <ClInclude Include="include\murmurhash_3.h" />
     <ClInclude Include="include\partitioner.h" />
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
-    <ClInclude Include="include\TpchExperiment.h" />
+    <ClInclude Include="include\tpch_experiment.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\BitTrickBox.cpp" />
-    <ClCompile Include="src\CardinalityEstimator.cpp" />
+    <ClCompile Include="src\bit_trick_utils.cpp" />
+    <ClCompile Include="src\cardinality_estimation_utils.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\MurmurHash3.cpp" />
+    <ClCompile Include="src\murmurhash_3.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Makefile" />
