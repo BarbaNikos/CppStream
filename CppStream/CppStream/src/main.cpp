@@ -305,7 +305,7 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 	{
 		out_file[i]->flush();
 		out_file[i]->close();
-		auto task_lines = experiment.parse_debs_rides(partitioner_name + "_" + std::to_string(i) + ".csv", 500, 300);
+		auto task_lines = experiment.parse_debs_rides_with_to_string(partitioner_name + "_" + std::to_string(i) + ".csv");
 		// feed the worker
 		double average_execution_time = 0.0;
 		for (short r = 0; r < 3; ++r)
