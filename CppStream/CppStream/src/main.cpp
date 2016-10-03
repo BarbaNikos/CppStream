@@ -20,89 +20,6 @@
 #include "../include/TpchExperiment.h"
 #include "../include/LognormalSimulation.h"
 
-void card_estimate_example()
-{
-	std::unordered_set<uint32_t> naive_set;
-	CardinalityEstimator::ProbCount prob_count;
-	CardinalityEstimator::HyperLoglog hyper_loglog(5);
-	for (size_t i = 0; i < 1000000; ++i)
-	{
-		size_t naive_diff = naive_set.size();
-		naive_set.insert(uint32_t(i));
-		naive_diff = naive_set.size() - naive_diff;
-		size_t pc_prev = prob_count.cardinality_estimation();
-		prob_count.update_bitmap(uint32_t(i));
-		size_t pc_diff = prob_count.cardinality_estimation() - pc_prev;
-		size_t hll_prev = hyper_loglog.cardinality_estimation();
-		hyper_loglog.update_bitmap(uint32_t(i));
-		size_t hll_diff = hyper_loglog.cardinality_estimation() - hll_prev;
-		if (naive_diff < 0)
-		{
-			std::cout << "non-monotonicity detected in naive set\n";
-			exit(1);
-		}
-		if (pc_diff < 0)
-		{
-			std::cout << "non-monotonicity detected in pc! value: " << i << ", previous: " << 
-				pc_prev << ", new: " << prob_count.cardinality_estimation() << ", diff: " << pc_diff << ".\n";
-			exit(1);
-		}
-		if (hll_diff < 0)
-		{
-			std::cout << "non-monotonicity detected in HLL! value: " << i << ", previous: " <<
-				hll_prev << ", new: " << hyper_loglog.cardinality_estimation() << ", diff: " << hll_diff << ".\n";
-			exit(1);
-		}
-	}
-	std::cout << "Actual cardinality: " << naive_set.size() << "\n";
-	std::cout << "Probabilistic Count: estimated cardinality: " << prob_count.cardinality_estimation() << "\n";
-	std::cout << "Hyper-Loglog: estimated cardinality: " << hyper_loglog.cardinality_estimation() << "\n";
-}
-
-void debs_hll_partition_performance_estimate(const std::vector<uint16_t>& tasks, CagPartitionLib::CagHllEstPartitioner& partitioner,
-	const std::string partioner_name, std::vector<Experiment::DebsChallenge::Ride>& rides)
-{
-	std::vector<std::unordered_set<std::string>> key_per_task;
-	for (size_t i = 0; i < tasks.size(); ++i)
-	{
-		key_per_task.push_back(std::unordered_set<std::string>());
-	}
-	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-	for (std::vector<Experiment::DebsChallenge::Ride>::const_iterator it = rides.begin(); it != rides.end(); ++it)
-	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "-" + dropoff_cell;
-		short task = partitioner.partition_next(key, key.length());
-		key_per_task[task].insert(key);
-	}
-	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-	std::chrono::duration<double, std::milli> partition_time = part_end - part_start;
-	size_t min_cardinality = std::numeric_limits<uint64_t>::max();
-	size_t max_cardinality = std::numeric_limits<uint64_t>::min();
-	double average_cardinality = 0;
-	std::cout << "Cardinalities: ";
-	for (size_t i = 0; i < tasks.size(); ++i)
-	{
-		if (min_cardinality > key_per_task[i].size())
-		{
-			min_cardinality = key_per_task[i].size();
-		}
-		if (max_cardinality < key_per_task[i].size())
-		{
-			max_cardinality = key_per_task[i].size();
-		}
-		average_cardinality += key_per_task[i].size();
-		std::cout << key_per_task[i].size() << " ";
-		key_per_task[i].clear();
-	}
-	std::cout << "\n";
-	average_cardinality = average_cardinality / tasks.size();
-	key_per_task.clear();
-	std::cout << "Time partition using " << partioner_name << ": " << partition_time.count() << " (msec). Min: " << min_cardinality <<
-		", Max: " << max_cardinality << ", AVG: " << average_cardinality << "\n";
-}
-
 void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
 {
 	std::string out_hash_one = out_file_name + "_" + std::to_string(13);
@@ -363,7 +280,6 @@ void log_normal_simulation(std::string input_file)
 void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks, 
 	Partitioner& partitioner, const std::string partitioner_name)
 {
-	size_t max_queue_size = 200;
 	// first read the input file and generate sub-files with 
 	// the tuples that will be handled by each worker
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
@@ -384,52 +300,59 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 		*out_file[task] << it->to_string() << "\n";
 	}
 	// get maximum and minimum running times
-	std::chrono::duration<double, std::milli> min_duration;
-	std::chrono::duration<double, std::milli> max_duration;
+	double min_duration, max_duration;
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		out_file[i]->flush();
 		out_file[i]->close();
 		auto task_lines = experiment.parse_debs_rides(partitioner_name + "_" + std::to_string(i) + ".csv", 500, 300);
 		// feed the worker
-		std::queue<Experiment::DebsChallenge::CompactRide> queue;
-		std::mutex mu;
-		std::condition_variable cond;
-		Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond);
-		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-		for (auto it = task_lines.begin(); it != task_lines.end(); ++it)
+		double average_execution_time = 0.0;
+		for (short r = 0; r < 3; ++r)
 		{
-			worker.update(*it);
+			std::queue<Experiment::DebsChallenge::CompactRide> queue;
+			std::mutex mu;
+			std::condition_variable cond;
+			Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond);
+			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+			for (auto it = task_lines.begin(); it != task_lines.end(); ++it)
+			{
+				worker.update(*it);
+			}
+			worker.finalize();
+			std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+			std::chrono::duration<double, std::milli> execution_time = end - start;
+			average_execution_time += execution_time.count();
 		}
-		worker.finalize();
-		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-		std::chrono::duration<double, std::milli> execution_time = end - start;
+		average_execution_time = average_execution_time / 3;
 		if (i == 0)
 		{
-			min_duration = execution_time;
-			max_duration = execution_time;
+			min_duration = average_execution_time;
+			max_duration = average_execution_time;
 		}
 		else
 		{
-			if (min_duration > execution_time)
+			if (min_duration > average_execution_time)
 			{
-				min_duration = execution_time;
+				min_duration = average_execution_time;
 			}
-			if (max_duration < execution_time)
+			if (max_duration < average_execution_time)
 			{
-				max_duration = execution_time;
+				max_duration = average_execution_time;
 			}
 		}
 		delete out_file[i];
+		std::string f_name = partitioner_name + "_" + std::to_string(i) + ".csv";
+		std::remove(f_name.c_str());
 	}
 	delete[] out_file;
-	std::cout << partitioner_name << " :: Min duration: " << min_duration.count() << " (msec). Max duration: " << 
-		max_duration.count() << "\n";
+	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " << 
+		max_duration << "\n";
 }
 
 int main(int argc, char** argv)
 {
-	char ch;
+	//char ch;
 	if (argc < 3)
 	{
 		std::cout << "usage: <input-file> <max-queue-size>\n";
@@ -437,7 +360,6 @@ int main(int argc, char** argv)
 	}
 	std::string input_file_name = argv[1];
 	size_t max_queue_size = std::stoi(argv[2]);
-
 	/*
 	 * TPC-H query
 	 */
@@ -447,23 +369,48 @@ int main(int argc, char** argv)
 	 */
 	//debs_all_test(input_file_name, max_queue_size);
 	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	auto lines = experiment.parse_debs_rides(input_file_name, 500, 300);
+	std::cout << "scanned and parsed the whole life..\n";
+
 	std::vector<uint16_t> tasks;
+	for (size_t i = 0; i < 5; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "Tasks: " << tasks.size() << ".\n";
+	PkgPartitioner* pkg = new PkgPartitioner(tasks);
+	HashFieldPartitioner* fld = new HashFieldPartitioner(tasks);
+	CardinalityAwarePolicy cag_policy;
+	CagPartitionLib::CagNaivePartitioner* cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+	
+	delete pkg;
+	delete fld;
+	delete cag_naive;
+	tasks.clear();
+
 	for (size_t i = 0; i < 10; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	PkgPartitioner pkg(tasks);
-	HashFieldPartitioner fld(tasks);
-	CardinalityAwarePolicy cag_policy;
-	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
-	Experiment::DebsChallenge::FrequentRoutePartition experiment;
-	auto lines = experiment.parse_debs_rides(input_file_name, 500, 300);
-	std::cout << "scanned and parsed the whole life..\n";
-	upper_bound_performance_simulation(lines, tasks, pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, cag_naive, "CAG-naive");
-	std::cout << "Press any key to continue...\n";
-	std::cin >> ch;
+	std::cout << "Tasks: " << tasks.size() << ".\n";
+	pkg = new PkgPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+
+	delete pkg;
+	delete fld;
+	delete cag_naive;
+	tasks.clear();
+	/*std::cout << "Press any key to continue...\n";
+	std::cin >> ch;*/
 	return 0;
 }
