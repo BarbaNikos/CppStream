@@ -410,6 +410,25 @@ int main(int argc, char** argv)
 	delete fld;
 	delete cag_naive;
 	tasks.clear();
+
+	for (size_t i = 0; i < 100; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "Tasks: " << tasks.size() << ".\n";
+	pkg = new PkgPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+
+	delete pkg;
+	delete fld;
+	delete cag_naive;
+	tasks.clear();
+
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/
 	return 0;
