@@ -360,6 +360,73 @@ void log_normal_simulation(std::string input_file)
 	std::cout << "********* END ***********\n";*/
 }
 
+void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks, 
+	Partitioner& partitioner, const std::string partitioner_name)
+{
+	size_t max_queue_size = 200;
+	// first read the input file and generate sub-files with 
+	// the tuples that will be handled by each worker
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	std::ofstream** out_file;
+	out_file = new std::ofstream*[tasks.size()];
+	// create files
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i] = new std::ofstream(partitioner_name + "_" + std::to_string(i) + ".csv");
+	}
+	// distribute tuples
+	for (auto it = rides.begin(); it != rides.end(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "-" + dropoff_cell;
+		uint16_t task = partitioner.partition_next(key, key.length());
+		*out_file[task] << it->to_string() << "\n";
+	}
+	// get maximum and minimum running times
+	std::chrono::duration<double, std::milli> min_duration;
+	std::chrono::duration<double, std::milli> max_duration;
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		out_file[i]->flush();
+		out_file[i]->close();
+		auto task_lines = experiment.parse_debs_rides(partitioner_name + "_" + std::to_string(i) + ".csv", 500, 300);
+		// feed the worker
+		std::queue<Experiment::DebsChallenge::CompactRide> queue;
+		std::mutex mu;
+		std::condition_variable cond;
+		Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond);
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		for (auto it = task_lines.begin(); it != task_lines.end(); ++it)
+		{
+			worker.update(*it);
+		}
+		worker.finalize();
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+		if (i == 0)
+		{
+			min_duration = execution_time;
+			max_duration = execution_time;
+		}
+		else
+		{
+			if (min_duration > execution_time)
+			{
+				min_duration = execution_time;
+			}
+			if (max_duration < execution_time)
+			{
+				max_duration = execution_time;
+			}
+		}
+		delete out_file[i];
+	}
+	delete[] out_file;
+	std::cout << partitioner_name << " :: Min duration: " << min_duration.count() << " (msec). Max duration: " << 
+		max_duration.count() << "\n";
+}
+
 int main(int argc, char** argv)
 {
 	char ch;
@@ -379,7 +446,23 @@ int main(int argc, char** argv)
 	 * DEBS queries
 	 */
 	//debs_all_test(input_file_name, max_queue_size);
-	log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
+	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
+	std::vector<uint16_t> tasks;
+	for (size_t i = 0; i < 10; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	PkgPartitioner pkg(tasks);
+	HashFieldPartitioner fld(tasks);
+	CardinalityAwarePolicy cag_policy;
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag_policy);
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	auto lines = experiment.parse_debs_rides(input_file_name, 500, 300);
+	std::cout << "scanned and parsed the whole life..\n";
+	upper_bound_performance_simulation(lines, tasks, pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, cag_naive, "CAG-naive");
 	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
 	return 0;

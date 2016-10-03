@@ -147,6 +147,10 @@ namespace Experiment
 				fare_amount = o.fare_amount;
 				tip_amount = o.tip_amount;
 			}
+			compact_ride_str(const std::string& line)
+			{
+				parse_string(line);
+			}
 			~compact_ride_str() {}
 			compact_ride_str& operator= (const compact_ride_str& o)
 			{
@@ -162,6 +166,32 @@ namespace Experiment
 					tip_amount = o.tip_amount;
 				}
 				return *this;
+			}
+			std::string to_string()
+			{
+				std::string med = medallion;
+				return med + "," + std::to_string(trip_distance) + "," +
+					std::to_string(pickup_cell.first) + "," + std::to_string(pickup_cell.second) + "," +
+					std::to_string(dropoff_cell.first) + "," + std::to_string(dropoff_cell.second) + "," +
+					std::to_string(fare_amount) + "," + std::to_string(tip_amount);
+			}
+			void parse_string(const std::string& ride_info)
+			{
+				std::stringstream str_stream(ride_info);
+				std::string token;
+				std::vector<std::string> tokens;
+				while (getline(str_stream, token, ','))
+				{
+					tokens.push_back(token);
+				}
+				memcpy(medallion, tokens[0].c_str(), 32 * sizeof(char));
+				trip_distance = std::stof(tokens[1]);
+				pickup_cell.first = std::stoi(tokens[2]);
+				pickup_cell.second = std::stoi(tokens[3]);
+				dropoff_cell.first = std::stoi(tokens[4]);
+				dropoff_cell.second = std::stoi(tokens[5]);
+				fare_amount = std::stof(tokens[6]);
+				tip_amount = std::stof(tokens[7]);
 			}
 			char medallion[32];
 			float_t trip_distance;
@@ -232,12 +262,12 @@ namespace Experiment
 			uint32_t grid_distance;
 		};
 
-		class FrequentRoute
+		class FrequentRouteWorkerThread
 		{
 		public:
-			FrequentRoute(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
+			FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
 				std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
-			~FrequentRoute();
+			~FrequentRouteWorkerThread();
 			void operate();
 			void update(DebsChallenge::CompactRide& ride);
 			void finalize();
@@ -277,12 +307,12 @@ namespace Experiment
 			double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner, 
 				const std::string partitioner_name, const size_t max_queue_size);
 		private:
-			static void debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRoute* frequent_route);
+			static void debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route);
 			std::queue<Experiment::DebsChallenge::CompactRide>** queues;
 			std::mutex* mu_xes;
 			std::condition_variable* cond_vars;
 			std::thread** threads;
-			Experiment::DebsChallenge::FrequentRoute** query_workers;
+			Experiment::DebsChallenge::FrequentRouteWorkerThread** query_workers;
 			size_t max_queue_size;
 		};
 
@@ -645,7 +675,7 @@ time_t Experiment::DebsChallenge::DebsCellAssignment::produce_timestamp(const st
 
 // FrequentRoute
 
-Experiment::DebsChallenge::FrequentRoute::FrequentRoute(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, 
+Experiment::DebsChallenge::FrequentRouteWorkerThread::FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, 
 	std::condition_variable* aggr_cond, std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond)
 {
 	if (aggregator_queue != nullptr)
@@ -665,12 +695,12 @@ Experiment::DebsChallenge::FrequentRoute::FrequentRoute(std::queue<Experiment::D
 	this->input_queue = input_queue;
 }
 
-inline Experiment::DebsChallenge::FrequentRoute::~FrequentRoute()
+inline Experiment::DebsChallenge::FrequentRouteWorkerThread::~FrequentRouteWorkerThread()
 {
 	result.clear();
 }
 
-inline void Experiment::DebsChallenge::FrequentRoute::operate()
+inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::operate()
 {
 	while (true)
 	{
@@ -695,7 +725,7 @@ inline void Experiment::DebsChallenge::FrequentRoute::operate()
 	}
 }
 
-inline void Experiment::DebsChallenge::FrequentRoute::update(Experiment::DebsChallenge::CompactRide& ride)
+inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::update(Experiment::DebsChallenge::CompactRide& ride)
 {
 	std::string key = std::to_string(ride.pickup_cell.first) +
 		std::to_string(ride.pickup_cell.second) +
@@ -713,7 +743,7 @@ inline void Experiment::DebsChallenge::FrequentRoute::update(Experiment::DebsCha
 	}
 }
 
-inline void Experiment::DebsChallenge::FrequentRoute::finalize()
+inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize()
 {
 	
 	std::map<uint64_t, std::vector<std::string>> count_to_keys_map;
@@ -1065,12 +1095,12 @@ double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partit
 	mu_xes = new std::mutex[tasks.size()];
 	cond_vars = new std::condition_variable[tasks.size()];
 	threads = new std::thread*[tasks.size()];
-	query_workers = new Experiment::DebsChallenge::FrequentRoute*[tasks.size()];
+	query_workers = new Experiment::DebsChallenge::FrequentRouteWorkerThread*[tasks.size()];
 	this->max_queue_size = max_queue_size;
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		queues[i] = new std::queue<Experiment::DebsChallenge::CompactRide>();
-		query_workers[i] = new Experiment::DebsChallenge::FrequentRoute(nullptr, nullptr, nullptr, queues[i], &mu_xes[i], &cond_vars[i]);
+		query_workers[i] = new Experiment::DebsChallenge::FrequentRouteWorkerThread(nullptr, nullptr, nullptr, queues[i], &mu_xes[i], &cond_vars[i]);
 		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
 	}
 	//std::cout << partitioner_name << " thread INITIATES partitioning (frequent-route).\n";
@@ -1186,7 +1216,7 @@ double Experiment::DebsChallenge::ProfitableAreaPartition::debs_concurrent_parti
 	return partition_time.count();
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRoute* frequent_route)
+void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route)
 {
 	frequent_route->operate();
 }
