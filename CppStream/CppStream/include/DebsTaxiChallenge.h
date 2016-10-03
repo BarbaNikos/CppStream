@@ -135,7 +135,17 @@ namespace Experiment
 
 		typedef struct compact_ride_str
 		{
-			compact_ride_str() {}
+			compact_ride_str() 
+			{
+				memset(medallion, 0x0, 32 * sizeof(char));
+				trip_distance = 0;
+				pickup_cell.first = 0;
+				pickup_cell.second = 0;
+				dropoff_cell.first = 0;
+				dropoff_cell.second = 0;
+				fare_amount = 0;
+				tip_amount = 0;
+			}
 			compact_ride_str(const compact_ride_str& o)
 			{
 				memcpy(medallion, o.medallion, 32 * sizeof(char));
@@ -246,7 +256,7 @@ namespace Experiment
 			}
 			std::string cell;
 			double profit;
-		};
+		}most_profitable_cell;
 
 		class DebsCellAssignment
 		{
@@ -340,10 +350,10 @@ namespace Experiment
 		class ProfitableAreaAggregator
 		{
 		public:
-			ProfitableAreaAggregator(std::queue<Experiment::DebsChallenge::most_profitable_cell_str>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			ProfitableAreaAggregator(std::queue<Experiment::DebsChallenge::most_profitable_cell>* input_queue, std::mutex* mu, std::condition_variable* cond);
 			~ProfitableAreaAggregator();
 			void operate();
-			void update(Experiment::DebsChallenge::most_profitable_cell_str& most_profitable_cell);
+			void update(Experiment::DebsChallenge::most_profitable_cell& most_profitable_cell);
 			void finalize();
 		private:
 			std::mutex* mu;
@@ -608,7 +618,7 @@ void Experiment::DebsChallenge::DebsCellAssignment::parse_ride(std::string ride_
 
 inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide & ride)
 {
-	double pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude;
+	double pickup_longitude = 0, pickup_latitude = 0, dropoff_longitude = 0, dropoff_latitude = 0;
 	std::stringstream str_stream(ride_info);
 	std::string token;
 	std::vector<std::string> tokens;
@@ -1050,8 +1060,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_compare_cag_correct
 		double cag_naive_avg_card = 0;
 		double cag_pc_max_card_real = 0;
 		double cag_pc_avg_card_real = 0;
-		double cag_pc_max_card_est = cag_pc.get_max_cardinality();
-		double cag_pc_avg_card_est = cag_pc.get_average_cardinality();
+		//double cag_pc_max_card_est = cag_pc.get_max_cardinality();
+		//double cag_pc_avg_card_est = cag_pc.get_average_cardinality();
 		for (size_t i = 0; i < tasks.size(); ++i)
 		{
 			cag_naive_max_card = cag_naive_max_card < cag_naive_key_per_task[i].size() ? cag_naive_key_per_task[i].size() : cag_naive_max_card;

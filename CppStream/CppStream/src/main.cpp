@@ -300,7 +300,7 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 		*out_file[task] << it->to_string() << "\n";
 	}
 	// get maximum and minimum running times
-	double min_duration, max_duration;
+	double min_duration = 0, max_duration = 0;
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		out_file[i]->flush();
@@ -359,7 +359,7 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 	std::string input_file_name = argv[1];
-	size_t max_queue_size = std::stoi(argv[2]);
+	//size_t max_queue_size = std::stoi(argv[2]);
 	/*
 	 * TPC-H query
 	 */
