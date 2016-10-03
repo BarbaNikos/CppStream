@@ -262,7 +262,7 @@ namespace Experiment
 		{
 		public:
 			void parse_ride(std::string ride_info, Experiment::DebsChallenge::Ride& ride);
-			void parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide& ride);
+			int parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide& ride);
 			void output_to_file(std::vector<Experiment::DebsChallenge::Ride>& rides, const std::string output_file_name);
 			time_t produce_timestamp(const std::string& datetime_literal);
 			DebsCellAssignment(uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
@@ -616,7 +616,7 @@ void Experiment::DebsChallenge::DebsCellAssignment::parse_ride(std::string ride_
 	ride.total_amount = std::stof(tokens[16]);
 }
 
-inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide & ride)
+int Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide & ride)
 {
 	double pickup_longitude = 0, pickup_latitude = 0, dropoff_longitude = 0, dropoff_latitude = 0;
 	std::stringstream str_stream(ride_info);
@@ -634,10 +634,11 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	}
 	catch (const std::invalid_argument&)
 	{
-		std::cerr << "pickup-longitude argument is invalid: " << tokens[6] << ".\n";
+		/*std::cerr << "pickup-longitude argument is invalid: " << tokens[6] << ".\n";
 		std::cerr << "parsed line: {" << ride_info << "}\n";
 		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
-		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
+		std::cerr << "trip-distance: " << ride.trip_distance << "\n";*/
+		return -1;
 	}
 	try
 	{
@@ -645,11 +646,12 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	}
 	catch (const std::exception&)
 	{
-		std::cerr << "pickup-latitude argument is invalid: " << tokens[7] << ".\n";
+		/*std::cerr << "pickup-latitude argument is invalid: " << tokens[7] << ".\n";
 		std::cerr << "parsed line: {" << ride_info << "}\n";
 		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
 		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
-		std::cerr << "pickup-longitude: " << pickup_longitude << "\n";
+		std::cerr << "pickup-longitude: " << pickup_longitude << "\n";*/
+		return -1;
 	}
 	try
 	{
@@ -657,11 +659,12 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	}
 	catch (const std::exception&)
 	{
-		std::cerr << "dropoff-longitude argument is invalid: " << tokens[8] << ".\n";
+		/*std::cerr << "dropoff-longitude argument is invalid: " << tokens[8] << ".\n";
 		std::cerr << "parsed line: {" << ride_info << "}\n";
 		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
 		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
-		std::cerr << "pickup-longitude: " << pickup_longitude << ", pickup-latitude: " << pickup_latitude << "\n";
+		std::cerr << "pickup-longitude: " << pickup_longitude << ", pickup-latitude: " << pickup_latitude << "\n";*/
+		return -1;
 	}
 	try
 	{
@@ -669,17 +672,19 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	}
 	catch (const std::exception&)
 	{
-		std::cerr << "dropoff-latitude argument is invalid: " << tokens[9] << ".\n";
+		/*std::cerr << "dropoff-latitude argument is invalid: " << tokens[9] << ".\n";
 		std::cerr << "parsed line: {" << ride_info << "}\n";
 		std::cerr << "parsed medallion: " << tokens[0].c_str() << "\n";
 		std::cerr << "trip-distance: " << ride.trip_distance << "\n";
 		std::cerr << "pickup-longitude: " << pickup_longitude << ", pickup-latitude: " << pickup_latitude << "\n";
-		std::cerr << "dropoff-longitude: " << dropoff_longitude << "\n";
+		std::cerr << "dropoff-longitude: " << dropoff_longitude << "\n";*/
+		return -1;
 	}
 	ride.pickup_cell = Experiment::DebsChallenge::TaxiCoordinateHelper::recursive_location(1, grid_distance, 1, grid_distance, cells, pickup_latitude, pickup_longitude);
 	ride.dropoff_cell = Experiment::DebsChallenge::TaxiCoordinateHelper::recursive_location(1, grid_distance, 1, grid_distance, cells, dropoff_latitude, dropoff_longitude);
 	ride.fare_amount = std::stof(tokens[11]);
 	ride.tip_amount = std::stof(tokens[14]);
+	return 0;
 }
 
 inline void Experiment::DebsChallenge::DebsCellAssignment::output_to_file(std::vector<Experiment::DebsChallenge::Ride>& rides, const std::string output_file_name)
@@ -994,8 +999,11 @@ std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::F
 	while (getline(file, line))
 	{
 		Experiment::DebsChallenge::CompactRide ride;
-		cell_assign.parse_compact_ride(line, ride);
-		lines.push_back(ride);
+		int val = cell_assign.parse_compact_ride(line, ride);
+		if (val == 0)
+		{
+			lines.push_back(ride);
+		}
 		/*std::string key = std::to_string(ride.pickup_cell.first) + "." + std::to_string(ride.pickup_cell.second) + "-" +
 				std::to_string(ride.dropoff_cell.first) + "." + std::to_string(ride.dropoff_cell.second);*/
 		/*auto it = ride_frequency.find(key);
