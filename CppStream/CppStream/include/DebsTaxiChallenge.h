@@ -608,6 +608,7 @@ void Experiment::DebsChallenge::DebsCellAssignment::parse_ride(std::string ride_
 
 inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide & ride)
 {
+	double pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude;
 	std::stringstream str_stream(ride_info);
 	std::string token;
 	std::vector<std::string> tokens;
@@ -617,10 +618,38 @@ inline void Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(st
 	}
 	memcpy(ride.medallion, tokens[0].c_str(), 32 * sizeof(char));
 	ride.trip_distance = std::stof(tokens[5]);
-	double pickup_longitude = std::stod(tokens[6]);
-	double pickup_latitude = std::stod(tokens[7]);
-	double dropoff_longitude = std::stod(tokens[8]);
-	double dropoff_latitude = std::stod(tokens[9]);
+	try
+	{
+		pickup_longitude = std::stod(tokens[6]);
+	}
+	catch (const std::invalid_argument&)
+	{
+		std::cerr << "pickup-longitude argument is invalid: " << tokens[6] << ".\n";
+	}
+	try
+	{
+		pickup_latitude = std::stod(tokens[7]);
+	}
+	catch (const std::exception&)
+	{
+		std::cerr << "pickup-latitude argument is invalid: " << tokens[7] << ".\n";
+	}
+	try
+	{
+		dropoff_longitude = std::stod(tokens[8]);
+	}
+	catch (const std::exception&)
+	{
+		std::cerr << "dropoff-longitude argument is invalid: " << tokens[8] << ".\n";
+	}
+	try
+	{
+		dropoff_latitude = std::stod(tokens[9]);
+	}
+	catch (const std::exception&)
+	{
+		std::cerr << "dropoff-latitude argument is invalid: " << tokens[9] << ".\n";
+	}
 	ride.pickup_cell = Experiment::DebsChallenge::TaxiCoordinateHelper::recursive_location(1, grid_distance, 1, grid_distance, cells, pickup_latitude, pickup_longitude);
 	ride.dropoff_cell = Experiment::DebsChallenge::TaxiCoordinateHelper::recursive_location(1, grid_distance, 1, grid_distance, cells, dropoff_latitude, dropoff_longitude);
 	ride.fare_amount = std::stof(tokens[11]);
