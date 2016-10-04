@@ -73,7 +73,7 @@ namespace Experiment
 			~FrequentRoutePartition();
 			void produce_compact_ride_file(const std::string input_file_name, const std::string output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			std::vector<Experiment::DebsChallenge::CompactRide> parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
-			std::vector<Experiment::DebsChallenge::CompactRide> parse_debs_rides_with_to_string(const std::string input_file_name);
+			void parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer);
 			void debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner, const std::string partioner_name, std::vector<Experiment::DebsChallenge::CompactRide>& rides);
 			double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner, 
 				const std::string partitioner_name, const size_t max_queue_size);
@@ -384,9 +384,8 @@ inline Experiment::DebsChallenge::ProfitableAreaPartition::~ProfitableAreaPartit
 {
 }
 
-std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides_with_to_string(const std::string input_file_name)
+void Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer)
 {
-	std::vector<Experiment::DebsChallenge::CompactRide> lines;
 	std::string line;
 	//std::map<std::string, uint32_t> ride_frequency;
 	std::ifstream file(input_file_name);
@@ -397,12 +396,10 @@ std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::F
 	}
 	while (getline(file, line))
 	{
-		Experiment::DebsChallenge::CompactRide ride(line);
-		lines.push_back(ride);
+		buffer->push_back(Experiment::DebsChallenge::CompactRide(line));
 	}
-	lines.shrink_to_fit();
+	buffer->shrink_to_fit();
 	file.close();
-	return lines;
 }
 
 std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells)

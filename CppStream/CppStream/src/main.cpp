@@ -40,7 +40,7 @@ void debs_cardinality_estimation(const std::string& out_file_name, const std::ve
 void debs_all_test(const std::string input_file_name, size_t max_queue_size);
 void log_normal_simulation(std::string input_file);
 void upper_bound_experiment(const std::string input_file_name);
-void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks,
+void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name);
 
 int main(int argc, char** argv)
@@ -333,12 +333,14 @@ void upper_bound_experiment(const std::string input_file_name)
 {
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
 	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-	auto lines = experiment.parse_debs_rides_with_to_string(input_file_name);
+	std::vector<Experiment::DebsChallenge::CompactRide>* lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
+	experiment.parse_debs_rides_with_to_string(input_file_name, lines);
 	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> scan_duration = end - start;
 	std::cout << "scanned and parsed the whole life.. (time: " << scan_duration.count() << " msec).\n";
+	// tasks: 5
 	std::vector<uint16_t> tasks;
-	for (size_t i = 0; i < 5; i++)
+	for (uint16_t i = 0; i < 5; i++)
 	{
 		tasks.push_back(i);
 	}
@@ -348,16 +350,16 @@ void upper_bound_experiment(const std::string input_file_name)
 	HashFieldPartitioner* fld = new HashFieldPartitioner(tasks);
 	CardinalityAwarePolicy cag_policy;
 	CagPartitionLib::CagNaivePartitioner* cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");
 
 	delete pkg;
 	delete fld;
 	delete cag_naive;
 	tasks.clear();
-
-	for (size_t i = 0; i < 10; i++)
+	// tasks: 10
+	for (uint16_t i = 0; i < 10; i++)
 	{
 		tasks.push_back(i);
 	}
@@ -366,16 +368,16 @@ void upper_bound_experiment(const std::string input_file_name)
 	pkg = new PkgPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");
 
 	delete pkg;
 	delete fld;
 	delete cag_naive;
 	tasks.clear();
-
-	for (size_t i = 0; i < 100; i++)
+	// tasks: 100
+	for (uint16_t i = 0; i < 100; i++)
 	{
 		tasks.push_back(i);
 	}
@@ -384,17 +386,20 @@ void upper_bound_experiment(const std::string input_file_name)
 	pkg = new PkgPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");
 
 	delete pkg;
 	delete fld;
 	delete cag_naive;
 	tasks.clear();
+	// cleaning up buffer
+	lines->clear();
+	delete lines;
 }
 
-void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks,
+void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name)
 {
 	// first read the input file and generate sub-files with 
@@ -408,7 +413,7 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 		out_file[i] = new std::ofstream(partitioner_name + "_" + std::to_string(i) + ".csv");
 	}
 	// distribute tuples
-	for (auto it = rides.begin(); it != rides.end(); ++it)
+	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
 	{
 		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
@@ -422,7 +427,8 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 	{
 		out_file[i]->flush();
 		out_file[i]->close();
-		auto task_lines = experiment.parse_debs_rides_with_to_string(partitioner_name + "_" + std::to_string(i) + ".csv");
+		std::vector<Experiment::DebsChallenge::CompactRide>* task_lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
+		experiment.parse_debs_rides_with_to_string(partitioner_name + "_" + std::to_string(i) + ".csv", task_lines);
 		// feed the worker
 		double average_execution_time = 0.0;
 		for (short r = 0; r < 3; ++r)
@@ -432,7 +438,7 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 			std::condition_variable cond;
 			Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond);
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-			for (auto it = task_lines.begin(); it != task_lines.end(); ++it)
+			for (auto it = task_lines->begin(); it != task_lines->end(); ++it)
 			{
 				worker.update(*it);
 			}
@@ -441,6 +447,9 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 			std::chrono::duration<double, std::milli> execution_time = end - start;
 			average_execution_time += execution_time.count();
 		}
+		// clean up the memory after the work is done
+		task_lines->clear();
+		delete task_lines;
 		average_execution_time = average_execution_time / 3;
 		if (i == 0)
 		{

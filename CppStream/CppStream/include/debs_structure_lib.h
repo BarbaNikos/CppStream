@@ -139,7 +139,7 @@ namespace Experiment
 				}
 				return *this;
 			}
-			std::string to_string()
+			std::string to_string() const
 			{
 				char med_buffer[33];
 				memcpy(med_buffer, medallion, 32 * sizeof(char));

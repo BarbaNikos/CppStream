@@ -123,13 +123,13 @@ inline uint16_t CagPartitionLib::CagNaivePartitioner::partition_next(const std::
 	MurmurHash3_x86_32(key.c_str(), key_len, 17, &hash_two);
 	first_choice = hash_one % tasks.size();
 	second_choice = hash_two % tasks.size();
-	uint32_t first_cardinality = task_cardinality[first_choice].size();
-	uint32_t second_cardinality = task_cardinality[second_choice].size();
+	uint32_t first_cardinality = uint32_t(task_cardinality[first_choice].size());
+	uint32_t second_cardinality = uint32_t(task_cardinality[second_choice].size());
 	uint16_t selected_choice = policy.get_score(first_choice, task_count[first_choice], first_cardinality,
 		second_choice, task_count[second_choice], second_cardinality, min_task_count, max_task_count,
 		min_task_cardinality, max_task_cardinality);
 	task_cardinality[selected_choice].insert(hash_one);
-	uint32_t selected_cardinality = task_cardinality[selected_choice].size();
+	uint32_t selected_cardinality = uint32_t(task_cardinality[selected_choice].size());
 	/*std::cout << "NAIVE: first: " << first_choice << ", first-card: " << first_cardinality <<
 	", second: " << second_choice << ", second-card: " << second_cardinality <<
 	", selected: " << selected_choice << ", selected-card: " << selected_cardinality << "\n";*/
@@ -234,7 +234,7 @@ inline uint16_t CagPartitionLib::CagPcPartitioner::partition_next(const std::str
 	max_task_count = BitWizard::max_uint64(max_task_count, _task_count[selected_choice]);
 	min_task_count = BitWizard::min_uint64(min_task_count, _task_count[selected_choice]);
 	max_task_cardinality = BitWizard::max_uint32(max_task_cardinality, selected_cardinality);
-	min_task_cardinality = BitWizard::min_uint64(min_task_cardinality, selected_cardinality);
+	min_task_cardinality = BitWizard::min_uint32(min_task_cardinality, selected_cardinality);
 	return selected_choice;
 }
 

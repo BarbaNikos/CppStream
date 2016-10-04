@@ -8,7 +8,7 @@ class PartitionPolicy
 {
 public:
 	virtual ~PartitionPolicy() {}
-	virtual uint64_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality, 
+	virtual uint16_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality, 
 		uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality, 
 		uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality) = 0;
 };
@@ -16,7 +16,7 @@ public:
 class CountAwarePolicy : public PartitionPolicy
 {
 public:
-	uint64_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
+	uint16_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
 		uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality,
 		uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality);
 };
@@ -24,7 +24,7 @@ public:
 class CardinalityAwarePolicy : public PartitionPolicy
 {
 public:
-	uint64_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
+	uint16_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
 		uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality,
 		uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality);
 };
@@ -32,26 +32,26 @@ public:
 class LoadAwarePolicy : public PartitionPolicy
 {
 public:
-	uint64_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
+	uint16_t get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
 		uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality,
 		uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality);
 };
 
-inline uint64_t CountAwarePolicy::get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
+inline uint16_t CountAwarePolicy::get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
 	uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality,
 	uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality)
 {
 	return first_count < second_count ? first_choice : second_choice;
 }
 
-inline uint64_t CardinalityAwarePolicy::get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
+inline uint16_t CardinalityAwarePolicy::get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
 	uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality,
 	uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality)
 {
 	return first_cardinality < second_cardinality ? first_choice : second_choice;
 }
 
-inline uint64_t LoadAwarePolicy::get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
+inline uint16_t LoadAwarePolicy::get_score(uint16_t first_choice, uint64_t first_count, uint32_t first_cardinality,
 	uint16_t second_choice, uint64_t second_count, uint32_t second_cardinality,
 	uint64_t min_count, uint64_t max_count, uint32_t min_cardinality, uint32_t max_cardinality)
 {
