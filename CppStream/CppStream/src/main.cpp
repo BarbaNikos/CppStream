@@ -35,6 +35,43 @@
 #include "../include/lognormal_experiment.h"
 #endif // !EXPERIMENT_LOGNORMAL_SIMULATION_H_
 
+void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
+void debs_cardinality_estimation(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
+void debs_all_test(const std::string input_file_name, size_t max_queue_size);
+void log_normal_simulation(std::string input_file);
+void upper_bound_experiment(const std::string input_file_name);
+void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks,
+	Partitioner& partitioner, const std::string partitioner_name);
+
+int main(int argc, char** argv)
+{
+	//char ch;
+
+	if (argc < 2)
+	{
+		std::cout << "usage: <input-file>\n";
+		exit(1);
+	}
+	std::string input_file_name = argv[1];
+	/*
+	 * TPC-H query
+	 */
+	// Experiment::Tpch::DataParser::parse_all_files_test("C:\\Users\\nickk\\Documents\\tpc_h_2_17\\dbgen");
+	/*
+	 * DEBS queries
+	 */
+	//debs_all_test(input_file_name, max_queue_size);
+	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
+	/*
+	 * Upper bound benefit experiment
+	 */
+	upper_bound_experiment(input_file_name);
+
+	/*std::cout << "Press any key to continue...\n";
+	std::cin >> ch;*/
+	return 0;
+}
+
 void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
 {
 	std::string out_hash_one = out_file_name + "_" + std::to_string(13);
@@ -280,14 +317,14 @@ void log_normal_simulation(std::string input_file)
 	/*uint16_t task_num[] = { 5, 10, 50, 100 };
 	for (size_t i = 0; i < 4; i++)
 	{
-		std::vector<uint16_t> tasks;
-		for (size_t j = 0; j < task_num[i]; j++)
-		{
-			tasks.push_back(j);
-		}
-		tasks.shrink_to_fit();
-		std::cout << "## Tasks: " << task_num[i] << ".\n";
-		simulation.simulate(tasks, input_file);
+	std::vector<uint16_t> tasks;
+	for (size_t j = 0; j < task_num[i]; j++)
+	{
+	tasks.push_back(j);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "## Tasks: " << task_num[i] << ".\n";
+	simulation.simulate(tasks, input_file);
 	}
 	std::cout << "********* END ***********\n";*/
 }
@@ -357,7 +394,7 @@ void upper_bound_experiment(const std::string input_file_name)
 	tasks.clear();
 }
 
-void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks, 
+void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name)
 {
 	// first read the input file and generate sub-files with 
@@ -426,35 +463,6 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 		std::remove(f_name.c_str());
 	}
 	delete[] out_file;
-	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " << 
+	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
 		max_duration << "\n";
-}
-
-int main(int argc, char** argv)
-{
-	//char ch;
-
-	if (argc < 2)
-	{
-		std::cout << "usage: <input-file>\n";
-		exit(1);
-	}
-	std::string input_file_name = argv[1];
-	/*
-	 * TPC-H query
-	 */
-	// Experiment::Tpch::DataParser::parse_all_files_test("C:\\Users\\nickk\\Documents\\tpc_h_2_17\\dbgen");
-	/*
-	 * DEBS queries
-	 */
-	//debs_all_test(input_file_name, max_queue_size);
-	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
-	/*
-	 * Upper bound benefit experiment
-	 */
-	upper_bound_experiment(input_file_name);
-
-	/*std::cout << "Press any key to continue...\n";
-	std::cin >> ch;*/
-	return 0;
 }
