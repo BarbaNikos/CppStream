@@ -162,19 +162,32 @@ namespace Experiment
 				memcpy(medallion, tokens[0].c_str(), 32 * sizeof(char));
 				try
 				{
-
+					trip_distance = std::stof(tokens[1]);
 				}
 				catch (const std::exception&)
 				{
-
+					std::cerr << "parse_string():: failed on trip-distance: " << tokens[1] << ", line: " << ride_info << "\n";
 				}
-				trip_distance = std::stof(tokens[1]);
 				pickup_cell.first = std::stoi(tokens[2]);
 				pickup_cell.second = std::stoi(tokens[3]);
 				dropoff_cell.first = std::stoi(tokens[4]);
 				dropoff_cell.second = std::stoi(tokens[5]);
-				fare_amount = std::stof(tokens[6]);
-				tip_amount = std::stof(tokens[7]);
+				try
+				{
+					fare_amount = std::stof(tokens[6]);
+				}
+				catch (const std::exception&)
+				{
+					std::cerr << "parse_string():: failed on fare-amount: " << tokens[6] << ", line: " << ride_info << "\n";
+				}
+				try
+				{
+					tip_amount = std::stof(tokens[7]);
+				}
+				catch (const std::exception&)
+				{
+					std::cerr << "parse_string():: failed on tip-amount: " << tokens[7] << ", line: " << ride_info << "\n";
+				}
 			}
 			char medallion[32];
 			float_t trip_distance;

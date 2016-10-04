@@ -292,6 +292,71 @@ void log_normal_simulation(std::string input_file)
 	std::cout << "********* END ***********\n";*/
 }
 
+void upper_bound_experiment(const std::string input_file_name)
+{
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+	auto lines = experiment.parse_debs_rides_with_to_string(input_file_name);
+	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> scan_duration = end - start;
+	std::cout << "scanned and parsed the whole life.. (time: " << scan_duration.count() << " msec).\n";
+	std::vector<uint16_t> tasks;
+	for (size_t i = 0; i < 5; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "Tasks: " << tasks.size() << ".\n";
+	PkgPartitioner* pkg = new PkgPartitioner(tasks);
+	HashFieldPartitioner* fld = new HashFieldPartitioner(tasks);
+	CardinalityAwarePolicy cag_policy;
+	CagPartitionLib::CagNaivePartitioner* cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+
+	delete pkg;
+	delete fld;
+	delete cag_naive;
+	tasks.clear();
+
+	for (size_t i = 0; i < 10; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "Tasks: " << tasks.size() << ".\n";
+	pkg = new PkgPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+
+	delete pkg;
+	delete fld;
+	delete cag_naive;
+	tasks.clear();
+
+	for (size_t i = 0; i < 100; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "Tasks: " << tasks.size() << ".\n";
+	pkg = new PkgPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
+	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
+
+	delete pkg;
+	delete fld;
+	delete cag_naive;
+	tasks.clear();
+}
+
 void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::CompactRide> rides, const std::vector<uint16_t> tasks, 
 	Partitioner& partitioner, const std::string partitioner_name)
 {
@@ -368,13 +433,13 @@ void upper_bound_performance_simulation(std::vector<Experiment::DebsChallenge::C
 int main(int argc, char** argv)
 {
 	//char ch;
-	if (argc < 3)
+
+	if (argc < 2)
 	{
-		std::cout << "usage: <input-file> <max-queue-size>\n";
+		std::cout << "usage: <input-file>\n";
 		exit(1);
 	}
 	std::string input_file_name = argv[1];
-	//size_t max_queue_size = std::stoi(argv[2]);
 	/*
 	 * TPC-H query
 	 */
@@ -384,67 +449,11 @@ int main(int argc, char** argv)
 	 */
 	//debs_all_test(input_file_name, max_queue_size);
 	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
-	Experiment::DebsChallenge::FrequentRoutePartition experiment;
-	// auto lines = experiment.parse_debs_rides(input_file_name, 500, 300);
-	experiment.produce_compact_ride_file(input_file_name, "frequent_compact_rides.csv", 500, 300);
-	std::cout << "scanned and parsed the whole life..\n";
-/*
-	std::vector<uint16_t> tasks;
-	for (size_t i = 0; i < 5; i++)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-	std::cout << "Tasks: " << tasks.size() << ".\n";
-	PkgPartitioner* pkg = new PkgPartitioner(tasks);
-	HashFieldPartitioner* fld = new HashFieldPartitioner(tasks);
-	CardinalityAwarePolicy cag_policy;
-	CagPartitionLib::CagNaivePartitioner* cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
-	
-	delete pkg;
-	delete fld;
-	delete cag_naive;
-	tasks.clear();
+	/*
+	 * Upper bound benefit experiment
+	 */
+	upper_bound_experiment(input_file_name);
 
-	for (size_t i = 0; i < 10; i++)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-	std::cout << "Tasks: " << tasks.size() << ".\n";
-	pkg = new PkgPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
-
-	delete pkg;
-	delete fld;
-	delete cag_naive;
-	tasks.clear();
-
-	for (size_t i = 0; i < 100; i++)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-	std::cout << "Tasks: " << tasks.size() << ".\n";
-	pkg = new PkgPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(lines, tasks, *cag_naive, "cag-naive");
-
-	delete pkg;
-	delete fld;
-	delete cag_naive;
-	tasks.clear();
-*/
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/
 	return 0;
