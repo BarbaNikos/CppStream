@@ -14,6 +14,9 @@
 #include <thread>
 #include <future>
 #include <fstream>
+#include <functional>
+#include <numeric>
+#include <algorithm>
 
 #ifndef DEBS_QUERY_LIB_H_
 #include "../include/debs_query_lib.h"
@@ -43,6 +46,100 @@ void upper_bound_experiment(const std::string input_file_name);
 void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name);
 
+double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
+{
+	double sum = 0.0;
+	for each (std::unordered_set<uint32_t> cardinality in task_cardinality)
+	{
+		sum += cardinality.size();
+	}
+	return sum / task_cardinality.size();
+}
+
+double get_cardinality_max(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
+{
+	double max = 0.0;
+	for each (std::unordered_set<uint32_t> cardinality in task_cardinality)
+	{
+		max = max < cardinality.size() ? cardinality.size() : max;
+	}
+	return max;
+}
+
+double get_imbalance(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
+{
+	return get_cardinality_max(task_cardinality) - get_cardinality_average(task_cardinality);
+}
+
+double get_imbalance(const std::vector<uint32_t>& task_cardinality)
+{
+	uint32_t max_card = *std::max_element(task_cardinality.begin(), task_cardinality.end());
+	double sum_card = std::accumulate(task_cardinality.begin(), task_cardinality.end(), 0);
+	return max_card - (sum_card / task_cardinality.size());
+}
+
+void plot_cardinality_estimation_correctness(size_t task_number)
+{
+	std::ofstream imbalance_plot("imbalance_plot.csv");
+	std::vector<uint16_t> tasks;
+	std::vector<std::unordered_set<uint32_t>> naive_task_cardinality;
+	std::vector<std::unordered_set<uint32_t>> hll_task_cardinality;
+	std::vector<std::unordered_set<uint32_t>> hll_est_task_cardinality;
+	uint64_t* stream;
+	const size_t stream_length = size_t(1e+05);
+
+	for (size_t i = 0; i < task_number; i++)
+	{
+		tasks.push_back(uint16_t(i));
+		naive_task_cardinality.push_back(std::unordered_set<uint32_t>());
+		hll_task_cardinality.push_back(std::unordered_set<uint32_t>());
+		hll_est_task_cardinality.push_back(std::unordered_set<uint32_t>());
+	}
+	
+	srand(time(NULL));
+	stream = new uint64_t[stream_length];
+	for (size_t i = 0; i < stream_length; ++i)
+	{
+		stream[i] = rand() % 1000;
+	}
+	std::cout << "Generated stream.\n";
+	CardinalityAwarePolicy cag;
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag);
+	CagPartitionLib::CagHllPartitioner cag_hll(tasks, cag, 10);
+	CagPartitionLib::CagHllEstPartitioner cag_hll_est(tasks, 10);
+	for (size_t i = 0; i < stream_length; ++i)
+	{
+		uint64_t element = stream[i];
+		std::string key = std::to_string(element);
+		uint16_t naive_choice = cag_naive.partition_next(key, key.size());
+		naive_task_cardinality[naive_choice].insert(element);
+		uint16_t hll_choice = cag_hll.partition_next(key, key.size());
+		hll_task_cardinality[hll_choice].insert(element);
+		uint16_t hll_est_choice = cag_hll_est.partition_next(key, key.size());
+		hll_est_task_cardinality[hll_est_choice].insert(element);
+		std::vector<uint32_t> naive_temporal_vector;
+		cag_naive.get_cardinality_vector(naive_temporal_vector);
+		std::vector<uint32_t> hll_temporal_vector;
+		cag_hll.get_cardinality_vector(hll_temporal_vector);
+		std::vector<uint32_t> hll_est_temporal_vector;
+		cag_hll_est.get_cardinality_vector(hll_est_temporal_vector);
+		
+		// plot imbalances
+		std::string log_record = std::to_string(i) + "," + 
+			std::to_string(get_imbalance(naive_task_cardinality)) + "," + 
+			std::to_string(get_imbalance(hll_task_cardinality)) + "," + std::to_string(get_imbalance(hll_temporal_vector)) + "," +
+			std::to_string(get_imbalance(hll_est_task_cardinality)) + "," + std::to_string(get_imbalance(hll_est_temporal_vector));
+		imbalance_plot << log_record << "\n";
+	}
+	std::cout << "Finished the partitioning and the output of the plot.\n";
+	tasks.clear();
+	naive_task_cardinality.clear();
+	hll_task_cardinality.clear();
+	delete[] stream;
+	imbalance_plot.flush();
+	imbalance_plot.close();
+}
+
 int main(int argc, char** argv)
 {
 	//char ch;
@@ -65,8 +162,8 @@ int main(int argc, char** argv)
 	/*
 	 * Upper bound benefit experiment
 	 */
-	upper_bound_experiment(input_file_name);
-
+	//upper_bound_experiment(input_file_name);
+	plot_cardinality_estimation_correctness(10);
 	/*std::cout << "Press any key to continue...\n";
 	std::cin >> ch;*/
 	return 0;
@@ -475,3 +572,4 @@ void upper_bound_performance_simulation(const std::vector<Experiment::DebsChalle
 	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
 		max_duration << "\n";
 }
+
