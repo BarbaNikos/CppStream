@@ -162,7 +162,7 @@ namespace Experiment
 		for (std::vector<uint32_t>::const_iterator it = stream.cbegin(); it != stream.cend(); ++it)
 		{
 			std::string key = std::to_string(*it);
-			short task = partitioner.partition_next(key, key.length());
+			short task = partitioner.partition_next(key.c_str(), key.length());
 			key_per_task[task].insert(key);
 			tuple_count[task]++;
 		}

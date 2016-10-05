@@ -18,6 +18,8 @@
 #include <numeric>
 #include <algorithm>
 
+#include "../include/c_hll.h"
+
 #ifndef DEBS_QUERY_LIB_H_
 #include "../include/debs_query_lib.h"
 #endif // !DEBS_QUERY_LIB_H_
@@ -86,14 +88,17 @@ void plot_cardinality_estimation_correctness(size_t task_number)
 	std::vector<std::unordered_set<uint32_t>> hll_task_cardinality;
 	std::vector<std::unordered_set<uint32_t>> hll_est_task_cardinality;
 	uint64_t* stream;
+	hll_8** cardinality_estimator = (hll_8**) malloc(sizeof(hll_8*) * task_number);
 	const size_t stream_length = size_t(1e+05);
-
+	const double error = 1.06 / sqrt(std::pow(2, 10));
 	for (size_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(uint16_t(i));
 		naive_task_cardinality.push_back(std::unordered_set<uint32_t>());
 		hll_task_cardinality.push_back(std::unordered_set<uint32_t>());
 		hll_est_task_cardinality.push_back(std::unordered_set<uint32_t>());
+		cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
+		init_8(cardinality_estimator[i], 10);
 	}
 	
 	srand(time(NULL));
@@ -110,12 +115,26 @@ void plot_cardinality_estimation_correctness(size_t task_number)
 	for (size_t i = 0; i < stream_length; ++i)
 	{
 		uint64_t element = stream[i];
-		std::string key = std::to_string(element);
-		uint16_t naive_choice = cag_naive.partition_next(key, key.size());
+		uint32_t code;
+		MurmurHash3_x86_32(&element, sizeof(uint64_t), 13, &code);
+		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
 		naive_task_cardinality[naive_choice].insert(element);
-		uint16_t hll_choice = cag_hll.partition_next(key, key.size());
+		update_8(cardinality_estimator[naive_choice], code);
+		// calculate relative error
+		double average_relative_error = 0.0;
+		for (size_t i = 0; i < task_number; i++)
+		{
+			uint32_t real_cardinality = naive_task_cardinality[i].size();
+			uint32_t estimate = cardinality_estimation_8(cardinality_estimator[i]);
+			if (real_cardinality != 0)
+			{
+				average_relative_error += (abs(int(real_cardinality - estimate)) / real_cardinality);
+			}
+		}
+		average_relative_error = average_relative_error / task_number;
+		uint16_t hll_choice = cag_hll.partition_next(&element, sizeof(uint64_t));
 		hll_task_cardinality[hll_choice].insert(element);
-		uint16_t hll_est_choice = cag_hll_est.partition_next(key, key.size());
+		uint16_t hll_est_choice = cag_hll_est.partition_next(&element, sizeof(uint64_t));
 		hll_est_task_cardinality[hll_est_choice].insert(element);
 		std::vector<uint32_t> naive_temporal_vector;
 		cag_naive.get_cardinality_vector(naive_temporal_vector);
@@ -128,7 +147,7 @@ void plot_cardinality_estimation_correctness(size_t task_number)
 		std::string log_record = std::to_string(i) + "," + 
 			std::to_string(get_imbalance(naive_task_cardinality)) + "," + 
 			std::to_string(get_imbalance(hll_task_cardinality)) + "," + std::to_string(get_imbalance(hll_temporal_vector)) + "," +
-			std::to_string(get_imbalance(hll_est_task_cardinality)) + "," + std::to_string(get_imbalance(hll_est_temporal_vector));
+			std::to_string(get_imbalance(hll_est_task_cardinality)) + "," + std::to_string(get_imbalance(hll_est_temporal_vector)) + "," + std::to_string(average_relative_error);
 		imbalance_plot << log_record << "\n";
 	}
 	std::cout << "Finished the partitioning and the output of the plot.\n";
@@ -138,6 +157,12 @@ void plot_cardinality_estimation_correctness(size_t task_number)
 	delete[] stream;
 	imbalance_plot.flush();
 	imbalance_plot.close();
+	for (size_t i = 0; i < task_number; i++)
+	{
+		destroy_8(cardinality_estimator[i]);
+		free(cardinality_estimator[i]);
+	}
+	free(cardinality_estimator);
 }
 
 int main(int argc, char** argv)
@@ -515,7 +540,7 @@ void upper_bound_performance_simulation(const std::vector<Experiment::DebsChalle
 		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "-" + dropoff_cell;
-		uint16_t task = partitioner.partition_next(key, key.length());
+		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
 		*out_file[task] << it->to_string() << "\n";
 	}
 	// get maximum and minimum running times

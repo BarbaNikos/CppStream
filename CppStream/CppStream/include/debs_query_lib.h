@@ -445,7 +445,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performan
 		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
 		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
 		std::string key = pickup_cell + "-" + dropoff_cell;
-		short task = partitioner.partition_next(key, key.length());
+		short task = partitioner.partition_next(key.c_str(), key.length());
 		key_per_task[task].insert(key);
 	}
 	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
@@ -500,7 +500,7 @@ double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partit
 			std::to_string(it->pickup_cell.second) + "-" +
 			std::to_string(it->dropoff_cell.first) + "." +
 			std::to_string(it->dropoff_cell.second);
-		short task = partitioner.partition_next(key, key.length());
+		short task = partitioner.partition_next(key.c_str(), key.length());
 		std::unique_lock<std::mutex> locker(mu_xes[task]);
 		cond_vars[task].wait(locker, [this, task, max_queue_size]() { return queues[task]->size() < max_queue_size; });
 		queues[task]->push(*it);
@@ -563,7 +563,7 @@ double Experiment::DebsChallenge::ProfitableAreaPartition::debs_concurrent_parti
 	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = route_table.cbegin(); it != route_table.cend(); ++it)
 	{
 		std::string key = it->medallion;
-		short task = partitioner.partition_next(key, key.length());
+		short task = partitioner.partition_next(key.c_str(), key.length());
 		std::unique_lock<std::mutex> locker(mu_xes[task]);
 		cond_vars[task].wait(locker, [this, task, max_queue_size]() { return queues[task]->size() < max_queue_size; });
 		queues[task]->push(*it);

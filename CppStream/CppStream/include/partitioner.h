@@ -9,7 +9,7 @@ class Partitioner
 public:
 	Partitioner();
 	virtual ~Partitioner();
-	virtual uint16_t partition_next(const std::string& key, const size_t key_len) = 0;
+	virtual uint16_t partition_next(const void* key, const size_t key_len) = 0;
 };
 
 inline Partitioner::Partitioner()

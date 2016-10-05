@@ -25,7 +25,7 @@ class PkgPartitioner : public Partitioner
 public:
 	PkgPartitioner(const std::vector<uint16_t>& tasks);
 	~PkgPartitioner();
-	uint16_t partition_next(const std::string& key, const size_t key_len);
+	uint16_t partition_next(const void* key, const size_t key_len);
 	uint64_t get_min_count();
 	uint64_t get_max_count();
 private:
@@ -48,11 +48,11 @@ PkgPartitioner::~PkgPartitioner()
 	delete policy;
 }
 
-uint16_t PkgPartitioner::partition_next(const std::string& key, const size_t key_len)
+uint16_t PkgPartitioner::partition_next(const void* key, const size_t key_len)
 {
 	uint32_t first_choice, second_choice;
-	MurmurHash3_x86_32(key.c_str(), key_len, 13, &first_choice);
-	MurmurHash3_x86_32(key.c_str(), key_len, 17, &second_choice);
+	MurmurHash3_x86_32(key, key_len, 13, &first_choice);
+	MurmurHash3_x86_32(key, key_len, 17, &second_choice);
 	first_choice = first_choice % tasks.size();
 	second_choice = second_choice % tasks.size();
 	uint16_t selected_choice = policy->get_score(first_choice, task_count[first_choice], 0,
