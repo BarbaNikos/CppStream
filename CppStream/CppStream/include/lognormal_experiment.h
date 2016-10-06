@@ -31,7 +31,7 @@ namespace Experiment
 		~LogNormalSimulation();
 		void sort_to_plot(std::string input_file);
 		void simulate(std::vector<uint16_t> tasks, std::string input_file);
-		void measure_imbalance(const std::vector<uint32_t>& stream, const std::vector<uint16_t>& tasks, Partitioner& partitioner,
+		void measure_imbalance(std::vector<uint32_t>& stream, const std::vector<uint16_t>& tasks, Partitioner& partitioner,
 			const std::string partioner_name);
 	};
 
@@ -149,21 +149,21 @@ namespace Experiment
 		measure_imbalance(stream, tasks, lag_hll, "LAG-hll");
 	}
 
-	void LogNormalSimulation::measure_imbalance(const std::vector<uint32_t>& stream, const std::vector<uint16_t>& tasks, Partitioner & partitioner, const std::string partioner_name)
+	void LogNormalSimulation::measure_imbalance(std::vector<uint32_t>& stream, const std::vector<uint16_t>& tasks, Partitioner & partitioner, const std::string partioner_name)
 	{
-		std::vector<std::unordered_set<std::string>> key_per_task;
+		std::vector<std::unordered_set<uint32_t>> key_per_task;
 		uint64_t* tuple_count = (uint64_t*)calloc(tasks.size(), sizeof(uint64_t));
 		for (size_t i = 0; i < tasks.size(); ++i)
 		{
-			key_per_task.push_back(std::unordered_set<std::string>());
+			key_per_task.push_back(std::unordered_set<uint32_t>());
 			tuple_count[i] = 0;
 		}
 		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-		for (std::vector<uint32_t>::const_iterator it = stream.cbegin(); it != stream.cend(); ++it)
+		for (std::vector<uint32_t>::iterator it = stream.begin(); it != stream.end(); ++it)
 		{
-			std::string key = std::to_string(*it);
-			short task = partitioner.partition_next(key.c_str(), key.length());
-			key_per_task[task].insert(key);
+			uint32_t* it_ref = &*it;
+			short task = partitioner.partition_next(it_ref, sizeof(uint32_t));
+			key_per_task[task].insert(*it);
 			tuple_count[task]++;
 		}
 		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();

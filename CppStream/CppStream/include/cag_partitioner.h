@@ -136,9 +136,6 @@ inline uint16_t CagPartitionLib::CagNaivePartitioner::partition_next(const void*
 		min_task_cardinality, max_task_cardinality);
 	task_cardinality[selected_choice].insert(hash_one);
 	uint32_t selected_cardinality = uint32_t(task_cardinality[selected_choice].size());
-	/*std::cout << "NAIVE: first: " << first_choice << ", first-card: " << first_cardinality <<
-	", second: " << second_choice << ", second-card: " << second_cardinality <<
-	", selected: " << selected_choice << ", selected-card: " << selected_cardinality << "\n";*/
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
 	min_task_count = BitWizard::min_uint64(min_task_count, task_count[selected_choice]);
@@ -305,15 +302,15 @@ inline uint16_t CagPartitionLib::CagHllPartitioner::partition_next(const void* k
 	MurmurHash3_x86_32(key, key_len, 17, &hash_two);
 	first_choice = hash_one % tasks.size();
 	second_choice = hash_two % tasks.size();
-	uint32_t first_card = cardinality_estimation_8(this->task_cardinality[first_choice]);
-	uint32_t second_card = cardinality_estimation_8(this->task_cardinality[second_choice]);
+	uint32_t first_card = opt_cardinality_estimation_8(this->task_cardinality[first_choice]);
+	uint32_t second_card = opt_cardinality_estimation_8(this->task_cardinality[second_choice]);
 	// decision
 	uint16_t selected_choice = policy.get_score(first_choice, _task_count[first_choice], first_card,
 		second_choice, _task_count[second_choice], second_card, min_task_count, max_task_count,
 		min_task_cardinality, max_task_cardinality);
 	// update metrics
-	update_8(this->task_cardinality[selected_choice], hash_one);
-	uint32_t selected_cardinality = cardinality_estimation_8(this->task_cardinality[selected_choice]);
+	opt_update_8(this->task_cardinality[selected_choice], hash_one);
+	uint32_t selected_cardinality = opt_cardinality_estimation_8(this->task_cardinality[selected_choice]);
 	_task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, _task_count[selected_choice]);
 	min_task_count = BitWizard::min_uint64(min_task_count, _task_count[selected_choice]);
@@ -326,7 +323,7 @@ void CagPartitionLib::CagHllPartitioner::get_cardinality_vector(std::vector<uint
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		v.push_back(cardinality_estimation_8(this->task_cardinality[i]));
+		v.push_back(opt_cardinality_estimation_8(this->task_cardinality[i]));
 	}
 	v.shrink_to_fit();
 }
@@ -367,15 +364,15 @@ inline uint16_t CagPartitionLib::CagHllEstPartitioner::partition_next(const void
 	MurmurHash3_x86_32(key, key_len, 17, &hash_two);
 	first_choice = hash_one % tasks.size();
 	second_choice = hash_two % tasks.size();
-	uint32_t first_card = cardinality_estimation_8(this->_task_cardinality[first_choice]);
-	uint32_t second_card = cardinality_estimation_8(this->_task_cardinality[second_choice]);
+	uint32_t first_card = opt_cardinality_estimation_8(this->_task_cardinality[first_choice]);
+	uint32_t second_card = opt_cardinality_estimation_8(this->_task_cardinality[second_choice]);
 	// calculate new cardinality estimates (EXTRA COST)
-	uint32_t first_card_est = new_cardinality_estimate_8(this->_task_cardinality[first_choice], hash_one);
-	uint32_t second_card_est = new_cardinality_estimate_8(this->_task_cardinality[second_choice], hash_one);
+	uint32_t first_card_est = opt_new_cardinality_estimate_8(this->_task_cardinality[first_choice], hash_one);
+	uint32_t second_card_est = opt_new_cardinality_estimate_8(this->_task_cardinality[second_choice], hash_one);
 	// decision
 	if (first_card_est - first_card == 0)
 	{
-		update_8(this->_task_cardinality[first_choice], hash_one);
+		opt_update_8(this->_task_cardinality[first_choice], hash_one);
 		_task_count[first_choice] += 1;
 		max_task_count = BitWizard::max_uint64(max_task_count, _task_count[first_choice]);
 		min_task_count = BitWizard::min_uint64(min_task_count, _task_count[first_choice]);
@@ -384,7 +381,7 @@ inline uint16_t CagPartitionLib::CagHllEstPartitioner::partition_next(const void
 	}
 	else if (second_card_est - second_card == 0)
 	{
-		update_8(this->_task_cardinality[second_choice], hash_one);
+		opt_update_8(this->_task_cardinality[second_choice], hash_one);
 		_task_count[second_choice] += 1;
 		max_task_count = BitWizard::max_uint64(max_task_count, _task_count[second_choice]);
 		min_task_count = BitWizard::min_uint64(min_task_count, _task_count[second_choice]);
@@ -397,8 +394,8 @@ inline uint16_t CagPartitionLib::CagHllEstPartitioner::partition_next(const void
 		// cardinality at that point
 		uint16_t selected_choice = first_card < second_card ? first_choice : second_choice;
 		// update metrics
-		update_8(this->_task_cardinality[selected_choice], hash_one);
-		uint32_t selected_cardinality = cardinality_estimation_8(this->_task_cardinality[selected_choice]);
+		opt_update_8(this->_task_cardinality[selected_choice], hash_one);
+		uint32_t selected_cardinality = opt_cardinality_estimation_8(this->_task_cardinality[selected_choice]);
 		_task_count[selected_choice] += 1;
 		max_task_count = BitWizard::max_uint64(max_task_count, _task_count[selected_choice]);
 		min_task_count = BitWizard::min_uint64(min_task_count, _task_count[selected_choice]);
@@ -412,7 +409,7 @@ inline void CagPartitionLib::CagHllEstPartitioner::get_cardinality_vector(std::v
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
-		v.push_back(cardinality_estimation_8(this->_task_cardinality[i]));
+		v.push_back(opt_cardinality_estimation_8(this->_task_cardinality[i]));
 	}
 	v.shrink_to_fit();
 }

@@ -80,94 +80,109 @@ double get_imbalance(const std::vector<uint32_t>& task_cardinality)
 	return max_card - (sum_card / task_cardinality.size());
 }
 
-void plot_cardinality_estimation_correctness(size_t task_number)
+void plot_cardinality_estimation_correctness(const unsigned int p, const size_t task_number, const uint64_t cardinality, const size_t stream_length)
 {
-	std::ofstream imbalance_plot("imbalance_plot.csv");
-	std::vector<uint16_t> tasks;
-	std::vector<std::unordered_set<uint32_t>> naive_task_cardinality;
-	std::vector<std::unordered_set<uint32_t>> hll_task_cardinality;
-	std::vector<std::unordered_set<uint32_t>> hll_est_task_cardinality;
-	uint64_t* stream;
-	hll_8** cardinality_estimator = (hll_8**) malloc(sizeof(hll_8*) * task_number);
-	const size_t stream_length = size_t(1e+05);
 	const double error = 1.06 / sqrt(std::pow(2, 10));
+	std::ofstream imbalance_plot("imbalance_plot.csv");
+	//imbalance_plot << "tuple-id";
+	std::vector<uint16_t> tasks;
+	uint64_t* stream;
+	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
+	srand(time(NULL));
+
+	for (size_t i = 0; i < task_number; i++)
+	{
+		if (i < task_number - 1)
+		{
+			//imbalance_plot << std::to_string(i) << "-err,";
+		}
+		else
+		{
+			//imbalance_plot << std::to_string(i) << "-err";
+		}
+	}
+	//imbalance_plot << "\n";
+	
 	for (size_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(uint16_t(i));
-		naive_task_cardinality.push_back(std::unordered_set<uint32_t>());
-		hll_task_cardinality.push_back(std::unordered_set<uint32_t>());
-		hll_est_task_cardinality.push_back(std::unordered_set<uint32_t>());
-		cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
-		init_8(cardinality_estimator[i], 10);
+		opt_cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
+		init_8(opt_cardinality_estimator[i], p);
 	}
-	
-	srand(time(NULL));
+	CardinalityAwarePolicy cag;
+	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag);
 	stream = new uint64_t[stream_length];
 	for (size_t i = 0; i < stream_length; ++i)
 	{
-		stream[i] = rand() % 1000;
+		stream[i] = rand() % cardinality;
 	}
 	std::cout << "Generated stream.\n";
-	CardinalityAwarePolicy cag;
-	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag);
-	CagPartitionLib::CagHllPartitioner cag_hll(tasks, cag, 10);
-	CagPartitionLib::CagHllEstPartitioner cag_hll_est(tasks, 10);
+
 	for (size_t i = 0; i < stream_length; ++i)
 	{
 		uint64_t element = stream[i];
 		uint32_t code;
 		MurmurHash3_x86_32(&element, sizeof(uint64_t), 13, &code);
 		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
-		naive_task_cardinality[naive_choice].insert(element);
-		update_8(cardinality_estimator[naive_choice], code);
-		// calculate relative error
-		double average_relative_error = 0.0;
+		opt_update_8(opt_cardinality_estimator[naive_choice], code);
+		std::vector<uint32_t> cag_naive_cardinality_vector;
+		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
+		imbalance_plot << std::to_string(i) << ",";
 		for (size_t i = 0; i < task_number; i++)
 		{
-			uint32_t real_cardinality = naive_task_cardinality[i].size();
-			uint32_t estimate = cardinality_estimation_8(cardinality_estimator[i]);
-			if (real_cardinality != 0)
+			uint32_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
+			int opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
+			/*if (cag_naive_cardinality_vector[i])
 			{
-				average_relative_error += (abs(int(real_cardinality - estimate)) / real_cardinality);
+				double relative_diff = double(opt_diff) / cag_naive_cardinality_vector[i];
+				if (i < task_number - 1)
+				{
+					imbalance_plot << std::to_string(relative_diff) << ",";
+				}
+				else
+				{
+					imbalance_plot << std::to_string(relative_diff);
+				}
+			}
+			else
+			{
+				double relative_diff = 0;
+				if (i < task_number - 1)
+				{
+					imbalance_plot << std::to_string(relative_diff) << ",";
+				}
+				else
+				{
+					imbalance_plot << std::to_string(relative_diff);
+				}
+			}*/
+			if (i < task_number - 1)
+			{
+				imbalance_plot << std::to_string(abs(opt_diff)) << ",";
+			}
+			else
+			{
+				imbalance_plot << std::to_string(abs(opt_diff));
 			}
 		}
-		average_relative_error = average_relative_error / task_number;
-		uint16_t hll_choice = cag_hll.partition_next(&element, sizeof(uint64_t));
-		hll_task_cardinality[hll_choice].insert(element);
-		uint16_t hll_est_choice = cag_hll_est.partition_next(&element, sizeof(uint64_t));
-		hll_est_task_cardinality[hll_est_choice].insert(element);
-		std::vector<uint32_t> naive_temporal_vector;
-		cag_naive.get_cardinality_vector(naive_temporal_vector);
-		std::vector<uint32_t> hll_temporal_vector;
-		cag_hll.get_cardinality_vector(hll_temporal_vector);
-		std::vector<uint32_t> hll_est_temporal_vector;
-		cag_hll_est.get_cardinality_vector(hll_est_temporal_vector);
-		
-		// plot imbalances
-		std::string log_record = std::to_string(i) + "," + 
-			std::to_string(get_imbalance(naive_task_cardinality)) + "," + 
-			std::to_string(get_imbalance(hll_task_cardinality)) + "," + std::to_string(get_imbalance(hll_temporal_vector)) + "," +
-			std::to_string(get_imbalance(hll_est_task_cardinality)) + "," + std::to_string(get_imbalance(hll_est_temporal_vector)) + "," + std::to_string(average_relative_error);
-		imbalance_plot << log_record << "\n";
+		imbalance_plot << "\n";
 	}
 	std::cout << "Finished the partitioning and the output of the plot.\n";
 	tasks.clear();
-	naive_task_cardinality.clear();
-	hll_task_cardinality.clear();
 	delete[] stream;
 	imbalance_plot.flush();
 	imbalance_plot.close();
 	for (size_t i = 0; i < task_number; i++)
 	{
-		destroy_8(cardinality_estimator[i]);
-		free(cardinality_estimator[i]);
+		destroy_8(opt_cardinality_estimator[i]);
+		free(opt_cardinality_estimator[i]);
 	}
-	free(cardinality_estimator);
+	free(opt_cardinality_estimator);
 }
 
 int main(int argc, char** argv)
 {
-	//char ch;
+	char ch;
 
 	if (argc < 2)
 	{
@@ -183,14 +198,15 @@ int main(int argc, char** argv)
 	 * DEBS queries
 	 */
 	//debs_all_test(input_file_name, max_queue_size);
-	//log_normal_simulation("C:\\Users\\nickk\\Desktop\\windowgrouping\\ln1_stream.tbl");
+	//log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
 	/*
 	 * Upper bound benefit experiment
 	 */
 	//upper_bound_experiment(input_file_name);
-	plot_cardinality_estimation_correctness(10);
-	/*std::cout << "Press any key to continue...\n";
-	std::cin >> ch;*/
+	const unsigned int p = 12;
+	plot_cardinality_estimation_correctness(p, 10, 1e+6, 1e+7);
+	std::cout << "Press any key to continue...\n";
+	std::cin >> ch;
 	return 0;
 }
 
@@ -435,8 +451,8 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 void log_normal_simulation(std::string input_file)
 {
 	Experiment::LogNormalSimulation simulation;
-	simulation.sort_to_plot(input_file);
-	/*uint16_t task_num[] = { 5, 10, 50, 100 };
+	//simulation.sort_to_plot(input_file);
+	uint16_t task_num[] = { 5, 10, 50, 100 };
 	for (size_t i = 0; i < 4; i++)
 	{
 	std::vector<uint16_t> tasks;
@@ -448,7 +464,7 @@ void log_normal_simulation(std::string input_file)
 	std::cout << "## Tasks: " << task_num[i] << ".\n";
 	simulation.simulate(tasks, input_file);
 	}
-	std::cout << "********* END ***********\n";*/
+	std::cout << "********* END ***********\n";
 }
 
 void upper_bound_experiment(const std::string input_file_name)
