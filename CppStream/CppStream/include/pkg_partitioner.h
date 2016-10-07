@@ -50,16 +50,19 @@ PkgPartitioner::~PkgPartitioner()
 
 uint16_t PkgPartitioner::partition_next(const void* key, const size_t key_len)
 {
+	uint64_t hash_one, long_hash_one[2], hash_two, long_hash_two[2];
 	uint32_t first_choice, second_choice;
-	MurmurHash3_x86_32(key, key_len, 13, &first_choice);
-	MurmurHash3_x86_32(key, key_len, 17, &second_choice);
-	first_choice = first_choice % tasks.size();
-	second_choice = second_choice % tasks.size();
+	MurmurHash3_x64_128(key, key_len, 13, &long_hash_one);
+	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
+	hash_one = long_hash_one[0] ^ long_hash_one[1];
+	hash_two = long_hash_two[0] ^ long_hash_two[1];
+	first_choice = hash_one % tasks.size();
+	second_choice = hash_two % tasks.size();
 	uint16_t selected_choice = policy->get_score(first_choice, task_count[first_choice], 0,
 		second_choice, task_count[second_choice], 0, min_task_count, max_task_count, 0, 0);
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
-	min_task_count = BitWizard::min_uint64(min_task_count, task_count[selected_choice]);
+	min_task_count = *std::min_element(task_count.begin(), task_count.end());
 	return selected_choice;
 }
 

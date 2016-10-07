@@ -88,26 +88,30 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 	std::vector<uint16_t> tasks;
 	uint64_t* stream;
 	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
+	hll_32** opt_32_cardinality_estimator = (hll_32**)malloc(sizeof(hll_32*) * task_number);
+	
 	srand(time(NULL));
 
-	for (size_t i = 0; i < task_number; i++)
-	{
-		if (i < task_number - 1)
-		{
-			//imbalance_plot << std::to_string(i) << "-err,";
-		}
-		else
-		{
-			//imbalance_plot << std::to_string(i) << "-err";
-		}
-	}
+	//for (size_t i = 0; i < task_number; i++)
+	//{
+	//	if (i < task_number - 1)
+	//	{
+	//		//imbalance_plot << std::to_string(i) << "-err,";
+	//	}
+	//	else
+	//	{
+	//		//imbalance_plot << std::to_string(i) << "-err";
+	//	}
+	//}
 	//imbalance_plot << "\n";
 	
 	for (size_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(uint16_t(i));
 		opt_cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
-		init_8(opt_cardinality_estimator[i], p);
+		init_8(opt_cardinality_estimator[i], p, sizeof(uint64_t));
+		opt_32_cardinality_estimator[i] = (hll_32*)malloc(sizeof(hll_32));
+		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
 	}
 	CardinalityAwarePolicy cag;
 	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag);
@@ -121,17 +125,21 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 	for (size_t i = 0; i < stream_length; ++i)
 	{
 		uint64_t element = stream[i];
-		uint32_t code;
-		MurmurHash3_x86_32(&element, sizeof(uint64_t), 13, &code);
+		uint64_t long_code[2];
+		MurmurHash3_x64_128(&element, sizeof(uint64_t), 13, &long_code);
+		uint64_t xor_long_code = long_code[0] ^ long_code[1];
 		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
-		opt_update_8(opt_cardinality_estimator[naive_choice], code);
-		std::vector<uint32_t> cag_naive_cardinality_vector;
+		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
+		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
+		std::vector<uint64_t> cag_naive_cardinality_vector;
 		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
 		imbalance_plot << std::to_string(i) << ",";
 		for (size_t i = 0; i < task_number; i++)
 		{
 			uint32_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
+			uint32_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
 			int opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
+			int opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
 			/*if (cag_naive_cardinality_vector[i])
 			{
 				double relative_diff = double(opt_diff) / cag_naive_cardinality_vector[i];
@@ -203,8 +211,8 @@ int main(int argc, char** argv)
 	 * Upper bound benefit experiment
 	 */
 	//upper_bound_experiment(input_file_name);
-	const unsigned int p = 12;
-	plot_cardinality_estimation_correctness(p, 10, 1e+6, 1e+7);
+	const unsigned int p = 16;
+	plot_cardinality_estimation_correctness(p, 10, 1e+4, 1e+6);
 	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
 	return 0;

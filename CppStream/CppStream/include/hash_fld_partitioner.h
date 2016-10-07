@@ -25,18 +25,17 @@ private:
 
 HashFieldPartitioner::HashFieldPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks)
 {
-
 }
 
 HashFieldPartitioner::~HashFieldPartitioner()
 {
-
 }
 
 uint16_t HashFieldPartitioner::partition_next(const void* key, const size_t key_len)
 {
-	uint32_t choice;
-	MurmurHash3_x86_32(key, key_len, 13, &choice);
-	return uint16_t(choice % tasks.size());
+	uint64_t hash_code, long_hash_code[2];
+	MurmurHash3_x64_128(key, key_len, 13, &long_hash_code);
+	hash_code = long_hash_code[0] ^ long_hash_code[1];
+	return uint16_t(hash_code % tasks.size());
 }
 #endif // !HASH_FLD_PARTITIONER_H_

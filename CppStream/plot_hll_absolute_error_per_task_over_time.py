@@ -12,7 +12,7 @@ element_sequence_id = []
 absolute_error = dict()
 for i in range(1, task_number + 1):
     absolute_error[i] = list()
-    print "added task-%d" % i
+    #print "added task-%d" % i
 
 lines = list()
 with open(main_file) as abs_error_file:
@@ -25,25 +25,23 @@ for l in lines:
         if max_error < float(tokens[i]):
             max_error = float(tokens[i])
         absolute_error[i].append(float(tokens[i]))
-        #print "token index: %d" % i
 
-matplotlib.rcParams.update({'font.size' : 24, 'font.family' : 'sans-serif'})
+matplotlib.rcParams.update({'font.size' : 24, 'font.family' : 'monospace'})
 
-markers = ['ro', 'b^', 'gx', 'yo', 'cv', 'k1', 'gD', 'm.', 'r,', 'bp']
+markers = ['b.', 'ro', 'b^', 'gx', 'yo', 'cv', 'k1', 'gD', 'm.', 'r,', 'bp']
 
-colors = [ 'red', 'blue', 'green', 'purple', 'orange', 'yellow', 'black', 'grey', 'purple', 'pink']
-fig = plt.figure(1)
-plt.xlabel('stream progress')
-plt.ylabel('Absolute error')
-plt.grid(True)
+colors = [ 'red', 'blue', 'green', 'purple', 'orange', 'yellow', 'black', 'grey', 'purple', 'pink', 'red']
+fig, ax = plt.subplots(1)
+for i in range(1, task_number + 1):
+    #print "index: %d" % i
+    task_label = 't-' + str(i)
+    ax.plot(element_sequence_id, absolute_error[i], markers[i], label=task_label, linewidth=2, markersize=5)
+
+ax.set_ylabel('absolute error')
+ax.set_xlabel('stream progress')
+ax.yaxis.grid(True)
 plt.tight_layout()
-plt.plot(element_sequence_id, 
-absolute_error[1], markers[1], absolute_error[2], markers[2], 
-absolute_error[3], markers[3], absolute_error[4], markers[4], absolute_error[5], markers[5], 
-absolute_error[6], markers[6], absolute_error[7], markers[7], absolute_error[8], markers[8])
-#absolute_error[9], markers[9], absolute_error[10], markers[10])
-
 
 plt.show()
-fig.savefig('rel_error.pdf')
+fig.savefig('absolute_error.pdf')
 plt.close()
