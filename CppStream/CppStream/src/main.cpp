@@ -166,11 +166,11 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 			}*/
 			if (i < task_number - 1)
 			{
-				imbalance_plot << std::to_string(abs(opt_diff)) << ",";
+				imbalance_plot << std::to_string(abs(opt_32_diff)) << ",";
 			}
 			else
 			{
-				imbalance_plot << std::to_string(abs(opt_diff));
+				imbalance_plot << std::to_string(abs(opt_32_diff));
 			}
 		}
 		imbalance_plot << "\n";
@@ -212,7 +212,7 @@ int main(int argc, char** argv)
 	 */
 	//upper_bound_experiment(input_file_name);
 	const unsigned int p = 16;
-	plot_cardinality_estimation_correctness(p, 10, 1e+4, 1e+6);
+	plot_cardinality_estimation_correctness(p, 10, 1e+5, 1e+6);
 	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
 	return 0;
