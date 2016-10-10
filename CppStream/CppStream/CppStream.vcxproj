@@ -124,6 +124,7 @@
     <ClInclude Include="include\debs_query_lib.h" />
     <ClInclude Include="include\debs_cell_coordinate_util.h" />
     <ClInclude Include="include\debs_structure_lib.h" />
+    <ClInclude Include="include\google_cluster_monitor_util.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
     <ClInclude Include="include\lognormal_experiment.h" />
     <ClInclude Include="include\murmurhash_3.h" />

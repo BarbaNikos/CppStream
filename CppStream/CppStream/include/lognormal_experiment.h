@@ -31,8 +31,8 @@ namespace Experiment
 		~LogNormalSimulation();
 		void sort_to_plot(std::string input_file);
 		void simulate(std::vector<uint16_t> tasks, std::string input_file);
-		void measure_imbalance(std::vector<uint32_t>& stream, const std::vector<uint16_t>& tasks, Partitioner& partitioner,
-			const std::string partioner_name);
+		void measure_imbalance(const std::vector<unsigned long long>& stream, const std::vector<uint16_t>& tasks, Partitioner& partitioner,
+			const std::string partitioner_name);
 	};
 
 	LogNormalSimulation::LogNormalSimulation()
@@ -105,7 +105,7 @@ namespace Experiment
 	{
 		std::ifstream input(input_file);
 		std::string line;
-		std::vector<uint32_t> stream;
+		std::vector<unsigned long long> stream;
 		if (!input.is_open())
 		{
 			std::cout << "could not open stream file " << input_file << "\n";
@@ -113,7 +113,7 @@ namespace Experiment
 		}
 		while (getline(input, line))
 		{
-			uint32_t element = std::stoi(line);
+			unsigned long long element = std::stoll(line);
 			stream.push_back(element);
 		}
 		input.close();
@@ -139,17 +139,18 @@ namespace Experiment
 		CaPartitionLib::CA_PC_Partitioner lag_pc(tasks, lag);
 		measure_imbalance(stream, tasks, lag_pc, "LAG-pc");
 		// CAG-hll
-		CaPartitionLib::CA_HLL_Partitioner cag_hll(tasks, cag, 10);
+		CaPartitionLib::CA_HLL_Partitioner cag_hll(tasks, cag, 16);
 		measure_imbalance(stream, tasks, cag_hll, "CAG-hll");
 		// CAG-hll-est
-		CaPartitionLib::CA_HLL_Aff_Partitioner cag_est_hll(tasks, 10);
+		CaPartitionLib::CA_HLL_Aff_Partitioner cag_est_hll(tasks, 16);
 		measure_imbalance(stream, tasks, cag_est_hll, "CAG-est-hll");
 		// LAG-hll
-		CaPartitionLib::CA_HLL_Partitioner lag_hll(tasks, lag, 10);
+		CaPartitionLib::CA_HLL_Partitioner lag_hll(tasks, lag, 16);
 		measure_imbalance(stream, tasks, lag_hll, "LAG-hll");
 	}
 
-	void LogNormalSimulation::measure_imbalance(std::vector<uint32_t>& stream, const std::vector<uint16_t>& tasks, Partitioner & partitioner, const std::string partioner_name)
+	void LogNormalSimulation::measure_imbalance(const std::vector<unsigned long long>& stream, const std::vector<uint16_t>& tasks, 
+		Partitioner & partitioner, const std::string partioner_name)
 	{
 		std::vector<std::unordered_set<uint32_t>> key_per_task;
 		uint64_t* tuple_count = (uint64_t*)calloc(tasks.size(), sizeof(uint64_t));
@@ -159,10 +160,10 @@ namespace Experiment
 			tuple_count[i] = 0;
 		}
 		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-		for (std::vector<uint32_t>::iterator it = stream.begin(); it != stream.end(); ++it)
+		for (std::vector<unsigned long long>::const_iterator it = stream.cbegin(); it != stream.cend(); ++it)
 		{
-			uint32_t* it_ref = &*it;
-			short task = partitioner.partition_next(it_ref, sizeof(uint32_t));
+			unsigned long long it_ref = *it;
+			short task = partitioner.partition_next(&it_ref, sizeof(unsigned long long));
 			key_per_task[task].insert(*it);
 			tuple_count[task]++;
 		}

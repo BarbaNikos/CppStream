@@ -32,13 +32,18 @@
 #include "../include/pkg_partitioner.h"
 #endif // !PKG_PARTITIONER_H_
 
-#ifndef CA_PARTITIONER_H_
+#ifndef CA_PARTITION_LIB_H_
 #include "../include/ca_partition_lib.h"
-#endif // !CA_PARTITIONER_H_
+#endif // !CA_PARTITION_LIB_H_
 
 #ifndef EXPERIMENT_LOGNORMAL_SIMULATION_H_
 #include "../include/lognormal_experiment.h"
 #endif // !EXPERIMENT_LOGNORMAL_SIMULATION_H_
+
+#ifndef GOOGLE_CLUSTER_MONITOR_UTIL_H_
+#include "../include/google_cluster_monitor_util.h"
+#endif // !GOOGLE_CLUSTER_MONITOR_UTIL_H_
+
 
 void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
 void debs_cardinality_estimation(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
@@ -89,6 +94,7 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 	uint64_t* stream;
 	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
 	hll_32** opt_32_cardinality_estimator = (hll_32**)malloc(sizeof(hll_32*) * task_number);
+	Cardinality_Estimation_Utils::ProbCount** pc = new Cardinality_Estimation_Utils::ProbCount*[task_number];
 	
 	srand(time(NULL));
 
@@ -112,9 +118,10 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		init_8(opt_cardinality_estimator[i], p, sizeof(uint64_t));
 		opt_32_cardinality_estimator[i] = (hll_32*)malloc(sizeof(hll_32));
 		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
+		pc[i] = new Cardinality_Estimation_Utils::ProbCount(64);
 	}
-	CardinalityAwarePolicy cag;
-	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, cag);
+	CardinalityAwarePolicy ca;
+	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, ca);
 	stream = new uint64_t[stream_length];
 	for (size_t i = 0; i < stream_length; ++i)
 	{
@@ -131,15 +138,17 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
 		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
 		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
+		pc[naive_choice]->update_bitmap_with_hashed_value_64(xor_long_code);
 		std::vector<uint64_t> cag_naive_cardinality_vector;
 		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
 		imbalance_plot << std::to_string(i) << ",";
 		for (size_t i = 0; i < task_number; i++)
 		{
-			uint32_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
-			uint32_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
-			int opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
-			int opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
+			uint64_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
+			uint64_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
+			uint16_t pc_estimate = pc[i]->cardinality_estimation_64();
+			int64_t opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
+			int64_t opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
 			/*if (cag_naive_cardinality_vector[i])
 			{
 				double relative_diff = double(opt_diff) / cag_naive_cardinality_vector[i];
@@ -184,7 +193,9 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 	{
 		destroy_8(opt_cardinality_estimator[i]);
 		free(opt_cardinality_estimator[i]);
+		delete pc[i];
 	}
+	delete[] pc;
 	free(opt_cardinality_estimator);
 }
 
@@ -205,13 +216,13 @@ int main(int argc, char** argv)
 	 * DEBS queries
 	 */
 	//debs_all_test(input_file_name, max_queue_size);
-	//log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
+	log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
 	/*
 	 * Upper bound benefit experiment
 	 */
 	//upper_bound_experiment(input_file_name);
 	const unsigned int p = 16;
-	plot_cardinality_estimation_correctness(p, 10, 1e+5, 1e+6);
+	//plot_cardinality_estimation_correctness(p, 10, (uint64_t)1e+5, (size_t)1e+6);
 	std::cout << "Press any key to continue...\n";
 	std::cin >> ch;
 	return 0;
@@ -276,8 +287,6 @@ void debs_cardinality_estimation(const std::string& out_file_name, const std::ve
 {
 	std::unordered_set<uint32_t> actual_cardinality;
 	Cardinality_Estimation_Utils::ProbCount prob_count(64);
-	Cardinality_Estimation_Utils::HyperLoglog hyper_loglog_s(5);
-	Cardinality_Estimation_Utils::HyperLoglog hyper_loglog_l(10);
 	uint64_t counter = 0;
 	std::ofstream output_file_2(out_file_name);
 	for (auto it = ride_table.cbegin(); it != ride_table.cend(); ++it)
@@ -289,10 +298,7 @@ void debs_cardinality_estimation(const std::string& out_file_name, const std::ve
 		MurmurHash3_x86_32(key.c_str(), key.length(), 13, &value_1);
 		actual_cardinality.insert(value_1);
 		prob_count.update_bitmap_64(value_1);
-		hyper_loglog_s.update_bitmap(value_1);
-		hyper_loglog_l.update_bitmap(value_1);
-		output_file_2 << counter << "," << actual_cardinality.size() << "," << prob_count.cardinality_estimation_64() << "," <<
-			hyper_loglog_s.cardinality_estimation() << "," << hyper_loglog_l.cardinality_estimation() << "\n";
+		output_file_2 << counter << "," << actual_cardinality.size() << "," << prob_count.cardinality_estimation_64() << "\n";
 		counter++;
 	}
 	output_file_2.flush();
@@ -459,13 +465,13 @@ void log_normal_simulation(std::string input_file)
 {
 	Experiment::LogNormalSimulation simulation;
 	//simulation.sort_to_plot(input_file);
-	uint16_t task_num[] = { 5, 10, 50, 100 };
-	for (size_t i = 0; i < 4; i++)
+	uint16_t task_num[] = { 10, 50, 100 };
+	for (size_t i = 0; i < 3; i++)
 	{
 	std::vector<uint16_t> tasks;
 	for (size_t j = 0; j < task_num[i]; j++)
 	{
-	tasks.push_back(j);
+	tasks.push_back(uint16_t(j));
 	}
 	tasks.shrink_to_fit();
 	std::cout << "## Tasks: " << task_num[i] << ".\n";

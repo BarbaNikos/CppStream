@@ -26,22 +26,23 @@ class PkgPartitioner : public Partitioner
 public:
 	PkgPartitioner(const std::vector<uint16_t>& tasks);
 	~PkgPartitioner();
-	uint16_t partition_next(const void* key, const size_t key_len);
-	uint64_t get_min_count();
-	uint64_t get_max_count();
+	unsigned int partition_next(const void* key, const size_t key_len);
+	unsigned long long get_min_task_count();
+	unsigned long long get_max_task_count();
 private:
 	std::vector<uint16_t> tasks;
-	std::vector<uint64_t> task_count;
+	std::vector<unsigned long long> task_count;
 	PartitionPolicy* policy;
-	uint64_t max_task_count;
-	uint64_t min_task_count;
+	unsigned long long max_task_count;
+	unsigned long long min_task_count;
 };
 
-PkgPartitioner::PkgPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), task_count(tasks.size(), uint64_t(0))
+PkgPartitioner::PkgPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
+task_count(tasks.size(), uint64_t(0))
 {
 	policy = new CountAwarePolicy();
-	max_task_count = uint64_t(0);
-	min_task_count = std::numeric_limits<uint64_t>::max();
+	max_task_count = 0;
+	min_task_count = 0;
 }
 
 PkgPartitioner::~PkgPartitioner()
@@ -49,17 +50,17 @@ PkgPartitioner::~PkgPartitioner()
 	delete policy;
 }
 
-uint16_t PkgPartitioner::partition_next(const void* key, const size_t key_len)
+inline unsigned int PkgPartitioner::partition_next(const void* key, const size_t key_len)
 {
 	uint64_t hash_one, long_hash_one[2], hash_two, long_hash_two[2];
-	uint32_t first_choice, second_choice;
+	unsigned int first_choice, second_choice;
 	MurmurHash3_x64_128(key, key_len, 13, &long_hash_one);
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_one = long_hash_one[0] ^ long_hash_one[1];
 	hash_two = long_hash_two[0] ^ long_hash_two[1];
 	first_choice = hash_one % tasks.size();
 	second_choice = hash_two % tasks.size();
-	uint16_t selected_choice = policy->get_score(first_choice, task_count[first_choice], 0,
+	unsigned int selected_choice = policy->get_score(first_choice, task_count[first_choice], 0,
 		second_choice, task_count[second_choice], 0, min_task_count, max_task_count, 0, 0);
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
@@ -67,14 +68,13 @@ uint16_t PkgPartitioner::partition_next(const void* key, const size_t key_len)
 	return tasks[selected_choice];
 }
 
-uint64_t PkgPartitioner::get_min_count()
+inline unsigned long long PkgPartitioner::get_min_task_count()
 {
 	return min_task_count;
 }
 
-uint64_t PkgPartitioner::get_max_count()
+inline unsigned long long PkgPartitioner::get_max_task_count()
 {
 	return max_task_count;
 }
-
 #endif // !PKG_PARTITIONER_H_

@@ -72,6 +72,9 @@
     <ClInclude Include="include\ca_partition_lib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\google_cluster_monitor_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
