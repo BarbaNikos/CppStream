@@ -16,9 +16,9 @@
 #include "../include/pkg_partitioner.h"
 #endif // !PKG_PARTITIONER_H_
 
-#ifndef CAG_PARTITIONER_H_
-#include "../include/cag_partitioner.h"
-#endif // !CAG_PARTITIONER_H_
+#ifndef CA_PARTITION_LIB_H_
+#include "../include/ca_partition_lib.h"
+#endif // !CA_PARTITION_LIB_H_
 
 #ifndef EXPERIMENT_LOGNORMAL_SIMULATION_H_
 #define EXPERIMENT_LOGNORMAL_SIMULATION_H_
@@ -127,25 +127,25 @@ namespace Experiment
 		PkgPartitioner pkg_partitioner(tasks);
 		measure_imbalance(stream, tasks, pkg_partitioner, "PKG");
 		// CAG-naive
-		CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag);
+		CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, cag);
 		measure_imbalance(stream, tasks, cag_naive, "CAG-naive");
 		// LAG-naive
-		CagPartitionLib::CagNaivePartitioner lag_naive(tasks, lag);
+		CaPartitionLib::CA_Exact_Partitioner lag_naive(tasks, lag);
 		measure_imbalance(stream, tasks, lag_naive, "LAG-naive");
 		// CAG-pc
-		CagPartitionLib::CagPcPartitioner cag_pc(tasks, cag);
+		CaPartitionLib::CA_PC_Partitioner cag_pc(tasks, cag);
 		measure_imbalance(stream, tasks, cag_pc, "CAG-pc");
 		// LAG-pc
-		CagPartitionLib::CagPcPartitioner lag_pc(tasks, lag);
+		CaPartitionLib::CA_PC_Partitioner lag_pc(tasks, lag);
 		measure_imbalance(stream, tasks, lag_pc, "LAG-pc");
 		// CAG-hll
-		CagPartitionLib::CagHllPartitioner cag_hll(tasks, cag, 10);
+		CaPartitionLib::CA_HLL_Partitioner cag_hll(tasks, cag, 10);
 		measure_imbalance(stream, tasks, cag_hll, "CAG-hll");
 		// CAG-hll-est
-		CagPartitionLib::CagHllEstPartitioner cag_est_hll(tasks, 10);
+		CaPartitionLib::CA_HLL_Aff_Partitioner cag_est_hll(tasks, 10);
 		measure_imbalance(stream, tasks, cag_est_hll, "CAG-est-hll");
 		// LAG-hll
-		CagPartitionLib::CagHllPartitioner lag_hll(tasks, lag, 10);
+		CaPartitionLib::CA_HLL_Partitioner lag_hll(tasks, lag, 10);
 		measure_imbalance(stream, tasks, lag_hll, "LAG-hll");
 	}
 

@@ -117,7 +117,7 @@
   <ItemGroup>
     <ClInclude Include="include\BasicWindow.h" />
     <ClInclude Include="include\bit_trick_utils.h" />
-    <ClInclude Include="include\cag_partitioner.h" />
+    <ClInclude Include="include\ca_partition_lib.h" />
     <ClInclude Include="include\cardinality_estimation_utils.h" />
     <ClInclude Include="include\CircularBuffer.h" />
     <ClInclude Include="include\c_hll.h" />
@@ -130,6 +130,7 @@
     <ClInclude Include="include\partitioner.h" />
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
+    <ClInclude Include="include\round_robin_partitioner.h" />
     <ClInclude Include="include\tpch_experiment.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />

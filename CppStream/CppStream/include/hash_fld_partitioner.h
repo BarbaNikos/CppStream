@@ -36,6 +36,6 @@ uint16_t HashFieldPartitioner::partition_next(const void* key, const size_t key_
 	uint64_t hash_code, long_hash_code[2];
 	MurmurHash3_x64_128(key, key_len, 13, &long_hash_code);
 	hash_code = long_hash_code[0] ^ long_hash_code[1];
-	return uint16_t(hash_code % tasks.size());
+	return tasks[hash_code % tasks.size()];
 }
 #endif // !HASH_FLD_PARTITIONER_H_

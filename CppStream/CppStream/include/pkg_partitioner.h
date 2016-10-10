@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include <cinttypes>
 
@@ -63,7 +64,7 @@ uint16_t PkgPartitioner::partition_next(const void* key, const size_t key_len)
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
 	min_task_count = *std::min_element(task_count.begin(), task_count.end());
-	return selected_choice;
+	return tasks[selected_choice];
 }
 
 uint64_t PkgPartitioner::get_min_count()
@@ -75,6 +76,5 @@ uint64_t PkgPartitioner::get_max_count()
 {
 	return max_task_count;
 }
-
 
 #endif // !PKG_PARTITIONER_H_

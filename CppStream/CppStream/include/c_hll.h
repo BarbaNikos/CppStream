@@ -154,7 +154,7 @@ void update_8(hll_8* _hll, uint32_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_32(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	righmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	righmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	_hll->current_sum -= (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	_hll->bucket[j] = BitWizard::max_uint8(current, righmost_bit);
@@ -168,7 +168,7 @@ void update_8(hll_8* _hll, uint64_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_64(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	righmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	righmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	_hll->current_sum -= (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	_hll->bucket[j] = BitWizard::max_uint8(current, righmost_bit);
@@ -182,7 +182,7 @@ void opt_update_8(hll_8* _hll, uint32_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_32(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	righmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	righmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	_hll->current_sum -= (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	_hll->bucket[j] = BitWizard::max_uint8(current, righmost_bit);
@@ -206,7 +206,7 @@ void opt_update_8(hll_8* _hll, uint64_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits -_hll->p);
 	w = BitWizard::isolate_bits_64(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	righmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	righmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	_hll->current_sum -= (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	_hll->bucket[j] = BitWizard::max_uint8(current, righmost_bit);
@@ -332,7 +332,7 @@ uint64_t new_cardinality_estimate_8(hll_8* _hll, uint32_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_32(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	righmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	righmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	current_sum = _hll->current_sum - (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	new_value = BitWizard::max_uint8(current, righmost_bit);
@@ -349,7 +349,7 @@ uint64_t new_cardinality_estimate_8(hll_8* _hll, uint64_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_64(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	rightmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	rightmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	current_sum = _hll->current_sum - (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	new_value = BitWizard::max_uint8(current, rightmost_bit);
@@ -366,7 +366,7 @@ uint64_t opt_new_cardinality_estimate_8(hll_8* _hll, uint32_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_32(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	rightmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	rightmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	current_sum = _hll->current_sum - (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	new_value = BitWizard::max_uint8(current, rightmost_bit);
@@ -409,7 +409,7 @@ uint64_t opt_new_cardinality_estimate_8(hll_8* _hll, uint64_t hash_value)
 	j = hash_value >> (_hll->hash_code_len_in_bits - _hll->p);
 	w = BitWizard::isolate_bits_64(_hll->bitmap_offset, _hll->bitmap_size, hash_value) >> _hll->bitmap_offset;
 	rob = BitWizard::highest_order_bit_index_arch(w);
-	rightmost_bit = 1 + BitWizard::log_base_2_of_power_of_2_uint(rob);
+	rightmost_bit = 1 + log2(rob);
 	current = _hll->bucket[j];
 	current_sum = _hll->current_sum - (double)((double)1 / (double)(1 << _hll->bucket[j]));
 	new_value = BitWizard::max_uint8(current, rightmost_bit);

@@ -32,9 +32,9 @@
 #include "../include/pkg_partitioner.h"
 #endif // !PKG_PARTITIONER_H_
 
-#ifndef CAG_PARTITIONER_H_
-#include "../include/cag_partitioner.h"
-#endif // !CAG_PARTITIONER_H_
+#ifndef CA_PARTITIONER_H_
+#include "../include/ca_partition_lib.h"
+#endif // !CA_PARTITIONER_H_
 
 #ifndef EXPERIMENT_LOGNORMAL_SIMULATION_H_
 #include "../include/lognormal_experiment.h"
@@ -114,7 +114,7 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
 	}
 	CardinalityAwarePolicy cag;
-	CagPartitionLib::CagNaivePartitioner cag_naive(tasks, cag);
+	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, cag);
 	stream = new uint64_t[stream_length];
 	for (size_t i = 0; i < stream_length; ++i)
 	{
@@ -191,7 +191,6 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 int main(int argc, char** argv)
 {
 	char ch;
-
 	if (argc < 2)
 	{
 		std::cout << "usage: <input-file>\n";
@@ -276,9 +275,9 @@ void debs_check_hash_result_values(const std::string& out_file_name, const std::
 void debs_cardinality_estimation(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table)
 {
 	std::unordered_set<uint32_t> actual_cardinality;
-	CardinalityEstimator::ProbCount prob_count;
-	CardinalityEstimator::HyperLoglog hyper_loglog_s(5);
-	CardinalityEstimator::HyperLoglog hyper_loglog_l(10);
+	Cardinality_Estimation_Utils::ProbCount prob_count(64);
+	Cardinality_Estimation_Utils::HyperLoglog hyper_loglog_s(5);
+	Cardinality_Estimation_Utils::HyperLoglog hyper_loglog_l(10);
 	uint64_t counter = 0;
 	std::ofstream output_file_2(out_file_name);
 	for (auto it = ride_table.cbegin(); it != ride_table.cend(); ++it)
@@ -289,10 +288,10 @@ void debs_cardinality_estimation(const std::string& out_file_name, const std::ve
 		std::string key = pickup_cell + "-" + dropoff_cell;
 		MurmurHash3_x86_32(key.c_str(), key.length(), 13, &value_1);
 		actual_cardinality.insert(value_1);
-		prob_count.update_bitmap(value_1);
+		prob_count.update_bitmap_64(value_1);
 		hyper_loglog_s.update_bitmap(value_1);
 		hyper_loglog_l.update_bitmap(value_1);
-		output_file_2 << counter << "," << actual_cardinality.size() << "," << prob_count.cardinality_estimation() << "," <<
+		output_file_2 << counter << "," << actual_cardinality.size() << "," << prob_count.cardinality_estimation_64() << "," <<
 			hyper_loglog_s.cardinality_estimation() << "," << hyper_loglog_l.cardinality_estimation() << "\n";
 		counter++;
 	}
@@ -348,13 +347,13 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 		{
 			HashFieldPartitioner* fld_partitioner = new HashFieldPartitioner(tasks);
 			PkgPartitioner* pkg_partitioner = new PkgPartitioner(tasks);
-			CagPartitionLib::CagNaivePartitioner* cag_naive_partitioner = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-			CagPartitionLib::CagNaivePartitioner* lag_naive_partitioner = new CagPartitionLib::CagNaivePartitioner(tasks, lag_policy);
-			CagPartitionLib::CagPcPartitioner* cag_pc_partitioner = new CagPartitionLib::CagPcPartitioner(tasks, cag_policy);
-			CagPartitionLib::CagPcPartitioner* lag_pc_partitioner = new CagPartitionLib::CagPcPartitioner(tasks, lag_policy);
-			CagPartitionLib::CagHllPartitioner* cag_hll_partitioner = new CagPartitionLib::CagHllPartitioner(tasks, cag_policy, 10);
-			CagPartitionLib::CagHllEstPartitioner* cag_hll_est_partitioner = new CagPartitionLib::CagHllEstPartitioner(tasks, 10);
-			CagPartitionLib::CagHllPartitioner* lag_hll_partitioner = new CagPartitionLib::CagHllPartitioner(tasks, lag_policy, 10);
+			CaPartitionLib::CA_Exact_Partitioner* cag_naive_partitioner = new CaPartitionLib::CA_Exact_Partitioner(tasks, cag_policy);
+			CaPartitionLib::CA_Exact_Partitioner* lag_naive_partitioner = new CaPartitionLib::CA_Exact_Partitioner(tasks, lag_policy);
+			CaPartitionLib::CA_PC_Partitioner* cag_pc_partitioner = new CaPartitionLib::CA_PC_Partitioner(tasks, cag_policy);
+			CaPartitionLib::CA_PC_Partitioner* lag_pc_partitioner = new CaPartitionLib::CA_PC_Partitioner(tasks, lag_policy);
+			CaPartitionLib::CA_HLL_Partitioner* cag_hll_partitioner = new CaPartitionLib::CA_HLL_Partitioner(tasks, cag_policy, 10);
+			CaPartitionLib::CA_HLL_Aff_Partitioner* cag_hll_est_partitioner = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 10);
+			CaPartitionLib::CA_HLL_Partitioner* lag_hll_partitioner = new CaPartitionLib::CA_HLL_Partitioner(tasks, lag_policy, 10);
 			avg_runtime[0] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, *fld_partitioner, "FLD", max_queue_size);
 			avg_runtime[1] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, *pkg_partitioner, "PKG", max_queue_size);
 			avg_runtime[2] += debs_experiment_frequent_route.debs_concurrent_partition(tasks, frequent_ride_ride_table, *cag_naive_partitioner, "CAG-naive", max_queue_size);
@@ -413,13 +412,13 @@ void debs_all_test(const std::string input_file_name, size_t max_queue_size)
 		{
 			HashFieldPartitioner* fld_partitioner = new HashFieldPartitioner(tasks);
 			PkgPartitioner* pkg_partitioner = new PkgPartitioner(tasks);
-			CagPartitionLib::CagNaivePartitioner* cag_naive_partitioner = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
-			CagPartitionLib::CagNaivePartitioner* lag_naive_partitioner = new CagPartitionLib::CagNaivePartitioner(tasks, lag_policy);
-			CagPartitionLib::CagPcPartitioner* cag_pc_partitioner = new CagPartitionLib::CagPcPartitioner(tasks, cag_policy);
-			CagPartitionLib::CagPcPartitioner* lag_pc_partitioner = new CagPartitionLib::CagPcPartitioner(tasks, lag_policy);
-			CagPartitionLib::CagHllPartitioner* cag_hll_partitioner = new CagPartitionLib::CagHllPartitioner(tasks, cag_policy, 10);
-			CagPartitionLib::CagHllEstPartitioner* cag_hll_est_partitioner = new CagPartitionLib::CagHllEstPartitioner(tasks, 10);
-			CagPartitionLib::CagHllPartitioner* lag_hll_partitioner = new CagPartitionLib::CagHllPartitioner(tasks, lag_policy, 10);
+			CaPartitionLib::CA_Exact_Partitioner* cag_naive_partitioner = new CaPartitionLib::CA_Exact_Partitioner(tasks, cag_policy);
+			CaPartitionLib::CA_Exact_Partitioner* lag_naive_partitioner = new CaPartitionLib::CA_Exact_Partitioner(tasks, lag_policy);
+			CaPartitionLib::CA_PC_Partitioner* cag_pc_partitioner = new CaPartitionLib::CA_PC_Partitioner(tasks, cag_policy);
+			CaPartitionLib::CA_PC_Partitioner* lag_pc_partitioner = new CaPartitionLib::CA_PC_Partitioner(tasks, lag_policy);
+			CaPartitionLib::CA_HLL_Partitioner* cag_hll_partitioner = new CaPartitionLib::CA_HLL_Partitioner(tasks, cag_policy, 10);
+			CaPartitionLib::CA_HLL_Aff_Partitioner* cag_hll_est_partitioner = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 10);
+			CaPartitionLib::CA_HLL_Partitioner* lag_hll_partitioner = new CaPartitionLib::CA_HLL_Partitioner(tasks, lag_policy, 10);
 			avg_runtime[0] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, *fld_partitioner, "FLD", max_queue_size);
 			avg_runtime[1] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, *pkg_partitioner, "PKG", max_queue_size);
 			avg_runtime[2] += debs_experiment_profit_area.debs_concurrent_partition(tasks, profitable_area_ride_table, *cag_naive_partitioner, "CAG-naive", max_queue_size);
@@ -495,7 +494,7 @@ void upper_bound_experiment(const std::string input_file_name)
 	PkgPartitioner* pkg = new PkgPartitioner(tasks);
 	HashFieldPartitioner* fld = new HashFieldPartitioner(tasks);
 	CardinalityAwarePolicy cag_policy;
-	CagPartitionLib::CagNaivePartitioner* cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	CaPartitionLib::CA_Exact_Partitioner* cag_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, cag_policy);
 	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
 	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
 	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");
@@ -513,7 +512,7 @@ void upper_bound_experiment(const std::string input_file_name)
 	std::cout << "Tasks: " << tasks.size() << ".\n";
 	pkg = new PkgPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
-	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	cag_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, cag_policy);
 	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
 	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
 	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");
@@ -531,7 +530,7 @@ void upper_bound_experiment(const std::string input_file_name)
 	std::cout << "Tasks: " << tasks.size() << ".\n";
 	pkg = new PkgPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
-	cag_naive = new CagPartitionLib::CagNaivePartitioner(tasks, cag_policy);
+	cag_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, cag_policy);
 	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
 	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
 	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");

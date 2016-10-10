@@ -58,6 +58,7 @@ public:
 	static uint64_t min_uint64(uint64_t x, uint64_t y);
 
 	static uint32_t log_base_2_of_power_of_2_uint(uint32_t value);
+	static uint64_t log_base_2_of_power_of_2_uint(uint64_t value);
 
 	static uint32_t swap_bits_32(uint32_t value);
 
@@ -138,6 +139,11 @@ inline uint64_t BitWizard::min_uint64(uint64_t x, uint64_t y)
 inline uint32_t BitWizard::log_base_2_of_power_of_2_uint(uint32_t value)
 {
 	return value == 0 ? 0 : BitWizard::MultiplyDeBruijnBitPosition2[(uint32_t)(value * 0x077CB531U) >> 27];
+}
+
+inline uint64_t BitWizard::log_base_2_of_power_of_2_uint(uint64_t value)
+{
+	return uint64_t();
 }
 
 inline uint32_t BitWizard::swap_bits_32(uint32_t v)
