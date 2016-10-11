@@ -37,6 +37,8 @@ namespace Experiment
 		public:
 			FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
 				std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
+				std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond, const std::string result_output_file_name);
 			~FrequentRouteWorkerThread();
 			void operate();
 			void update(DebsChallenge::CompactRide& ride);
@@ -49,6 +51,7 @@ namespace Experiment
 			std::condition_variable* cond;
 			std::unordered_map<std::string, uint64_t> result;
 			std::queue<DebsChallenge::CompactRide>* input_queue;
+			std::string result_output_file_name;
 		};
 
 		class FrequentRouteAggregator
@@ -157,6 +160,27 @@ Experiment::DebsChallenge::FrequentRouteWorkerThread::FrequentRouteWorkerThread(
 	this->mu = mu;
 	this->cond = cond;
 	this->input_queue = input_queue;
+	this->result_output_file_name = "";
+}
+
+inline Experiment::DebsChallenge::FrequentRouteWorkerThread::FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex * aggr_mu, std::condition_variable * aggr_cond, std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex * mu, std::condition_variable * cond, const std::string result_output_file_name)
+{
+	if (aggregator_queue != nullptr)
+	{
+		this->aggregator_queue = aggregator_queue;
+		this->aggr_mu = aggr_mu;
+		this->aggr_cond = aggr_cond;
+	}
+	else
+	{
+		this->aggregator_queue = nullptr;
+		this->aggr_mu = nullptr;
+		this->aggr_cond = nullptr;
+	}
+	this->mu = mu;
+	this->cond = cond;
+	this->input_queue = input_queue;
+	this->result_output_file_name = result_output_file_name;
 }
 
 inline Experiment::DebsChallenge::FrequentRouteWorkerThread::~FrequentRouteWorkerThread()
@@ -251,6 +275,21 @@ inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize()
 	{
 		// start feeding partial aggregations to the aggregator
 		// TO-DO: Complete this part
+		if (result_output_file_name.compare("") != 0)
+		{
+			std::ofstream output_file(result_output_file_name);
+			if (output_file.is_open() == false)
+			{
+				std::cerr << "FrequentRouteWorkerThread::finalize() failed to open file with name: " << result_output_file_name << ".\n";
+				exit(1);
+			}
+			for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
+			{
+				output_file << it->first << "," << it->second << "\n";
+			}
+			output_file.flush();
+			output_file.close();
+		}
 	}
 }
 
