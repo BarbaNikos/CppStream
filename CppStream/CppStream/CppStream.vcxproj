@@ -139,6 +139,8 @@
   <ItemGroup>
     <ClCompile Include="src\bit_trick_utils.cpp" />
     <ClCompile Include="src\cardinality_estimation_utils.cpp" />
+    <ClCompile Include="src\debs_cell_coordinate_util.cpp" />
+    <ClCompile Include="src\debs_query_lib.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\murmurhash_3.cpp" />
   </ItemGroup>

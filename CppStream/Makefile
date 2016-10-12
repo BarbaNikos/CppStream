@@ -2,14 +2,19 @@ CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
 FLAGS = -std=c++11 -O2 -g -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
 LIBS = -lpthread -lm							# additional libraries
-OBJS = bit_trick_utils.o cardinality_estimation_utils.o \
-	main.o murmurhash_3.o
+OBJS = bit_trick_utils.o cardinality_estimation_utils.o murmurhash_3.o debs_cell_coordinate_util.o debs_query_lib.o main.o
 
 all: ${OBJS}
-	${CC} ${FLAGS} ${INCLUDES} ${OBJS} -o target_bin ${LIBS}
+	${CC} ${FLAGS} ${OBJS} -o target_bin ${LIBS}
 
 main.o: ./CppStream/src/main.cpp
 	${CC} ${FLAGS} -c ./CppStream/src/main.cpp ${INCLUDE_FLAGS}
+
+debs_query_lib.o: ./CppStream/src/debs_query_lib.cpp
+	${CC} ${FLAGS} -c ./CppStream/src/debs_query_lib.cpp ${INCLUDE_FLAGS}
+
+debs_cell_coordinate_util.o: ./CppStream/src/debs_cell_coordinate_util.cpp
+	${CC} ${FLAGS} -c ./CppStream/src/debs_cell_coordinate_util.cpp ${INCLUDE_FLAGS}
 
 cardinality_estimation_utils.o: ./CppStream/src/cardinality_estimation_utils.cpp ./CppStream/include/cardinality_estimation_utils.h
 	${CC} ${FLAGS} -c ./CppStream/src/cardinality_estimation_utils.cpp ${INCLUDE_FLAGS}

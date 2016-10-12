@@ -200,6 +200,7 @@ namespace Experiment
 		typedef struct frequent_route_str
 		{
 			frequent_route_str() : route(), count(0) {}
+			frequent_route_str(const std::string route, const uint64_t count) : route(route), count(count) {}
 			frequent_route_str(const frequent_route_str& o)
 			{
 				route = o.route;
@@ -222,6 +223,7 @@ namespace Experiment
 		typedef struct most_profitable_cell_str
 		{
 			most_profitable_cell_str() : cell(), profit(0) {}
+			most_profitable_cell_str(std::string cell, const double profit) : cell(cell), profit(profit) {}
 			most_profitable_cell_str(const most_profitable_cell_str& o)
 			{
 				cell = o.cell;

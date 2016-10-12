@@ -43,159 +43,21 @@
 #include "../include/google_cluster_monitor_util.h"
 #endif // !GOOGLE_CLUSTER_MONITOR_UTIL_H_
 
+#ifndef ROUND_ROBIN_PARTITIONER_H_
+#include "../include/round_robin_partitioner.h"
+#endif // !ROUND_ROBIN_PARTITIONER_H_
+
 
 void debs_check_hash_result_values(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
 void debs_cardinality_estimation(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
 void debs_all_test(const std::string input_file_name, size_t max_queue_size);
 void log_normal_simulation(std::string input_file);
-void upper_bound_experiment(const std::vector<Experiment::DebsChallenge::CompactRide>& lines);
-void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+void frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines);
+void most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines);
+void debs_frequent_route_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
-
-double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
-{
-	double sum = 0.0;
-	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
-	{
-		sum += it->size();
-	}
-	return sum / task_cardinality.size();
-}
-
-double get_cardinality_max(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
-{
-	double max = 0.0;
-	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
-	{
-		max = max < it->size() ? it->size() : max;
-	}
-	return max;
-}
-
-double get_imbalance(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
-{
-	return get_cardinality_max(task_cardinality) - get_cardinality_average(task_cardinality);
-}
-
-double get_imbalance(const std::vector<uint32_t>& task_cardinality)
-{
-	uint32_t max_card = *std::max_element(task_cardinality.begin(), task_cardinality.end());
-	double sum_card = std::accumulate(task_cardinality.begin(), task_cardinality.end(), 0);
-	return max_card - (sum_card / task_cardinality.size());
-}
-
-void plot_cardinality_estimation_correctness(const unsigned int p, const size_t task_number, const uint64_t cardinality, const size_t stream_length)
-{
-	std::ofstream imbalance_plot("imbalance_plot.csv");
-	//imbalance_plot << "tuple-id";
-	std::vector<uint16_t> tasks;
-	uint64_t* stream;
-	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
-	hll_32** opt_32_cardinality_estimator = (hll_32**)malloc(sizeof(hll_32*) * task_number);
-	Cardinality_Estimation_Utils::ProbCount** pc = new Cardinality_Estimation_Utils::ProbCount*[task_number];
-	
-	srand(time(NULL));
-
-	//for (size_t i = 0; i < task_number; i++)
-	//{
-	//	if (i < task_number - 1)
-	//	{
-	//		//imbalance_plot << std::to_string(i) << "-err,";
-	//	}
-	//	else
-	//	{
-	//		//imbalance_plot << std::to_string(i) << "-err";
-	//	}
-	//}
-	//imbalance_plot << "\n";
-	
-	for (size_t i = 0; i < task_number; i++)
-	{
-		tasks.push_back(uint16_t(i));
-		opt_cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
-		init_8(opt_cardinality_estimator[i], p, sizeof(uint64_t));
-		opt_32_cardinality_estimator[i] = (hll_32*)malloc(sizeof(hll_32));
-		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
-		pc[i] = new Cardinality_Estimation_Utils::ProbCount(64);
-	}
-	CardinalityAwarePolicy ca;
-	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, ca);
-	stream = new uint64_t[stream_length];
-	for (size_t i = 0; i < stream_length; ++i)
-	{
-		stream[i] = rand() % cardinality;
-	}
-	std::cout << "Generated stream.\n";
-
-	for (size_t i = 0; i < stream_length; ++i)
-	{
-		uint64_t element = stream[i];
-		uint64_t long_code[2];
-		MurmurHash3_x64_128(&element, sizeof(uint64_t), 13, &long_code);
-		uint64_t xor_long_code = long_code[0] ^ long_code[1];
-		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
-		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
-		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
-		pc[naive_choice]->update_bitmap_with_hashed_value_64(xor_long_code);
-		std::vector<unsigned long long> cag_naive_cardinality_vector;
-		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
-		imbalance_plot << std::to_string(i) << ",";
-		for (size_t i = 0; i < task_number; i++)
-		{
-			//uint64_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
-			uint64_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
-			//uint16_t pc_estimate = pc[i]->cardinality_estimation_64();
-			//int64_t opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
-			int64_t opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
-			/*if (cag_naive_cardinality_vector[i])
-			{
-				double relative_diff = double(opt_diff) / cag_naive_cardinality_vector[i];
-				if (i < task_number - 1)
-				{
-					imbalance_plot << std::to_string(relative_diff) << ",";
-				}
-				else
-				{
-					imbalance_plot << std::to_string(relative_diff);
-				}
-			}
-			else
-			{
-				double relative_diff = 0;
-				if (i < task_number - 1)
-				{
-					imbalance_plot << std::to_string(relative_diff) << ",";
-				}
-				else
-				{
-					imbalance_plot << std::to_string(relative_diff);
-				}
-			}*/
-			if (i < task_number - 1)
-			{
-				imbalance_plot << std::to_string(abs(opt_32_diff)) << ",";
-			}
-			else
-			{
-				imbalance_plot << std::to_string(abs(opt_32_diff));
-			}
-		}
-		imbalance_plot << "\n";
-	}
-	std::cout << "Finished the partitioning and the output of the plot.\n";
-	tasks.clear();
-	delete[] stream;
-	imbalance_plot.flush();
-	imbalance_plot.close();
-	for (size_t i = 0; i < task_number; i++)
-	{
-		destroy_8(opt_cardinality_estimator[i]);
-		free(opt_cardinality_estimator[i]);
-		delete pc[i];
-	}
-	delete[] pc;
-	free(opt_cardinality_estimator);
-}
+void debs_most_profitable_cell_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+	Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 
 int main(int argc, char** argv)
 {
@@ -213,9 +75,18 @@ int main(int argc, char** argv)
 	 * DEBS queries
 	 */
 	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
-	frequent_ride_table.shrink_to_fit();
-	upper_bound_experiment(frequent_ride_table);
+	//std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
+	
+	/*std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &frequent_ride_table);
+	frequent_route_simulation(frequent_ride_table);
+	frequent_ride_table.clear();*/
+
+	std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table;
+	debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &most_profitable_cell_table);
+	most_profitable_cell_simulation(most_profitable_cell_table);
+	most_profitable_cell_table.clear();
+
 	//debs_all_test(input_file_name, max_queue_size);
 	//log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
 	/*
@@ -479,81 +350,131 @@ void log_normal_simulation(std::string input_file)
 	std::cout << "********* END ***********\n";
 }
 
-void upper_bound_experiment(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
+void frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
 {
+	RoundRobinPartitioner* rrg;
 	PkgPartitioner* pkg;
 	HashFieldPartitioner* fld;
 	CardinalityAwarePolicy ca_policy;
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	LoadAwarePolicy la_policy;
+	CaPartitionLib::CA_Exact_Partitioner* la_naive;
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
-	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-	// std::vector<Experiment::DebsChallenge::CompactRide>* lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
-	// experiment.parse_debs_rides_with_to_string(input_file_name, lines);
-	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-	std::chrono::duration<double, std::milli> scan_duration = end - start;
-	std::cout << "scanned and parsed the whole life.. (time: " << scan_duration.count() << " msec).\n";
-	// tasks: 5
 	std::vector<uint16_t> tasks;
-	/*for (uint16_t i = 0; i < 5; i++)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-	std::cout << "Tasks: " << tasks.size() << ".\n";
-	PkgPartitioner* pkg = new PkgPartitioner(tasks);
-	HashFieldPartitioner* fld = new HashFieldPartitioner(tasks);
-	CardinalityAwarePolicy cag_policy;
-	CaPartitionLib::CA_Exact_Partitioner* cag_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, cag_policy);
-	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg");
-	upper_bound_performance_simulation(*lines, tasks, *fld, "fld");
-	upper_bound_performance_simulation(*lines, tasks, *cag_naive, "cag-naive");
 
-	delete pkg;
-	delete fld;
-	delete cag_naive;
-	tasks.clear();*/
 	// tasks: 10
 	for (uint16_t i = 0; i < 10; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	std::cout << "Tasks: " << tasks.size() << ".\n";
-	pkg = new PkgPartitioner(tasks);
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
-	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	upper_bound_performance_simulation(lines, tasks, *fld, "fld", "fld_full_result");
-	upper_bound_performance_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	debs_frequent_route_performance_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
 
-	delete pkg;
+	delete rrg;
 	delete fld;
+	delete pkg;
 	delete ca_naive;
+	delete la_naive;
 	tasks.clear();
 	// tasks: 100
-	/*for (uint16_t i = 0; i < 100; i++)
+	for (uint16_t i = 0; i < 100; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	std::cout << "Tasks: " << tasks.size() << ".\n";
-	pkg = new PkgPartitioner(tasks);
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
-	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	upper_bound_performance_simulation(*lines, tasks, *fld, "fld", "fld_full_result");
-	upper_bound_performance_simulation(*lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	debs_frequent_route_performance_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	debs_frequent_route_performance_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
 
-	delete pkg;
+	delete rrg;
 	delete fld;
+	delete pkg;
 	delete ca_naive;
-	tasks.clear();*/
-	// cleaning up buffer
-	/*lines.clear();
-	delete lines;*/
+	delete la_naive;
+	tasks.clear();
 }
 
-void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+void most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
+{
+	RoundRobinPartitioner* rrg;
+	PkgPartitioner* pkg;
+	HashFieldPartitioner* fld;
+	CardinalityAwarePolicy ca_policy;
+	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	LoadAwarePolicy la_policy;
+	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	std::vector<uint16_t> tasks;
+
+	// tasks: 10
+	for (uint16_t i = 0; i < 10; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+	// tasks: 100
+	for (uint16_t i = 0; i < 100; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	debs_most_profitable_cell_performance_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+}
+
+void debs_frequent_route_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix)
 {
 	// get maximum and minimum running times
@@ -630,6 +551,7 @@ void upper_bound_performance_simulation(const std::vector<Experiment::DebsChalle
 	}
 
 	Experiment::DebsChallenge::FrequentRouteOfflineAggregator aggregator;
+	// TIME CRITICAL CODE - START
 	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
 	if (!partial_result.empty())
 	{
@@ -640,6 +562,7 @@ void upper_bound_performance_simulation(const std::vector<Experiment::DebsChalle
 		aggregator.sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
 	}
 	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+	// TIME CRITICAL CODE - END
 	std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
 
 	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
@@ -649,3 +572,242 @@ void upper_bound_performance_simulation(const std::vector<Experiment::DebsChalle
 	partial_result.clear();
 }
 
+void debs_most_profitable_cell_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+	Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix)
+{
+	// get maximum and minimum running times
+	double min_duration = -1, max_duration = 0, sum_of_durations = 0;
+	std::vector<Experiment::DebsChallenge::most_profitable_cell> partial_result;
+	// first read the input file and generate sub-files with 
+	// the tuples that will be handled by each worker
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	std::ofstream** out_file;
+	out_file = new std::ofstream*[tasks.size()];
+	// create files
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i] = new std::ofstream(partitioner_name + "_" + std::to_string(i) + ".csv");
+	}
+	// distribute tuples - TODO: Finish it up!
+	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+	{
+		std::string key = it->medallion;
+		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+		*out_file[task] << it->to_string() << "\n";
+	}
+	// write out files and clean up memory
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i]->flush();
+		out_file[i]->close();
+		delete out_file[i];
+	}
+	delete[] out_file;
+
+	// for every task - calculate (partial) workload
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		std::vector<Experiment::DebsChallenge::most_profitable_cell> p;
+		std::vector<Experiment::DebsChallenge::CompactRide>* task_lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
+		std::string workload_file_name = partitioner_name + "_" + std::to_string(i) + ".csv";
+		experiment.parse_debs_rides_with_to_string(workload_file_name, task_lines);
+		// feed the worker
+		std::queue<Experiment::DebsChallenge::CompactRide> queue;
+		std::mutex mu;
+		std::condition_variable cond;
+		Experiment::DebsChallenge::ProfitableArea worker(&queue, &mu, &cond, worker_output_file_name_prefix + "_" + std::to_string(i));
+
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		// TIME CRITICAL CODE - START
+		for (auto it = task_lines->begin(); it != task_lines->end(); ++it)
+		{
+			worker.update(*it);
+		}
+
+		worker.partial_finalize(p);
+		partial_result.reserve(partial_result.size() + p.size());
+		std::move(p.begin(), p.end(), std::inserter(partial_result, partial_result.end()));
+		// TIME CRITICAL CODE - END
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+
+		sum_of_durations += execution_time.count();
+		if (max_duration < execution_time.count())
+		{
+			max_duration = execution_time.count();
+		}
+		min_duration = i == 0 ? execution_time.count() : (min_duration > execution_time.count() ? execution_time.count() : min_duration);
+
+		p.clear();
+		task_lines->clear();
+		delete task_lines;
+		std::remove(workload_file_name.c_str());
+	}
+
+	Experiment::DebsChallenge::ProfitableAreaOfflineAggregator aggregator;
+	// TIME CRITICAL CODE - START
+	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+	if (!partial_result.empty())
+	{
+		aggregator.calculate_and_sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
+	}
+	else
+	{
+		aggregator.sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
+	}
+	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+	// TIME CRITICAL CODE - END
+	std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
+
+	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
+		max_duration << ", average execution worker time: " << sum_of_durations / tasks.size() <<
+		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
+
+	partial_result.clear();
+}
+
+double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
+{
+	double sum = 0.0;
+	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
+	{
+		sum += it->size();
+	}
+	return sum / task_cardinality.size();
+}
+
+double get_cardinality_max(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
+{
+	double max = 0.0;
+	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
+	{
+		max = max < it->size() ? it->size() : max;
+	}
+	return max;
+}
+
+double get_imbalance(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
+{
+	return get_cardinality_max(task_cardinality) - get_cardinality_average(task_cardinality);
+}
+
+double get_imbalance(const std::vector<uint32_t>& task_cardinality)
+{
+	uint32_t max_card = *std::max_element(task_cardinality.begin(), task_cardinality.end());
+	double sum_card = std::accumulate(task_cardinality.begin(), task_cardinality.end(), 0);
+	return max_card - (sum_card / task_cardinality.size());
+}
+
+void plot_cardinality_estimation_correctness(const unsigned int p, const size_t task_number, const uint64_t cardinality, const size_t stream_length)
+{
+	std::ofstream imbalance_plot("imbalance_plot.csv");
+	//imbalance_plot << "tuple-id";
+	std::vector<uint16_t> tasks;
+	uint64_t* stream;
+	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
+	hll_32** opt_32_cardinality_estimator = (hll_32**)malloc(sizeof(hll_32*) * task_number);
+	Cardinality_Estimation_Utils::ProbCount** pc = new Cardinality_Estimation_Utils::ProbCount*[task_number];
+
+	srand(time(NULL));
+
+	//for (size_t i = 0; i < task_number; i++)
+	//{
+	//	if (i < task_number - 1)
+	//	{
+	//		//imbalance_plot << std::to_string(i) << "-err,";
+	//	}
+	//	else
+	//	{
+	//		//imbalance_plot << std::to_string(i) << "-err";
+	//	}
+	//}
+	//imbalance_plot << "\n";
+
+	for (size_t i = 0; i < task_number; i++)
+	{
+		tasks.push_back(uint16_t(i));
+		opt_cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
+		init_8(opt_cardinality_estimator[i], p, sizeof(uint64_t));
+		opt_32_cardinality_estimator[i] = (hll_32*)malloc(sizeof(hll_32));
+		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
+		pc[i] = new Cardinality_Estimation_Utils::ProbCount(64);
+	}
+	CardinalityAwarePolicy ca;
+	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, ca);
+	stream = new uint64_t[stream_length];
+	for (size_t i = 0; i < stream_length; ++i)
+	{
+		stream[i] = rand() % cardinality;
+	}
+	std::cout << "Generated stream.\n";
+
+	for (size_t i = 0; i < stream_length; ++i)
+	{
+		uint64_t element = stream[i];
+		uint64_t long_code[2];
+		MurmurHash3_x64_128(&element, sizeof(uint64_t), 13, &long_code);
+		uint64_t xor_long_code = long_code[0] ^ long_code[1];
+		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
+		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
+		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
+		pc[naive_choice]->update_bitmap_with_hashed_value_64(xor_long_code);
+		std::vector<unsigned long long> cag_naive_cardinality_vector;
+		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
+		imbalance_plot << std::to_string(i) << ",";
+		for (size_t i = 0; i < task_number; i++)
+		{
+			//uint64_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
+			uint64_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
+			//uint16_t pc_estimate = pc[i]->cardinality_estimation_64();
+			//int64_t opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
+			int64_t opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
+			/*if (cag_naive_cardinality_vector[i])
+			{
+			double relative_diff = double(opt_diff) / cag_naive_cardinality_vector[i];
+			if (i < task_number - 1)
+			{
+			imbalance_plot << std::to_string(relative_diff) << ",";
+			}
+			else
+			{
+			imbalance_plot << std::to_string(relative_diff);
+			}
+			}
+			else
+			{
+			double relative_diff = 0;
+			if (i < task_number - 1)
+			{
+			imbalance_plot << std::to_string(relative_diff) << ",";
+			}
+			else
+			{
+			imbalance_plot << std::to_string(relative_diff);
+			}
+			}*/
+			if (i < task_number - 1)
+			{
+				imbalance_plot << std::to_string(abs(opt_32_diff)) << ",";
+			}
+			else
+			{
+				imbalance_plot << std::to_string(abs(opt_32_diff));
+			}
+		}
+		imbalance_plot << "\n";
+	}
+	std::cout << "Finished the partitioning and the output of the plot.\n";
+	tasks.clear();
+	delete[] stream;
+	imbalance_plot.flush();
+	imbalance_plot.close();
+	for (size_t i = 0; i < task_number; i++)
+	{
+		destroy_8(opt_cardinality_estimator[i]);
+		free(opt_cardinality_estimator[i]);
+		delete pc[i];
+	}
+	delete[] pc;
+	free(opt_cardinality_estimator);
+}
