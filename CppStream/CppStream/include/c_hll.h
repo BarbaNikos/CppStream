@@ -3,11 +3,24 @@
 #include <cstdlib>
 #include <cmath>
 #include <climits>
+#include <cstring>
 
 #ifndef BIT_TRICK_UTILS_H_
 #include "bit_trick_utils.h"
 #endif // !BIT_TRICK_UTILS_H_
 
+
+
+#if defined(_MSC_VER)
+
+#include <intrin.h>
+#define popcnt64(x)	__popcnt64(x)
+
+#else	// defined(_MSC_VER)
+
+#define popcnt64(x)	__builtin_popcountll(x)
+
+#endif	// !defined(_MSC_VER)
 
 #ifndef C_HLL_H_
 #define C_HLL_H_
@@ -191,9 +204,9 @@ void opt_update_8(hll_8* _hll, uint32_t hash_value)
 	{
 		uint64_t or_operand = uint64_t(1 << (j % 64));
 		uint32_t byte_offset = j / 64;
-		uint64_t prev_count = __popcnt64(_hll->v_bitmap[byte_offset]);
+		uint64_t prev_count = popcnt64(_hll->v_bitmap[byte_offset]);
 		uint64_t new_bitmap_value = _hll->v_bitmap[byte_offset] | or_operand;
-		uint64_t current_count = __popcnt64(new_bitmap_value);
+		uint64_t current_count = popcnt64(new_bitmap_value);
 		_hll->v_bitmap[byte_offset] = new_bitmap_value;
 		_hll->v -= (current_count - prev_count);
 	}
@@ -215,9 +228,9 @@ void opt_update_8(hll_8* _hll, uint64_t hash_value)
 	{
 		uint64_t or_operand = 1 << (j % 64);
 		uint32_t byte_offset = j / 64;
-		uint32_t prev_count = __popcnt64(_hll->v_bitmap[byte_offset]);
+		uint32_t prev_count = popcnt64(_hll->v_bitmap[byte_offset]);
 		uint64_t new_bitmap_value = _hll->v_bitmap[byte_offset] | or_operand;
-		uint32_t current_count = __popcnt64(new_bitmap_value);
+		uint32_t current_count = popcnt64(new_bitmap_value);
 		_hll->v_bitmap[byte_offset] = new_bitmap_value;
 		_hll->v -= (current_count - prev_count);
 	}
@@ -264,9 +277,9 @@ void opt_update_32(hll_32* _hll, uint32_t hash_value)
 	{
 		uint64_t or_operand = 1 << (j % 64);
 		uint32_t byte_offset = j / 64;
-		uint32_t prev_count = __popcnt64(_hll->v_bitmap[byte_offset]);
+		uint32_t prev_count = popcnt64(_hll->v_bitmap[byte_offset]);
 		uint64_t new_bitmap_value = _hll->v_bitmap[byte_offset] | or_operand;
-		uint32_t current_count = __popcnt64(new_bitmap_value);
+		uint32_t current_count = popcnt64(new_bitmap_value);
 		_hll->v_bitmap[byte_offset] = new_bitmap_value;
 		_hll->v -= (current_count - prev_count);
 	}
@@ -287,9 +300,9 @@ void opt_update_32(hll_32* _hll, uint64_t hash_value)
 	{
 		uint64_t or_operand = 1 << (j % 64);
 		uint32_t byte_offset = j / 64;
-		uint32_t prev_count = __popcnt64(_hll->v_bitmap[byte_offset]);
+		uint32_t prev_count = popcnt64(_hll->v_bitmap[byte_offset]);
 		uint64_t new_bitmap_value = _hll->v_bitmap[byte_offset] | or_operand;
-		uint32_t current_count = __popcnt64(new_bitmap_value);
+		uint32_t current_count = popcnt64(new_bitmap_value);
 		_hll->v_bitmap[byte_offset] = new_bitmap_value;
 		_hll->v -= (current_count - prev_count);
 	}
@@ -375,9 +388,9 @@ uint64_t opt_new_cardinality_estimate_8(hll_8* _hll, uint32_t hash_value)
 	{
 		uint64_t or_operand = 1 << (j % 64);
 		uint32_t byte_offset = j / 64;
-		uint32_t prev_count = __popcnt64(_hll->v_bitmap[byte_offset]);
+		uint32_t prev_count = popcnt64(_hll->v_bitmap[byte_offset]);
 		uint64_t new_bitmap_value = _hll->v_bitmap[byte_offset] | or_operand;
-		uint32_t current_count = __popcnt64(new_bitmap_value);
+		uint32_t current_count = popcnt64(new_bitmap_value);
 		new_v = _hll->v - (current_count - prev_count);
 	}
 	E = _hll->_multiplier / current_sum;
@@ -418,9 +431,9 @@ uint64_t opt_new_cardinality_estimate_8(hll_8* _hll, uint64_t hash_value)
 	{
 		uint64_t or_operand = 1 << (j % 64);
 		uint32_t byte_offset = j / 64;
-		uint32_t prev_count = __popcnt64(_hll->v_bitmap[byte_offset]);
+		uint32_t prev_count = popcnt64(_hll->v_bitmap[byte_offset]);
 		uint64_t new_bitmap_value = _hll->v_bitmap[byte_offset] | or_operand;
-		uint32_t current_count = __popcnt64(new_bitmap_value);
+		uint32_t current_count = popcnt64(new_bitmap_value);
 		new_v = _hll->v - (current_count - prev_count);
 	}
 	E = _hll->_multiplier / current_sum;

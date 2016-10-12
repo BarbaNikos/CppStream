@@ -1,4 +1,3 @@
-#pragma once
 #include <iostream>
 #include <ctime>
 #include <fstream>
@@ -49,16 +48,16 @@ void debs_check_hash_result_values(const std::string& out_file_name, const std::
 void debs_cardinality_estimation(const std::string& out_file_name, const std::vector<Experiment::DebsChallenge::Ride>& ride_table);
 void debs_all_test(const std::string input_file_name, size_t max_queue_size);
 void log_normal_simulation(std::string input_file);
-void upper_bound_experiment(const std::string input_file_name);
+void upper_bound_experiment(const std::vector<Experiment::DebsChallenge::CompactRide>& lines);
 void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 
 double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
 {
 	double sum = 0.0;
-	for each (std::unordered_set<uint32_t> cardinality in task_cardinality)
+	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
 	{
-		sum += cardinality.size();
+		sum += it->size();
 	}
 	return sum / task_cardinality.size();
 }
@@ -66,9 +65,9 @@ double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& 
 double get_cardinality_max(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
 {
 	double max = 0.0;
-	for each (std::unordered_set<uint32_t> cardinality in task_cardinality)
+	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
 	{
-		max = max < cardinality.size() ? cardinality.size() : max;
+		max = max < it->size() ? it->size() : max;
 	}
 	return max;
 }
@@ -87,7 +86,6 @@ double get_imbalance(const std::vector<uint32_t>& task_cardinality)
 
 void plot_cardinality_estimation_correctness(const unsigned int p, const size_t task_number, const uint64_t cardinality, const size_t stream_length)
 {
-	const double error = 1.06 / sqrt(std::pow(2, 10));
 	std::ofstream imbalance_plot("imbalance_plot.csv");
 	//imbalance_plot << "tuple-id";
 	std::vector<uint16_t> tasks;
@@ -139,15 +137,15 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
 		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
 		pc[naive_choice]->update_bitmap_with_hashed_value_64(xor_long_code);
-		std::vector<uint64_t> cag_naive_cardinality_vector;
+		std::vector<unsigned long long> cag_naive_cardinality_vector;
 		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
 		imbalance_plot << std::to_string(i) << ",";
 		for (size_t i = 0; i < task_number; i++)
 		{
-			uint64_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
+			//uint64_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
 			uint64_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
-			uint16_t pc_estimate = pc[i]->cardinality_estimation_64();
-			int64_t opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
+			//uint16_t pc_estimate = pc[i]->cardinality_estimation_64();
+			//int64_t opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
 			int64_t opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
 			/*if (cag_naive_cardinality_vector[i])
 			{
@@ -201,7 +199,6 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 
 int main(int argc, char** argv)
 {
-	char ch;
 	if (argc < 2)
 	{
 		std::cout << "usage: <input-file>\n";
@@ -215,17 +212,18 @@ int main(int argc, char** argv)
 	/*
 	 * DEBS queries
 	 */
-	upper_bound_experiment(input_file_name);
+	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
+	frequent_ride_table.shrink_to_fit();
+	upper_bound_experiment(frequent_ride_table);
 	//debs_all_test(input_file_name, max_queue_size);
 	//log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
 	/*
 	 * Upper bound benefit experiment
 	 */
 	//upper_bound_experiment(input_file_name);
-	const unsigned int p = 16;
+	//const unsigned int p = 16;
 	//plot_cardinality_estimation_correctness(p, 10, (uint64_t)1e+5, (size_t)1e+6);
-	std::cout << "Press any key to continue...\n";
-	std::cin >> ch;
 	return 0;
 }
 
@@ -481,7 +479,7 @@ void log_normal_simulation(std::string input_file)
 	std::cout << "********* END ***********\n";
 }
 
-void upper_bound_experiment(const std::string input_file_name)
+void upper_bound_experiment(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
 {
 	PkgPartitioner* pkg;
 	HashFieldPartitioner* fld;
@@ -489,8 +487,8 @@ void upper_bound_experiment(const std::string input_file_name)
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
 	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-	std::vector<Experiment::DebsChallenge::CompactRide>* lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
-	experiment.parse_debs_rides_with_to_string(input_file_name, lines);
+	// std::vector<Experiment::DebsChallenge::CompactRide>* lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
+	// experiment.parse_debs_rides_with_to_string(input_file_name, lines);
 	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 	std::chrono::duration<double, std::milli> scan_duration = end - start;
 	std::cout << "scanned and parsed the whole life.. (time: " << scan_duration.count() << " msec).\n";
@@ -524,9 +522,9 @@ void upper_bound_experiment(const std::string input_file_name)
 	pkg = new PkgPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
-	upper_bound_performance_simulation(*lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	upper_bound_performance_simulation(*lines, tasks, *fld, "fld", "fld_full_result");
-	upper_bound_performance_simulation(*lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	upper_bound_performance_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	upper_bound_performance_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	upper_bound_performance_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
 
 	delete pkg;
 	delete fld;
@@ -551,13 +549,16 @@ void upper_bound_experiment(const std::string input_file_name)
 	delete ca_naive;
 	tasks.clear();*/
 	// cleaning up buffer
-	lines->clear();
-	delete lines;
+	/*lines.clear();
+	delete lines;*/
 }
 
 void upper_bound_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
 	Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix)
 {
+	// get maximum and minimum running times
+	double min_duration = -1, max_duration = 0, sum_of_durations = 0;
+	std::vector<Experiment::DebsChallenge::frequent_route> partial_result;
 	// first read the input file and generate sub-files with 
 	// the tuples that will be handled by each worker
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
@@ -577,58 +578,74 @@ void upper_bound_performance_simulation(const std::vector<Experiment::DebsChalle
 		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
 		*out_file[task] << it->to_string() << "\n";
 	}
-	// get maximum and minimum running times
-	double min_duration = 0, max_duration = 0;
-	for (size_t i = 0; i < tasks.size(); ++i)
+	// write out files and clean up memory
+	for (size_t i = 0; i < tasks.size(); i++)
 	{
 		out_file[i]->flush();
 		out_file[i]->close();
+		delete out_file[i];
+	}
+	delete[] out_file;
+
+	// for every task - calculate (partial) workload
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		std::vector<Experiment::DebsChallenge::frequent_route> p;
 		std::vector<Experiment::DebsChallenge::CompactRide>* task_lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
-		experiment.parse_debs_rides_with_to_string(partitioner_name + "_" + std::to_string(i) + ".csv", task_lines);
+		std::string workload_file_name = partitioner_name + "_" + std::to_string(i) + ".csv";
+		experiment.parse_debs_rides_with_to_string(workload_file_name, task_lines);
 		// feed the worker
-		double average_execution_time = 0.0;
-		/*for (short r = 0; r < 3; ++r)
-		{*/
 		std::queue<Experiment::DebsChallenge::CompactRide> queue;
 		std::mutex mu;
 		std::condition_variable cond;
-		Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond, worker_output_file_name_prefix + "_" + std::to_string(i));
+		Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond, 
+			worker_output_file_name_prefix + "_" + std::to_string(i));
+
 		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		// TIME CRITICAL CODE - START
 		for (auto it = task_lines->begin(); it != task_lines->end(); ++it)
 		{
 			worker.update(*it);
 		}
-		worker.finalize();
+		
+		worker.partial_finalize(p);
+		partial_result.reserve(partial_result.size() + p.size());
+		std::move(p.begin(), p.end(), std::inserter(partial_result, partial_result.end()));
+		// TIME CRITICAL CODE - END
 		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		
 		std::chrono::duration<double, std::milli> execution_time = end - start;
-		average_execution_time += execution_time.count();
-		//}
-		// clean up the memory after the work is done
+
+		sum_of_durations += execution_time.count();
+		if (max_duration < execution_time.count())
+		{
+			max_duration = execution_time.count();
+		}
+		min_duration = i == 0 ? execution_time.count() : (min_duration > execution_time.count() ? execution_time.count() : min_duration);
+		
+		p.clear();
 		task_lines->clear();
 		delete task_lines;
-		//average_execution_time = average_execution_time / 3;
-		/*if (i == 0)
-		{
-			min_duration = average_execution_time;
-			max_duration = average_execution_time;
-		}
-		else
-		{
-			if (min_duration > average_execution_time)
-			{
-				min_duration = average_execution_time;
-			}
-			if (max_duration < average_execution_time)
-			{
-				max_duration = average_execution_time;
-			}
-		}*/
-		delete out_file[i];
-		std::string f_name = partitioner_name + "_" + std::to_string(i) + ".csv";
-		std::remove(f_name.c_str());
+		std::remove(workload_file_name.c_str());
 	}
-	delete[] out_file;
+
+	Experiment::DebsChallenge::FrequentRouteOfflineAggregator aggregator;
+	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+	if (!partial_result.empty())
+	{
+		aggregator.calculate_and_sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
+	}
+	else
+	{
+		aggregator.sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
+	}
+	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
+
 	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
-		max_duration << "\n";
+		max_duration << ", average execution worker time: " << sum_of_durations / tasks.size() << 
+		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
+
+	partial_result.clear();
 }
 

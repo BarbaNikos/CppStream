@@ -43,6 +43,7 @@ namespace Experiment
 			void operate();
 			void update(DebsChallenge::CompactRide& ride);
 			void finalize();
+			void partial_finalize(std::vector<Experiment::DebsChallenge::frequent_route>&);
 		private:
 			std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue;
 			std::mutex* aggr_mu; 
@@ -54,19 +55,15 @@ namespace Experiment
 			std::string result_output_file_name;
 		};
 
-		class FrequentRouteAggregator
+		class FrequentRouteOfflineAggregator
 		{
 		public:
-			FrequentRouteAggregator(std::queue<Experiment::DebsChallenge::frequent_route>* input_queue, std::mutex* mu, std::condition_variable* cond);
-			~FrequentRouteAggregator();
-			void operate();
-			void update(Experiment::DebsChallenge::frequent_route& frequent_route);
-			void finalize();
+			FrequentRouteOfflineAggregator();
+			~FrequentRouteOfflineAggregator();
+			void sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& full_aggregates, const std::string& outfile_name);
+			void calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_aggregates, const std::string& outfile_name);
 		private:
-			std::mutex* mu;
-			std::condition_variable* cond;
-			std::unordered_map<std::string, uint64_t> result;
-			std::queue<DebsChallenge::frequent_route>* input_queue;
+			std::map<std::string, uint64_t> result;
 		};
 
 		class FrequentRoutePartition
@@ -215,10 +212,8 @@ inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::operate()
 
 inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::update(Experiment::DebsChallenge::CompactRide& ride)
 {
-	std::string key = std::to_string(ride.pickup_cell.first) +
-		std::to_string(ride.pickup_cell.second) +
-		std::to_string(ride.dropoff_cell.first) +
-		std::to_string(ride.dropoff_cell.second);
+	std::string key = std::to_string(ride.pickup_cell.first) + "." + std::to_string(ride.pickup_cell.second) + "-" +
+		std::to_string(ride.dropoff_cell.first) + "." + std::to_string(ride.dropoff_cell.second);
 	// update counts
 	std::unordered_map<std::string, uint64_t>::iterator it = result.find(key);
 	if (it != result.end())
@@ -273,8 +268,6 @@ inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize()
 	}
 	else
 	{
-		// start feeding partial aggregations to the aggregator
-		// TO-DO: Complete this part
 		if (result_output_file_name.compare("") != 0)
 		{
 			std::ofstream output_file(result_output_file_name);
@@ -293,93 +286,102 @@ inline void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize()
 	}
 }
 
-Experiment::DebsChallenge::FrequentRouteAggregator::FrequentRouteAggregator(std::queue<Experiment::DebsChallenge::frequent_route>* input_queue, std::mutex* mu, std::condition_variable* cond)
+void Experiment::DebsChallenge::FrequentRouteWorkerThread::partial_finalize(std::vector<Experiment::DebsChallenge::frequent_route>& partial_result)
 {
-	this->mu = mu;
-	this->cond = cond;
-	this->input_queue = input_queue;
-}
-
-inline Experiment::DebsChallenge::FrequentRouteAggregator::~FrequentRouteAggregator()
-{
-	result.clear();
-}
-
-inline void Experiment::DebsChallenge::FrequentRouteAggregator::operate()
-{
-	while (true)
-	{
-		std::unique_lock<std::mutex> locker(*mu);
-		cond->wait(locker, [this]() { return input_queue->size() > 0; });
-		Experiment::DebsChallenge::frequent_route freq_route = input_queue->back();
-		input_queue->pop();
-		// process
-		if (freq_route.count >= 0)
-		{
-			update(freq_route);
-		}
-		else
-		{
-			finalize();
-			locker.unlock();
-			cond->notify_all();
-			break;
-		}
-		locker.unlock();
-		cond->notify_all();
-	}
-}
-
-inline void Experiment::DebsChallenge::FrequentRouteAggregator::update(Experiment::DebsChallenge::frequent_route & frequent_route)
-{
-	// update counts
-	std::unordered_map<std::string, uint64_t>::iterator it = result.find(frequent_route.route);
-	if (it != result.end())
-	{
-		it->second += 1;
-	}
-	else
-	{
-		result.insert(std::make_pair(frequent_route.route, frequent_route.count));
-	}
-}
-
-inline void Experiment::DebsChallenge::FrequentRouteAggregator::finalize()
-{
-	std::map<uint64_t, std::vector<std::string>> count_to_keys_map;
-	std::vector<uint64_t> top_counts;
-	std::vector<std::string> top_routes;
 	for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
 	{
-		auto top_iter = count_to_keys_map.find(it->second);
-		if (top_iter == count_to_keys_map.end())
+		Experiment::DebsChallenge::frequent_route fr;
+		fr.route = it->first;
+		fr.count = it->second;
+		partial_result.push_back(fr);
+	}
+}
+
+Experiment::DebsChallenge::FrequentRouteOfflineAggregator::FrequentRouteOfflineAggregator()
+{
+
+}
+
+Experiment::DebsChallenge::FrequentRouteOfflineAggregator::~FrequentRouteOfflineAggregator()
+{
+
+}
+
+void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& full_aggregates, 
+	const std::string& out_filename)
+{
+	FILE* fd;
+	std::map<unsigned long, std::vector<std::string>> final_result;
+	for (std::vector<frequent_route>::const_iterator cit = full_aggregates.cbegin(); cit != full_aggregates.cend(); ++cit)
+	{
+		auto it = final_result.find(cit->count);
+		if (it != final_result.end())
 		{
-			std::vector<std::string> buffer;
-			buffer.push_back(it->first);
-			count_to_keys_map.insert(std::make_pair(it->second, buffer));
+			it->second.push_back(cit->route);
 		}
 		else
 		{
-			count_to_keys_map[it->second].push_back(it->first);
+			std::vector<std::string> tmp;
+			tmp.push_back(cit->route);
+			final_result.insert(std::make_pair(cit->count, tmp));
 		}
 	}
-	if (count_to_keys_map.size() > 0)
+	fd = fopen(out_filename.c_str(), "w");
+	for (std::map<unsigned long, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
 	{
-		std::map<uint64_t, std::vector<std::string>>::const_iterator reverse_iter = count_to_keys_map.cend();
-		do
+		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
-			reverse_iter--;
-			for (size_t i = 0; i < reverse_iter->second.size(); ++i)
-			{
-				top_routes.push_back(reverse_iter->second[i]);
-				top_counts.push_back(reverse_iter->first);
-				if (top_routes.size() >= 10)
-				{
-					return;
-				}
-			}
-		} while (reverse_iter != count_to_keys_map.cbegin());
+			std::string buffer = *i + "," + std::to_string(c->first) + "\n";
+			fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+		}
 	}
+	fclose(fd);
+	final_result.clear();
+}
+
+void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_aggregates, 
+	const std::string& out_filename)
+{
+	FILE* fd;
+	for (std::vector<frequent_route>::const_iterator cit = partial_aggregates.cbegin(); cit != partial_aggregates.cend(); ++cit)
+	{
+		auto it = result.find(cit->route);
+		if (it != result.end())
+		{
+			it->second += cit->count;
+		}
+		else
+		{
+			result.insert(std::make_pair(cit->route, cit->count));
+		}
+	}
+	std::map<unsigned long, std::vector<std::string>> final_result;
+	for (auto cit = result.begin(); cit != result.end(); ++cit)
+	{
+		auto it = final_result.find(cit->second);
+		if (it != final_result.end())
+		{
+			it->second.push_back(cit->first);
+		}
+		else
+		{
+			std::vector<std::string> tmp;
+			tmp.push_back(cit->first);
+			final_result.insert(std::make_pair(cit->second, tmp));
+		}
+	}
+	// at this point the result is materialized
+	fd = fopen(out_filename.c_str(), "w");
+	for (std::map<unsigned long, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
+	{
+		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
+		{
+			std::string buffer = *i + "," + std::to_string(c->first) + "\n";
+			fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+		}
+	}
+	fclose(fd);
+	final_result.clear();
 }
 
 inline Experiment::DebsChallenge::FrequentRoutePartition::FrequentRoutePartition()
