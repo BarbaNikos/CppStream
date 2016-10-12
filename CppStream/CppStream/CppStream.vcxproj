@@ -124,6 +124,7 @@
     <ClInclude Include="include\debs_query_lib.h" />
     <ClInclude Include="include\debs_cell_coordinate_util.h" />
     <ClInclude Include="include\debs_structure_lib.h" />
+    <ClInclude Include="include\google_cluster_monitor_query.h" />
     <ClInclude Include="include\google_cluster_monitor_util.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
     <ClInclude Include="include\lognormal_experiment.h" />
@@ -141,6 +142,7 @@
     <ClCompile Include="src\cardinality_estimation_utils.cpp" />
     <ClCompile Include="src\debs_cell_coordinate_util.cpp" />
     <ClCompile Include="src\debs_query_lib.cpp" />
+    <ClCompile Include="src\google_cluster_monitor_query.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\murmurhash_3.cpp" />
   </ItemGroup>
