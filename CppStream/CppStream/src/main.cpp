@@ -82,8 +82,9 @@ int main(int argc, char** argv)
 	frequent_route_simulation(frequent_ride_table);
 	frequent_ride_table.clear();*/
 
-	std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table;
-	debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &most_profitable_cell_table);
+	//std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table;
+	std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
+	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &most_profitable_cell_table);
 	most_profitable_cell_simulation(most_profitable_cell_table);
 	most_profitable_cell_table.clear();
 
@@ -449,7 +450,7 @@ void most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge
 	delete la_naive;
 	tasks.clear();
 	// tasks: 100
-	for (uint16_t i = 0; i < 100; i++)
+	/*for (uint16_t i = 0; i < 100; i++)
 	{
 		tasks.push_back(i);
 	}
@@ -471,7 +472,7 @@ void most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge
 	delete pkg;
 	delete ca_naive;
 	delete la_naive;
-	tasks.clear();
+	tasks.clear();*/
 }
 
 void debs_frequent_route_performance_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
@@ -553,7 +554,7 @@ void debs_frequent_route_performance_simulation(const std::vector<Experiment::De
 	Experiment::DebsChallenge::FrequentRouteOfflineAggregator aggregator;
 	// TIME CRITICAL CODE - START
 	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-	if (!partial_result.empty())
+	if (partitioner_name.compare("fld") != 0)
 	{
 		aggregator.calculate_and_sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
 	}
@@ -648,7 +649,7 @@ void debs_most_profitable_cell_performance_simulation(const std::vector<Experime
 	Experiment::DebsChallenge::ProfitableAreaOfflineAggregator aggregator;
 	// TIME CRITICAL CODE - START
 	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-	if (!partial_result.empty())
+	if (partitioner_name.compare("fld") != 0)
 	{
 		aggregator.calculate_and_sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
 	}
