@@ -18,6 +18,7 @@ class RoundRobinPartitioner : public Partitioner
 public:
 	RoundRobinPartitioner(const std::vector<uint16_t>& tasks);
 	~RoundRobinPartitioner();
+	void init();
 	unsigned int partition_next(const void* key, const size_t key_len);
 	unsigned long long get_min_task_count();
 	unsigned long long get_max_task_count();
@@ -28,8 +29,9 @@ private:
 	unsigned long long max_task_count;
 	unsigned long long min_task_count;
 };
+#endif // !ROUND_ROBIN_PARTITIONER_H_
 
-RoundRobinPartitioner::RoundRobinPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
+inline RoundRobinPartitioner::RoundRobinPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
 task_count(tasks.size(), uint64_t(0))
 {
 	next_task = -1;
@@ -37,8 +39,16 @@ task_count(tasks.size(), uint64_t(0))
 	min_task_count = 0;
 }
 
-RoundRobinPartitioner::~RoundRobinPartitioner()
+inline RoundRobinPartitioner::~RoundRobinPartitioner()
 {
+}
+
+inline void RoundRobinPartitioner::init()
+{
+	std::vector<unsigned long long>(tasks.size(), uint64_t(0)).swap(task_count);
+	next_task = -1;
+	max_task_count = 0;
+	min_task_count = 0;
 }
 
 inline unsigned int RoundRobinPartitioner::partition_next(const void* key, const size_t key_len)
@@ -58,5 +68,3 @@ inline unsigned long long RoundRobinPartitioner::get_max_task_count()
 {
 	return max_task_count;
 }
-#endif // !ROUND_ROBIN_PARTITIONER_H_
-

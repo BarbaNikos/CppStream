@@ -1,4 +1,6 @@
+#ifndef DEBS_QUERY_LIB_H_
 #include "../include/debs_query_lib.h"
+#endif // DEBS_QUERY_LIB_H_
 
 Experiment::DebsChallenge::FrequentRouteWorkerThread::FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu,
 	std::condition_variable* aggr_cond, std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond)
@@ -433,6 +435,164 @@ double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partit
 	return partition_time.count();
 }
 
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
+{
+	RoundRobinPartitioner* rrg;
+	PkgPartitioner* pkg;
+	HashFieldPartitioner* fld;
+	CardinalityAwarePolicy ca_policy;
+	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	LoadAwarePolicy la_policy;
+	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	std::vector<uint16_t> tasks;
+
+	// tasks: 10
+	for (uint16_t i = 0; i < 10; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	frequent_route_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	frequent_route_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	frequent_route_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	frequent_route_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	frequent_route_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+	// tasks: 100
+	for (uint16_t i = 0; i < 100; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	frequent_route_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	frequent_route_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	frequent_route_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	frequent_route_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	frequent_route_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks, 
+	Partitioner & partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix)
+{
+	std::queue<Experiment::DebsChallenge::CompactRide> queue;
+	std::mutex mu;
+	std::condition_variable cond;
+	// get maximum and minimum running times
+	double min_duration = -1, max_duration = 0, sum_of_durations = 0;
+	std::vector<Experiment::DebsChallenge::frequent_route> partial_result;
+	// first read the input file and generate sub-files with 
+	// the tuples that will be handled by each worker
+	std::ofstream** out_file;
+	out_file = new std::ofstream*[tasks.size()];
+	// create files
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i] = new std::ofstream(partitioner_name + "_" + std::to_string(i) + ".csv");
+	}
+	// distribute tuples
+	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+	{
+		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+		std::string key = pickup_cell + "-" + dropoff_cell;
+		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+		*out_file[task] << it->to_string() << "\n";
+	}
+	// write out files and clean up memory
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i]->flush();
+		out_file[i]->close();
+		delete out_file[i];
+	}
+	delete[] out_file;
+
+	// for every task - calculate (partial) workload
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		std::vector<Experiment::DebsChallenge::frequent_route> p;
+		std::vector<Experiment::DebsChallenge::CompactRide>* task_lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
+		std::string workload_file_name = partitioner_name + "_" + std::to_string(i) + ".csv";
+		parse_debs_rides_with_to_string(workload_file_name, task_lines);
+		// feed the worker
+		Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond,
+			worker_output_file_name_prefix + "_" + std::to_string(i));
+
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		// TIME CRITICAL CODE - START
+		for (auto it = task_lines->begin(); it != task_lines->end(); ++it)
+		{
+			worker.update(*it);
+		}
+
+		worker.partial_finalize(p);
+		partial_result.reserve(partial_result.size() + p.size());
+		std::move(p.begin(), p.end(), std::inserter(partial_result, partial_result.end()));
+		// TIME CRITICAL CODE - END
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+
+		sum_of_durations += execution_time.count();
+		if (max_duration < execution_time.count())
+		{
+			max_duration = execution_time.count();
+		}
+		min_duration = i == 0 ? execution_time.count() : (min_duration > execution_time.count() ? execution_time.count() : min_duration);
+
+		p.clear();
+		task_lines->clear();
+		delete task_lines;
+		std::remove(workload_file_name.c_str());
+	}
+
+	Experiment::DebsChallenge::FrequentRouteOfflineAggregator aggregator;
+	// TIME CRITICAL CODE - START
+	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+	if (partitioner_name.compare("fld") != 0)
+	{
+		aggregator.calculate_and_sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
+	}
+	else
+	{
+		aggregator.sort_final_aggregation(partial_result, partitioner_name + "_full_result.csv");
+	}
+	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+	// TIME CRITICAL CODE - END
+	std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
+
+	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
+		max_duration << ", average execution worker time: " << sum_of_durations / tasks.size() <<
+		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
+
+	partial_result.clear();
+}
+
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route)
 {
 	frequent_route->operate();
@@ -443,21 +603,12 @@ Experiment::DebsChallenge::ProfitableArea::ProfitableArea(std::queue<Experiment:
 	this->mu = mu;
 	this->cond = cond;
 	this->input_queue = input_queue;
-	this->result_output_file_name = "";
-}
-
-Experiment::DebsChallenge::ProfitableArea::ProfitableArea(std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond, const std::string result_output_file_name)
-{
-	this->mu = mu;
-	this->cond = cond;
-	this->input_queue = input_queue;
-	this->result_output_file_name = result_output_file_name;
 }
 
 Experiment::DebsChallenge::ProfitableArea::~ProfitableArea()
 {
 	fare_map.clear();
-	dropoff_cell.clear();
+	dropoff_table.clear();
 }
 
 void Experiment::DebsChallenge::ProfitableArea::operate()
@@ -475,7 +626,6 @@ void Experiment::DebsChallenge::ProfitableArea::operate()
 		}
 		else
 		{
-			finalize();
 			locker.unlock();
 			cond->notify_all();
 			break;
@@ -487,12 +637,14 @@ void Experiment::DebsChallenge::ProfitableArea::operate()
 
 void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRide & ride)
 {
-	// update fare table
 	float total = ride.fare_amount + ride.tip_amount;
 	std::string pickup_cell = std::to_string(ride.pickup_cell.first) + "." +
 		std::to_string(ride.pickup_cell.second);
-	auto it = this->fare_map.find(pickup_cell);
-	if (it != this->fare_map.end())
+	std::string dropoff_cell = std::to_string(ride.dropoff_cell.first) + "." + 
+		std::to_string(ride.dropoff_cell.second);
+	// update fare table
+	auto it = fare_map.find(pickup_cell);
+	if (it != fare_map.end())
 	{
 		it->second.push_back(total);
 	}
@@ -500,151 +652,156 @@ void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRid
 	{
 		std::vector<float> fares;
 		fares.push_back(total);
-		this->fare_map[pickup_cell] = fares;
+		fare_map[pickup_cell] = fares;
 	}
 	// update area cell
-	auto medallion_it = this->dropoff_cell.find(ride.medallion);
-	if (medallion_it != this->dropoff_cell.end())
+	auto med_it = this->dropoff_table.find(ride.medallion);
+	if (med_it != dropoff_table.end())
 	{
-		medallion_it->second = std::to_string(ride.dropoff_cell.first) + "." +
-			std::to_string(ride.dropoff_cell.second);
+		if (med_it->second.second <= ride.dropoff_datetime)
+		{
+			// update
+			med_it->second.first = dropoff_cell;
+			med_it->second.second = ride.dropoff_datetime;
+		}
 	}
 	else
 	{
-		this->dropoff_cell[ride.medallion] = std::to_string(ride.dropoff_cell.first) + "." +
-			std::to_string(ride.dropoff_cell.second);
+		dropoff_table.insert(std::make_pair(ride.medallion, std::make_pair(dropoff_cell, ride.dropoff_datetime)));
 	}
 }
 
-void Experiment::DebsChallenge::ProfitableArea::finalize()
+void Experiment::DebsChallenge::ProfitableArea::first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map, 
+	std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table, const bool two_choice_partition_used)
 {
-	// calculate # of empty taxis per area
-	std::unordered_map<std::string, uint32_t> empty_taxi_count;
-	std::map<double, std::vector<std::string>> most_profitable_areas;
-	for (auto it = this->dropoff_cell.cbegin(); it != this->dropoff_cell.cend(); ++it)
+	for (std::unordered_map<std::string, std::vector<float>>::const_iterator it = fare_map.cbegin(); it != fare_map.cend(); ++it)
 	{
-		auto cell_it = empty_taxi_count.find(it->second);
-		if (cell_it != empty_taxi_count.end())
+		auto c_fm_it = complete_fare_map.find(it->first);
+		if (c_fm_it != complete_fare_map.end())
 		{
-			cell_it->second++;
+			// add all the fares recorded
+			c_fm_it->second.reserve(c_fm_it->second.size() + it->second.size());
+			std::move(it->second.begin(), it->second.end(), std::inserter(c_fm_it->second, c_fm_it->second.end()));
 		}
-		else
+		else 
 		{
-			empty_taxi_count[it->second] = uint32_t(1);
-		}
-	}
-	// for each cell that has # of empty taxis > 0
-	for (auto cell_it = empty_taxi_count.cbegin(); cell_it != empty_taxi_count.cend(); ++cell_it)
-	{
-		auto fare_it = this->fare_map.find(cell_it->first);
-		if (fare_it != this->fare_map.end())
-		{
-			// calculate median
-			double median = 0;
-			if (fare_it->second.size() % 2 != 0)
-			{
-				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2,
-					fare_it->second.end());
-				median = fare_it->second[fare_it->second.size() / 2];
-			}
-			else
-			{
-				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2,
-					fare_it->second.end());
-				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2 + 1,
-					fare_it->second.end());
-				median = (fare_it->second[fare_it->second.size() / 2] + fare_it->second[fare_it->second.size() / 2 + 1]) / 2;
-			}
-			auto mpa_it = most_profitable_areas.find(median);
-			if (mpa_it != most_profitable_areas.end())
-			{
-				mpa_it->second.push_back(cell_it->first);
-			}
-			else
-			{
-				most_profitable_areas[median] = std::vector<std::string>();
-				most_profitable_areas[median].push_back(cell_it->first);
-			}
+			// create new record
+			complete_fare_map.insert(std::make_pair(it->first, it->second));
 		}
 	}
-	// get the top-10
-	if (most_profitable_areas.size() > 0)
+	if (two_choice_partition_used)
 	{
-		std::vector<std::string> top_10_areas;
-		std::vector<double> top_10_profit;
-		auto it = most_profitable_areas.cend();
-		do
+		// if a two choice partitioner is used - an aggregation should take place for figuring out the last 
+		// cell a taxi has dropped off a ride
+		for (std::unordered_map<std::string, std::pair<std::string, std::time_t>>::const_iterator it = dropoff_table.cbegin();
+			it != dropoff_table.cend(); ++it)
 		{
-			it--;
-			for (size_t i = 0; i < it->second.size(); ++i)
+			auto medallion_it = complete_dropoff_table.find(it->first);
+			if (medallion_it != complete_dropoff_table.end())
 			{
-				top_10_areas.push_back(it->second[i]);
-				top_10_profit.push_back(it->first);
-				if (top_10_areas.size() >= 10)
+				if (medallion_it->second.second < it->second.second && medallion_it->second.first.compare(it->second.first) != 0)
 				{
-					return;
+					medallion_it->second.first = it->second.first;
+					medallion_it->second.second = it->second.second;
 				}
 			}
-		} while (it != most_profitable_areas.cbegin());
+			else
+			{
+				complete_dropoff_table.insert(std::make_pair(it->first, std::make_pair(it->second.first, it->second.second)));
+			}
+		}
+	}
+	else
+	{
+		// if a single choice partitioner is used - the information about medallions have to be placed in the intermediate buffer
+		for (std::unordered_map<std::string, std::pair<std::string, std::time_t>>::const_iterator it = dropoff_table.cbegin();
+			it != dropoff_table.cend(); ++it)
+		{
+			complete_dropoff_table.insert(std::make_pair(it->first, it->second));
+		}
 	}
 }
 
-void Experiment::DebsChallenge::ProfitableArea::partial_finalize(std::vector<Experiment::DebsChallenge::most_profitable_cell>& partial_result)
+void Experiment::DebsChallenge::ProfitableArea::second_round_init()
 {
-	// calculate # of empty taxis per area
-	std::unordered_map<std::string, uint32_t> empty_taxi_count;
-	std::map<double, std::vector<std::string>> most_profitable_areas;
-	for (auto it = this->dropoff_cell.cbegin(); it != this->dropoff_cell.cend(); ++it)
+	this->pickup_cell_median_fare.clear();
+	this->dropoff_cell_empty_taxi_count.clear();
+}
+
+void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::string & pickup_cell, std::vector<float>& fare_list)
+{
+	// calculate median
+	float median_fare;
+	if (fare_list.size() % 2 != 0)
 	{
-		auto cell_it = empty_taxi_count.find(it->second);
-		if (cell_it != empty_taxi_count.end())
-		{
-			cell_it->second++;
-		}
-		else
-		{
-			empty_taxi_count[it->second] = uint32_t(1);
-		}
+		std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2, fare_list.end());
+		median_fare = fare_list[fare_list.size() / 2];
 	}
-	// for each cell that has # of empty taxis > 0
-	for (auto cell_it = empty_taxi_count.cbegin(); cell_it != empty_taxi_count.cend(); ++cell_it)
+	else
 	{
-		auto fare_it = this->fare_map.find(cell_it->first);
-		if (fare_it != this->fare_map.end())
+		std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2, fare_list.end());
+		std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2 + 1, fare_list.end());
+		median_fare = (fare_list[fare_list.size() / 2] + fare_list[fare_list.size() / 2 + 1]) / 2;
+	}
+	auto it = pickup_cell_median_fare.find(pickup_cell);
+	if (it != pickup_cell_median_fare.end())
+	{
+		// this is probably a mistake since each pickup-cell has a single list of fare lists
+		// it->second = median_fare;
+		std::cerr << "second_round_update() identified duplicate pickup-cell record. the cell-id: " << pickup_cell << " was encountered twice. current median value found: " << it->second <<
+			", new value: " << median_fare << ".\n";
+	}
+	else
+	{
+		pickup_cell_median_fare.insert(std::make_pair(pickup_cell, median_fare));
+	}
+}
+
+void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::string & medallion, const std::string & dropoff_cell, const time_t & timestamp)
+{
+	auto it = this->dropoff_cell_empty_taxi_count.find(dropoff_cell);
+	if (it != dropoff_cell_empty_taxi_count.end())
+	{
+		it->second += 1;
+	}
+	else
+	{
+		dropoff_cell_empty_taxi_count.insert(std::make_pair(dropoff_cell, 1));
+	}
+}
+
+void Experiment::DebsChallenge::ProfitableArea::partial_finalize(std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer)
+{
+	for (auto dropoff_cell_it = dropoff_cell_empty_taxi_count.begin(); dropoff_cell_it != dropoff_cell_empty_taxi_count.end(); dropoff_cell_it++)
+	{
+		auto pickup_cell_it = pickup_cell_median_fare.find(dropoff_cell_it->first);
+		if (pickup_cell_it != pickup_cell_median_fare.end())
 		{
-			// calculate median
-			double median = 0;
-			if (fare_it->second.size() % 2 != 0)
+			// calculate profit
+			auto cell_profit_buffer_it = cell_profit_buffer.find(dropoff_cell_it->first);
+			if (cell_profit_buffer_it != cell_profit_buffer.end())
 			{
-				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2,
-					fare_it->second.end());
-				median = fare_it->second[fare_it->second.size() / 2];
+				cell_profit_buffer_it->second.first += dropoff_cell_it->second;
+				cell_profit_buffer_it->second.second += pickup_cell_it->second;
 			}
 			else
 			{
-				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2,
-					fare_it->second.end());
-				std::nth_element(fare_it->second.begin(), fare_it->second.begin() + fare_it->second.size() / 2 + 1,
-					fare_it->second.end());
-				median = (fare_it->second[fare_it->second.size() / 2] + fare_it->second[fare_it->second.size() / 2 + 1]) / 2;
-			}
-			auto mpa_it = most_profitable_areas.find(median);
-			if (mpa_it != most_profitable_areas.end())
-			{
-				mpa_it->second.push_back(cell_it->first);
-			}
-			else
-			{
-				most_profitable_areas[median] = std::vector<std::string>();
-				most_profitable_areas[median].push_back(cell_it->first);
+				cell_profit_buffer_it->second.first = dropoff_cell_it->second;
+				cell_profit_buffer_it->second.second = pickup_cell_it->second;
 			}
 		}
 	}
-	for (auto it = most_profitable_areas.cbegin(); it != most_profitable_areas.cend(); ++it)
+}
+
+void Experiment::DebsChallenge::ProfitableArea::finalize(std::unordered_map<std::string, float>& cell_profit_buffer)
+{
+	for (auto dropoff_cell_it = dropoff_cell_empty_taxi_count.begin(); dropoff_cell_it != dropoff_cell_empty_taxi_count.end(); dropoff_cell_it++)
 	{
-		for (auto inner_it = it->second.cbegin(); inner_it != it->second.cend(); ++inner_it)
+		auto pickup_cell_it = pickup_cell_median_fare.find(dropoff_cell_it->first);
+		if (pickup_cell_it != pickup_cell_median_fare.end())
 		{
-			partial_result.push_back(most_profitable_cell(*inner_it, it->first));
+			float profit = pickup_cell_it->second / dropoff_cell_it->second;
+			cell_profit_buffer[dropoff_cell_it->first] = profit;
 		}
 	}
 }
@@ -657,27 +814,26 @@ Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::~ProfitableAreaOffli
 {
 }
 
-void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::sort_final_aggregation(const std::vector<Experiment::DebsChallenge::most_profitable_cell>& full_aggregates, 
-	const std::string & outfile_name)
+void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::sort_final_aggregation(const std::unordered_map<std::string, float>& cell_profit_buffer, const std::string& out_file)
 {
 	FILE* fd;
-	std::map<double, std::vector<std::string>> final_result;
-	for (std::vector<most_profitable_cell>::const_iterator cit = full_aggregates.cbegin(); cit != full_aggregates.cend(); ++cit)
+	std::map<float, std::vector<std::string>> final_result;
+	for (std::unordered_map<std::string, float>::const_iterator cit = cell_profit_buffer.cbegin(); cit != cell_profit_buffer.cend(); ++cit)
 	{
-		auto it = final_result.find(cit->profit);
+		auto it = final_result.find(cit->second);
 		if (it != final_result.end())
 		{
-			it->second.push_back(cit->cell);
+			it->second.push_back(cit->first);
 		}
 		else
 		{
 			std::vector<std::string> tmp;
-			tmp.push_back(cit->cell);
-			final_result.insert(std::make_pair(cit->profit, tmp));
+			tmp.push_back(cit->first);
+			final_result[cit->second] = tmp;
 		}
 	}
-	fd = fopen(outfile_name.c_str(), "w");
-	for (std::map<double, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
+	fd = fopen(out_file.c_str(), "w");
+	for (std::map<float, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
@@ -689,26 +845,28 @@ void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::sort_final_aggr
 	final_result.clear();
 }
 
-void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::most_profitable_cell>& partial_aggregates, 
-	const std::string & outfile_name)
+void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::calculate_and_sort_final_aggregation(const std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer, const std::string& out_file)
 {
 	FILE* fd;
-	for (std::vector<most_profitable_cell>::const_iterator cit = partial_aggregates.cbegin(); cit != partial_aggregates.cend(); ++cit)
+	std::unordered_map<std::string, std::pair<float, int>> cell_profit_final_buffer;
+	for (std::unordered_map<std::string, std::pair<float, int>>::const_iterator cit = cell_profit_buffer.cbegin(); cit != cell_profit_buffer.cend(); ++cit)
 	{
-		auto it = result.find(cit->cell);
-		if (it != result.end())
+		auto it = cell_profit_final_buffer.find(cit->first);
+		if (it != cell_profit_final_buffer.end())
 		{
-			it->second += cit->profit;
+			it->second.first += cit->second.first;
+			it->second.second += cit->second.second;
 		}
 		else
 		{
-			result.insert(std::make_pair(cit->cell, cit->profit));
+			cell_profit_final_buffer[cit->first] = cit->second;
 		}
 	}
-	std::map<unsigned long, std::vector<std::string>> final_result;
-	for (auto cit = result.begin(); cit != result.end(); ++cit)
+	std::map<float, std::vector<std::string>> final_result;
+	for (auto cit = cell_profit_final_buffer.begin(); cit != cell_profit_final_buffer.end(); ++cit)
 	{
-		auto it = final_result.find(cit->second);
+		float final_profit = cit->second.first / cit->second.second;
+		auto it = final_result.find(final_profit);
 		if (it != final_result.end())
 		{
 			it->second.push_back(cit->first);
@@ -717,12 +875,12 @@ void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::calculate_and_s
 		{
 			std::vector<std::string> tmp;
 			tmp.push_back(cit->first);
-			final_result.insert(std::make_pair(cit->second, tmp));
+			final_result[final_profit] = tmp;
 		}
 	}
 	// at this point the result is materialized
-	fd = fopen(outfile_name.c_str(), "w");
-	for (std::map<unsigned long, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
+	fd = fopen(out_file.c_str(), "w");
+	for (std::map<float, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
@@ -803,6 +961,230 @@ double Experiment::DebsChallenge::ProfitableAreaPartition::debs_concurrent_parti
 	delete[] cond_vars;
 	//std::cout << "------END-----\n";
 	return partition_time.count();
+}
+
+void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
+{
+	RoundRobinPartitioner* rrg;
+	PkgPartitioner* pkg;
+	HashFieldPartitioner* fld;
+	CardinalityAwarePolicy ca_policy;
+	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	LoadAwarePolicy la_policy;
+	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	std::vector<uint16_t> tasks;
+
+	// tasks: 10
+	for (uint16_t i = 0; i < 10; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	most_profitable_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	most_profitable_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	most_profitable_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	most_profitable_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	most_profitable_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+	// tasks: 100
+	for (uint16_t i = 0; i < 100; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	most_profitable_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	most_profitable_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
+	most_profitable_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	most_profitable_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	most_profitable_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+}
+
+void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks, Partitioner & partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix)
+{
+	// auxiliary variables
+	Experiment::DebsChallenge::FrequentRoutePartition experiment;
+	std::queue<Experiment::DebsChallenge::CompactRide> queue;
+	std::mutex mu;
+	std::condition_variable cond;
+	// get maximum and minimum running times
+	double min_first_round_duration = -1, max_first_round_duration = 0, sum_of_first_round_durations = 0;
+	double min_second_round_duration = -1, max_second_round_duration = 0, sum_of_second_round_durations = 0;
+	// intermediate buffers
+	std::unordered_map<std::string, std::vector<float>> complete_fare_table;
+	std::unordered_map<std::string, std::pair<std::string, std::time_t>> dropoff_table;
+	std::vector<std::vector<std::pair<std::string, std::vector<float>>>> complete_fare_sub_table;
+	std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>> dropoff_cell_sub_table;
+	std::unordered_map<std::string, std::pair<float, int>> cell_partial_result_buffer;
+	std::unordered_map<std::string, float> cell_full_result_buffer;
+	// Partition Data - Key: Medallion
+	std::ofstream** out_file;
+	out_file = new std::ofstream*[tasks.size()];
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i] = new std::ofstream(partitioner_name + "_" + std::to_string(i) + ".csv");
+	}
+	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+	{
+		std::string key = it->medallion;
+		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+		*out_file[task] << it->to_string() << "\n";
+	}
+	// write out files and clean up memory
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		out_file[i]->flush();
+		out_file[i]->close();
+		delete out_file[i];
+	}
+	delete[] out_file;
+
+	// first parallel round of processing (for each pickup cell gather full-fares, for each medallion keep track of the latest dropoff-cell)
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		std::vector<Experiment::DebsChallenge::CompactRide>* task_lines = new std::vector<Experiment::DebsChallenge::CompactRide>();
+		std::string workload_file_name = partitioner_name + "_" + std::to_string(i) + ".csv";
+		experiment.parse_debs_rides_with_to_string(workload_file_name, task_lines);
+		Experiment::DebsChallenge::ProfitableArea worker(&queue, &mu, &cond);
+
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		// TIME CRITICAL CODE - START
+		for (auto it = task_lines->begin(); it != task_lines->end(); ++it)
+		{
+			worker.update(*it);
+		}
+		if (partitioner_name.compare("fld") != 0)
+		{
+			worker.first_round_aggregation(complete_fare_table, dropoff_table, true);
+		}
+		else
+		{
+			worker.first_round_aggregation(complete_fare_table, dropoff_table, false);
+		}
+		// TIME CRITICAL CODE - END
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+
+		sum_of_first_round_durations += execution_time.count();
+		if (max_first_round_duration < execution_time.count())
+		{
+			max_first_round_duration = execution_time.count();
+		}
+		min_first_round_duration = i == 0 ? execution_time.count() : (min_first_round_duration > execution_time.count() ? execution_time.count() : min_first_round_duration);
+		task_lines->clear();
+		delete task_lines;
+		std::remove(workload_file_name.c_str());
+	}
+	// re-initialize the partitioners
+	partitioner.init();
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		complete_fare_sub_table.push_back(std::vector<std::pair<std::string, std::vector<float>>>());
+		dropoff_cell_sub_table.push_back(std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>());
+	}
+	// 2nd - round
+	// partition fare_map
+	for (auto it = complete_fare_table.begin(); it != complete_fare_table.end(); ++it)
+	{
+		std::string key = it->first;
+		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+		complete_fare_sub_table[task].push_back(std::make_pair(it->first, it->second));
+	}
+	complete_fare_sub_table.shrink_to_fit();
+	complete_fare_table.clear();
+	// partition dropoff_cells
+	for (auto it = dropoff_table.begin(); it != dropoff_table.end(); ++it)
+	{
+		std::string key = it->second.first;
+		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+		dropoff_cell_sub_table[task].push_back(std::make_pair(it->first, it->second));
+	}
+	dropoff_cell_sub_table.shrink_to_fit();
+	dropoff_table.clear();
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		// first process the updates
+		Experiment::DebsChallenge::ProfitableArea worker(&queue, &mu, &cond);
+		worker.second_round_init();
+		// TIME CRITICAL CODE - START
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		for (auto it = complete_fare_sub_table[i].begin(); it != complete_fare_sub_table[i].end(); ++it)
+		{
+			worker.second_round_update(it->first, it->second);
+		}
+		for (auto it = dropoff_cell_sub_table[i].begin(); it != dropoff_cell_sub_table[i].end(); ++it)
+		{
+			worker.second_round_update(it->first, it->second.first, it->second.second);
+		}
+		if (partitioner_name.compare("fld") != 0)
+		{
+			worker.partial_finalize(cell_partial_result_buffer);
+		}
+		else
+		{
+			worker.finalize(cell_full_result_buffer);
+		}
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		// TIME CRITICAL CODE - END
+		complete_fare_sub_table[i].clear();
+		dropoff_cell_sub_table[i].clear();
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+		sum_of_second_round_durations += execution_time.count();
+		if (max_second_round_duration < execution_time.count())
+		{
+			max_second_round_duration = execution_time.count();
+		}
+		min_second_round_duration = i == 0 ? execution_time.count() : (min_second_round_duration > execution_time.count() ? execution_time.count() : min_second_round_duration);
+	}
+	complete_fare_sub_table.clear();
+	dropoff_cell_sub_table.clear();
+	std::cout << "cell_full_result_buffer size(): " << cell_full_result_buffer.size() << ", cell_partial_result_buffer size(): " << cell_partial_result_buffer.size() << ".\n";
+	// final aggregation
+	Experiment::DebsChallenge::ProfitableAreaOfflineAggregator aggregator;
+	// TIME CRITICAL CODE - START
+	std::chrono::system_clock::time_point aggr_start = std::chrono::system_clock::now();
+	if (partitioner_name.compare("fld") != 0)
+	{
+		aggregator.calculate_and_sort_final_aggregation(cell_partial_result_buffer, partitioner_name + "_debs_most_profit_result.csv");
+	}
+	else
+	{
+		aggregator.sort_final_aggregation(cell_full_result_buffer, partitioner_name + "_debs_most_profit_result.csv");
+	}
+	std::chrono::system_clock::time_point aggr_end = std::chrono::system_clock::now();
+	// TIME CRITICAL CODE - END
+	std::chrono::duration<double, std::milli> aggr_time = aggr_end - aggr_start;
+	std::cout << partitioner_name << " :: Step 1 durations: (Min: " << min_first_round_duration << ", Max: " <<
+		max_first_round_duration << ", MEAN: " << sum_of_first_round_durations / tasks.size() <<
+		") (msec). Step 2 durations: (Min: " << min_second_round_duration << ", Max: " <<
+		max_second_round_duration << ", MEAN: " << sum_of_second_round_durations / tasks.size() <<
+		") (msec). Final Aggregation Time: " << aggr_time.count() << " (msec).\n";
 }
 
 void Experiment::DebsChallenge::ProfitableAreaPartition::debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area)

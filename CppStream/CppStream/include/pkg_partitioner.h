@@ -26,6 +26,7 @@ class PkgPartitioner : public Partitioner
 public:
 	PkgPartitioner(const std::vector<uint16_t>& tasks);
 	~PkgPartitioner();
+	void init();
 	unsigned int partition_next(const void* key, const size_t key_len);
 	unsigned long long get_min_task_count();
 	unsigned long long get_max_task_count();
@@ -36,8 +37,9 @@ private:
 	unsigned long long max_task_count;
 	unsigned long long min_task_count;
 };
+#endif // !PKG_PARTITIONER_H_
 
-PkgPartitioner::PkgPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
+inline PkgPartitioner::PkgPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
 task_count(tasks.size(), uint64_t(0))
 {
 	policy = new CountAwarePolicy();
@@ -45,9 +47,16 @@ task_count(tasks.size(), uint64_t(0))
 	min_task_count = 0;
 }
 
-PkgPartitioner::~PkgPartitioner()
+inline PkgPartitioner::~PkgPartitioner()
 {
 	delete policy;
+}
+
+inline void PkgPartitioner::init()
+{
+	std::vector<unsigned long long>(tasks.size(), uint64_t(0)).swap(task_count);
+	max_task_count = 0;
+	min_task_count = 0;
 }
 
 inline unsigned int PkgPartitioner::partition_next(const void* key, const size_t key_len)
@@ -77,4 +86,3 @@ inline unsigned long long PkgPartitioner::get_max_task_count()
 {
 	return max_task_count;
 }
-#endif // !PKG_PARTITIONER_H_

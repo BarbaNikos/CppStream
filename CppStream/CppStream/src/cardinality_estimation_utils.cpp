@@ -1,3 +1,7 @@
+#ifndef CARDINALITY_ESTIMATION_UTILS_H_
+#include "../include/cardinality_estimation_utils.h"
+#endif // !CARDINALITY_ESTIMATION_UTILS_H_
+
 #include "../include/cardinality_estimation_utils.h"
 
 const double Cardinality_Estimation_Utils::ProbCount::phi = 0.77351;

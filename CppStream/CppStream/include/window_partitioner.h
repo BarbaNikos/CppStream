@@ -3,8 +3,13 @@
 #include <ctime>
 #include <cinttypes>
 
-#include "MurmurHash3.h"
+#ifndef MURMURHASH_3_H_
+#include "murmurhash_3.h"
+#endif // !MURMURHASH_3_H_
+
+#ifndef WINDOW_LOAD_H_
 #include "WindowLoad.h"
+#endif // !WINDOW_LOAD_H_
 
 #ifndef WINDOW_PARTITIONER_H_
 #define WINDOW_PARTITIONER_H_

@@ -133,18 +133,22 @@
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
     <ClInclude Include="include\round_robin_partitioner.h" />
-    <ClInclude Include="include\tpch_experiment.h" />
+    <ClInclude Include="include\tpch_query_lib.h" />
+    <ClInclude Include="include\tpch_util.h" />
+    <ClInclude Include="include\tpch_struct_lib.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\bit_trick_utils.cpp" />
     <ClCompile Include="src\cardinality_estimation_utils.cpp" />
+    <ClCompile Include="src\c_hll.c" />
     <ClCompile Include="src\debs_cell_coordinate_util.cpp" />
     <ClCompile Include="src\debs_query_lib.cpp" />
     <ClCompile Include="src\google_cluster_monitor_query.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\murmurhash_3.cpp" />
+    <ClCompile Include="src\tpch_query_lib.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Makefile" />

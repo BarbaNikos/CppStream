@@ -2,6 +2,10 @@
 #include <vector>
 #include <cinttypes>
 
+#ifndef BIT_TRICK_UTILS_H_
+#include "bit_trick_utils.h"
+#endif // !BIT_TRICK_UTILS_H_
+
 #ifndef PARTITIONER_H_
 #include "partitioner.h"
 #endif // !PARTITIONER_H_
@@ -18,6 +22,7 @@ class HashFieldPartitioner : public Partitioner
 public:
 	HashFieldPartitioner(const std::vector<uint16_t>& tasks);
 	~HashFieldPartitioner();
+	void init();
 	unsigned int partition_next(const void* key, const size_t key_len);
 	unsigned long long get_min_task_count();
 	unsigned long long get_max_task_count();
@@ -27,16 +32,24 @@ private:
 	unsigned long long max_task_count;
 	unsigned long long min_task_count;
 };
+#endif // !HASH_FLD_PARTITIONER_H_
 
-HashFieldPartitioner::HashFieldPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
+inline HashFieldPartitioner::HashFieldPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), 
 task_count(tasks.size(), uint64_t(0))
 {
 	max_task_count = 0;
 	min_task_count = 0;
 }
 
-HashFieldPartitioner::~HashFieldPartitioner()
+inline HashFieldPartitioner::~HashFieldPartitioner()
 {
+}
+
+inline void HashFieldPartitioner::init()
+{
+	std::vector<unsigned long long>(tasks.size(), uint64_t(0)).swap(task_count);
+	max_task_count = 0;
+	min_task_count = 0;
 }
 
 inline unsigned int HashFieldPartitioner::partition_next(const void* key, const size_t key_len)
@@ -60,4 +73,3 @@ inline unsigned long long HashFieldPartitioner::get_max_task_count()
 {
 	return max_task_count;
 }
-#endif // !HASH_FLD_PARTITIONER_H_

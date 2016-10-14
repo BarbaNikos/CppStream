@@ -15,9 +15,25 @@
 #include <algorithm>
 #include <unordered_set>
 
-#ifndef PARTITIONER_H_
+#ifndef _PARTITIONER_H_
 #include "partitioner.h"
 #endif // !PARTITIONER_H_
+
+#ifndef ROUND_ROBIN_PARTITIONER_H_
+#include "round_robin_partitioner.h"
+#endif // !ROUND_ROBIN_PARTITIONER_H_
+
+#ifndef HASH_FLD_PARTITIONER_H_
+#include "hash_fld_partitioner.h"
+#endif // !HASH_FLD_PARTITIONER_H_
+
+#ifndef PKG_PARTITIONER_H_
+#include "pkg_partitioner.h"
+#endif // !PKG_PARTITIONER_H_
+
+#ifndef CA_PARTITION_LIB_H_
+#include "ca_partition_lib.h"
+#endif // !CA_PARTITION_LIB_H_
 
 #ifndef DEBS_STRUCTURE_LIB_H_
 #include "debs_structure_lib.h"
@@ -78,6 +94,9 @@ namespace Experiment
 			void debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner, const std::string partioner_name, std::vector<Experiment::DebsChallenge::CompactRide>& rides);
 			double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner, 
 				const std::string partitioner_name, const size_t max_queue_size);
+			void frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines);
+			void frequent_route_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		private:
 			static void debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route);
 			std::queue<Experiment::DebsChallenge::CompactRide>** queues;
@@ -92,19 +111,24 @@ namespace Experiment
 		{
 		public:
 			ProfitableArea(std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
-			ProfitableArea(std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond, const std::string result_output_file_name);
 			~ProfitableArea();
 			void operate();
 			void update(DebsChallenge::CompactRide& ride);
-			void finalize();
-			void partial_finalize(std::vector<Experiment::DebsChallenge::most_profitable_cell>&);
+			void first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map, 
+				std::unordered_map<std::string, std::pair<std::string, std::time_t>>& dropoff_table, const bool two_choice_partition_used);
+			void second_round_init();
+			void second_round_update(const std::string& pickup_cell, std::vector<float>& fare_list);
+			void second_round_update(const std::string& medallion, const std::string& dropoff_cell, const time_t& timestamp);
+			void partial_finalize(std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer); // place results in intermediate buffer - 2 choice partitioner
+			void finalize(std::unordered_map<std::string, float>& cell_profit_buffer); // place results in intermediate buffer - 1 choice partitioner
 		private:
 			std::mutex* mu;
 			std::condition_variable* cond;
-			std::unordered_map<std::string, std::vector<float>> fare_map;
-			std::unordered_map<std::string, std::string> dropoff_cell;
+			std::unordered_map<std::string, std::vector<float>> fare_map; // pickup-cell -> fare-amount list
+			std::unordered_map<std::string, std::pair<std::string, std::time_t>> dropoff_table; // medallion -> (drop-off cell, timestamp)
 			std::queue<DebsChallenge::CompactRide>* input_queue;
-			std::string result_output_file_name;
+			std::unordered_map<std::string, float> pickup_cell_median_fare;
+			std::unordered_map<std::string, unsigned long> dropoff_cell_empty_taxi_count;
 		};
 
 		class ProfitableAreaOfflineAggregator
@@ -112,8 +136,8 @@ namespace Experiment
 		public:
 			ProfitableAreaOfflineAggregator();
 			~ProfitableAreaOfflineAggregator();
-			void sort_final_aggregation(const std::vector<Experiment::DebsChallenge::most_profitable_cell>& full_aggregates, const std::string& outfile_name);
-			void calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::most_profitable_cell>& partial_aggregates, const std::string& outfile_name);
+			void sort_final_aggregation(const std::unordered_map<std::string, float>& cell_profit_buffer, const std::string& out_file);
+			void calculate_and_sort_final_aggregation(const std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer, const std::string& out_file);
 		private:
 			std::unordered_map<std::string, uint64_t> result;
 		};
@@ -125,6 +149,9 @@ namespace Experiment
 			~ProfitableAreaPartition();
 			double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner,
 				const std::string partitioner_name, const size_t max_queue_size);
+			void most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines);
+			void most_profitable_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		private:
 			static void debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area);
 			std::queue<Experiment::DebsChallenge::CompactRide>** queues;

@@ -101,6 +101,7 @@ namespace Experiment
 			{
 				memset(medallion, 0x0, 32 * sizeof(char));
 				trip_distance = 0;
+				dropoff_datetime = 0;
 				pickup_cell.first = 0;
 				pickup_cell.second = 0;
 				dropoff_cell.first = 0;
@@ -112,6 +113,7 @@ namespace Experiment
 			{
 				memcpy(medallion, o.medallion, 32 * sizeof(char));
 				trip_distance = o.trip_distance;
+				dropoff_datetime = o.dropoff_datetime;
 				pickup_cell.first = o.pickup_cell.first;
 				pickup_cell.second = o.pickup_cell.second;
 				dropoff_cell.first = o.dropoff_cell.first;
@@ -130,6 +132,7 @@ namespace Experiment
 				{
 					memcpy(medallion, o.medallion, 32 * sizeof(char));
 					trip_distance = o.trip_distance;
+					dropoff_datetime = o.dropoff_datetime;
 					pickup_cell.first = o.pickup_cell.first;
 					pickup_cell.second = o.pickup_cell.second;
 					dropoff_cell.first = o.dropoff_cell.first;
@@ -145,7 +148,7 @@ namespace Experiment
 				memcpy(med_buffer, medallion, 32 * sizeof(char));
 				med_buffer[32] = '\0';
 				std::string med = med_buffer;
-				return med + "," + std::to_string(trip_distance) + "," +
+				return med + "," + std::to_string(trip_distance) + "," + std::to_string(dropoff_datetime) + "," + 
 					std::to_string(pickup_cell.first) + "," + std::to_string(pickup_cell.second) + "," +
 					std::to_string(dropoff_cell.first) + "," + std::to_string(dropoff_cell.second) + "," +
 					std::to_string(fare_amount) + "," + std::to_string(tip_amount);
@@ -167,6 +170,14 @@ namespace Experiment
 				catch (const std::exception&)
 				{
 					std::cerr << "parse_string():: failed on trip-distance: " << tokens[1] << ", line: " << ride_info << "\n";
+				}
+				try
+				{
+					dropoff_datetime = std::stoll(tokens[2]);
+				}
+				catch (const std::exception&)
+				{
+					std::cerr << "parse_string():: failed on drop-off datetime: " << tokens[2] << ", line: " << ride_info << "\n";
 				}
 				pickup_cell.first = std::stoi(tokens[2]);
 				pickup_cell.second = std::stoi(tokens[3]);
@@ -190,6 +201,7 @@ namespace Experiment
 				}
 			}
 			char medallion[32];
+			std::time_t dropoff_datetime;
 			float_t trip_distance;
 			std::pair<uint8_t, uint8_t> pickup_cell;
 			std::pair<uint8_t, uint8_t> dropoff_cell;

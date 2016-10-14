@@ -37,6 +37,7 @@ namespace CaPartitionLib
 	public:
 		CA_Exact_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy);
 		~CA_Exact_Partitioner();
+		void init();
 		unsigned int partition_next(const void* key, const size_t key_len);
 		unsigned long long get_min_task_count();
 		unsigned long long get_max_task_count();
@@ -59,6 +60,7 @@ namespace CaPartitionLib
 	public:
 		CA_PC_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy);
 		~CA_PC_Partitioner();
+		void init();
 		unsigned int partition_next(const void* key, const size_t key_len);
 		unsigned int vanilla_partition_next(const void* key, const size_t key_len);
 		unsigned long long get_min_task_count();
@@ -83,6 +85,7 @@ namespace CaPartitionLib
 	public:
 		CA_HLL_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k);
 		~CA_HLL_Partitioner();
+		void init();
 		unsigned int partition_next(const void* key, const size_t key_len);
 		unsigned long long get_min_task_count();
 		unsigned long long get_max_task_count();
@@ -96,6 +99,7 @@ namespace CaPartitionLib
 		uint64_t min_task_count;
 		uint64_t max_task_cardinality;
 		uint64_t min_task_cardinality;
+		unsigned int k;
 	};
 
 	class CA_HLL_Aff_Partitioner : public Partitioner
@@ -103,6 +107,7 @@ namespace CaPartitionLib
 	public:
 		CA_HLL_Aff_Partitioner(const std::vector<uint16_t>& tasks, uint8_t k);
 		~CA_HLL_Aff_Partitioner();
+		void init();
 		unsigned int partition_next(const void* key, const size_t key_len);
 		unsigned long long get_min_task_count();
 		unsigned long long get_max_task_count();
@@ -115,10 +120,12 @@ namespace CaPartitionLib
 		uint64_t min_task_count;
 		uint64_t max_task_cardinality;
 		uint64_t min_task_cardinality;
+		unsigned int k;
 	};
 }
+#endif // !CA_PARTITION_LIB_H_
 
-CaPartitionLib::CA_Exact_Partitioner::CA_Exact_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
+inline CaPartitionLib::CA_Exact_Partitioner::CA_Exact_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
 	tasks(tasks), task_count(tasks.size(), uint64_t(0)),
 	task_cardinality(tasks.size(), std::unordered_set<uint64_t>()),
 	policy(policy)
@@ -129,8 +136,18 @@ CaPartitionLib::CA_Exact_Partitioner::CA_Exact_Partitioner(const std::vector<uin
 	min_task_cardinality = 0;
 }
 
-CaPartitionLib::CA_Exact_Partitioner::~CA_Exact_Partitioner()
+inline CaPartitionLib::CA_Exact_Partitioner::~CA_Exact_Partitioner()
 {
+}
+
+inline void CaPartitionLib::CA_Exact_Partitioner::init()
+{
+	std::vector<unsigned long long>(tasks.size(), 0).swap(task_count);
+	std::vector<std::unordered_set<uint64_t>>(tasks.size(), std::unordered_set<uint64_t>()).swap(task_cardinality);
+	max_task_count = 0;
+	min_task_count = 0;
+	max_task_cardinality = 0;
+	min_task_cardinality = 0;
 }
 
 inline unsigned int CaPartitionLib::CA_Exact_Partitioner::partition_next(const void* key, const size_t key_len)
@@ -190,7 +207,7 @@ inline void CaPartitionLib::CA_Exact_Partitioner::get_cardinality_vector(std::ve
 	}
 }
 
-CaPartitionLib::CA_PC_Partitioner::CA_PC_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
+inline CaPartitionLib::CA_PC_Partitioner::CA_PC_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
 	tasks(tasks), task_count(tasks.size(), uint64_t(0)), policy(policy)
 {
 	_task_cardinality = new Cardinality_Estimation_Utils::ProbCount*[tasks.size()];
@@ -204,7 +221,7 @@ CaPartitionLib::CA_PC_Partitioner::CA_PC_Partitioner(const std::vector<uint16_t>
 	min_task_cardinality = 0;
 }
 
-CaPartitionLib::CA_PC_Partitioner::~CA_PC_Partitioner()
+inline CaPartitionLib::CA_PC_Partitioner::~CA_PC_Partitioner()
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -213,8 +230,26 @@ CaPartitionLib::CA_PC_Partitioner::~CA_PC_Partitioner()
 	delete[] _task_cardinality;
 }
 
+inline void CaPartitionLib::CA_PC_Partitioner::init()
+{
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		delete _task_cardinality[i];
+	}
+	delete[] _task_cardinality;
+	_task_cardinality = new Cardinality_Estimation_Utils::ProbCount*[tasks.size()];
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		_task_cardinality[i] = new Cardinality_Estimation_Utils::ProbCount(64);
+	}
+	max_task_count = 0;
+	min_task_count = 0;
+	max_task_cardinality = 0;
+	min_task_cardinality = 0;
+}
+
 // Vanilla version of CAG-PC (without the pessimistic increase in cardinality)
-unsigned int CaPartitionLib::CA_PC_Partitioner::vanilla_partition_next(const void* key, const size_t key_len)
+inline unsigned int CaPartitionLib::CA_PC_Partitioner::vanilla_partition_next(const void* key, const size_t key_len)
 {
 	uint64_t hash_one, hash_two;
 	uint64_t long_hash_one[2], long_hash_two[2];
@@ -321,7 +356,7 @@ inline unsigned long long CaPartitionLib::CA_PC_Partitioner::get_average_cardina
 	return avg_cardinality / tasks.size();
 }
 
-CaPartitionLib::CA_HLL_Partitioner::CA_HLL_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k) :
+inline CaPartitionLib::CA_HLL_Partitioner::CA_HLL_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k) :
 	tasks(tasks), task_count(tasks.size(), uint64_t(0)), policy(policy)
 {
 	this->task_cardinality = (hll_8**) malloc(tasks.size() * sizeof(hll_8*));
@@ -334,9 +369,10 @@ CaPartitionLib::CA_HLL_Partitioner::CA_HLL_Partitioner(const std::vector<uint16_
 	min_task_count = uint64_t(0);
 	max_task_cardinality = uint64_t(0);
 	min_task_cardinality = uint64_t(0);
+	this->k = k;
 }
 
-CaPartitionLib::CA_HLL_Partitioner::~CA_HLL_Partitioner()
+inline CaPartitionLib::CA_HLL_Partitioner::~CA_HLL_Partitioner()
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -344,6 +380,26 @@ CaPartitionLib::CA_HLL_Partitioner::~CA_HLL_Partitioner()
 		free(this->task_cardinality[i]);
 	}
 	free(this->task_cardinality);
+}
+
+inline void CaPartitionLib::CA_HLL_Partitioner::init()
+{
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		destroy_8(this->task_cardinality[i]);
+		free(this->task_cardinality[i]);
+	}
+	free(this->task_cardinality);
+	this->task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		this->task_cardinality[i] = (hll_8*)malloc(tasks.size() * sizeof(hll_8));
+		init_8(this->task_cardinality[i], k, sizeof(uint64_t));
+	}
+	max_task_count = uint64_t(0);
+	min_task_count = uint64_t(0);
+	max_task_cardinality = uint64_t(0);
+	min_task_cardinality = uint64_t(0);
 }
 
 inline unsigned int CaPartitionLib::CA_HLL_Partitioner::partition_next(const void* key, const size_t key_len)
@@ -387,7 +443,7 @@ inline unsigned long long CaPartitionLib::CA_HLL_Partitioner::get_max_task_count
 	return max_task_cardinality;
 }
 
-void CaPartitionLib::CA_HLL_Partitioner::get_cardinality_vector(std::vector<unsigned long long>& v)
+inline void CaPartitionLib::CA_HLL_Partitioner::get_cardinality_vector(std::vector<unsigned long long>& v)
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -395,7 +451,7 @@ void CaPartitionLib::CA_HLL_Partitioner::get_cardinality_vector(std::vector<unsi
 	}
 }
 
-CaPartitionLib::CA_HLL_Aff_Partitioner::CA_HLL_Aff_Partitioner(const std::vector<uint16_t>& tasks, uint8_t k) :
+inline CaPartitionLib::CA_HLL_Aff_Partitioner::CA_HLL_Aff_Partitioner(const std::vector<uint16_t>& tasks, uint8_t k) :
 	tasks(tasks), task_count(tasks.size(), uint64_t(0))
 {
 	this->_task_cardinality = (hll_8**) malloc(sizeof(hll_8*) * tasks.size());
@@ -408,9 +464,30 @@ CaPartitionLib::CA_HLL_Aff_Partitioner::CA_HLL_Aff_Partitioner(const std::vector
 	min_task_count = uint64_t(0);
 	max_task_cardinality = uint64_t(0);
 	min_task_cardinality = uint64_t(0);
+	this->k = k;
 }
 
-CaPartitionLib::CA_HLL_Aff_Partitioner::~CA_HLL_Aff_Partitioner()
+inline CaPartitionLib::CA_HLL_Aff_Partitioner::~CA_HLL_Aff_Partitioner()
+{
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		destroy_8(this->_task_cardinality[i]);
+		free(this->_task_cardinality[i]);
+	}
+	free(this->_task_cardinality);
+	this->_task_cardinality = (hll_8**)malloc(sizeof(hll_8*) * tasks.size());
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		this->_task_cardinality[i] = (hll_8*)malloc(sizeof(hll_8));
+		init_8(this->_task_cardinality[i], k, sizeof(uint64_t));
+	}
+	max_task_count = uint64_t(0);
+	min_task_count = uint64_t(0);
+	max_task_cardinality = uint64_t(0);
+	min_task_cardinality = uint64_t(0);
+}
+
+inline void CaPartitionLib::CA_HLL_Aff_Partitioner::init()
 {
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -497,4 +574,3 @@ inline void CaPartitionLib::CA_HLL_Aff_Partitioner::get_cardinality_vector(std::
 		v.push_back(opt_cardinality_estimation_8(this->_task_cardinality[i]));
 	}
 }
-#endif // !CA_PARTITION_LIB_H_

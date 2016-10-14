@@ -1,4 +1,6 @@
+#ifndef DEBS_CELL_COORDINATE_UTIL_H_
 #include "../include/debs_cell_coordinate_util.h"
+#endif // !DEBS_CELL_COORDINATE_UTIL_H_
 
 const double Experiment::DebsChallenge::TaxiCoordinateHelper::R = double(6371000);
 

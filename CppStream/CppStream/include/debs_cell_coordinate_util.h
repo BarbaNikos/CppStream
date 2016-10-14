@@ -14,7 +14,6 @@
 
 #ifndef DEBS_CELL_COORDINATE_UTIL_H_
 #define DEBS_CELL_COORDINATE_UTIL_H_
-
 namespace Experiment
 {
 	namespace DebsChallenge
@@ -71,5 +70,4 @@ namespace Experiment
 		};
 	}
 }
-
 #endif // DEBS_CELL_COORDINATE_UTIL_H_

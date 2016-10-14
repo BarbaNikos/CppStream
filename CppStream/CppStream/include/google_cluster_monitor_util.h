@@ -113,7 +113,7 @@ namespace Experiment
 			long machine_id; // not-required 4
 			short event_type; // required 5
 			std::string user_name; // not required hashed 6
-			int scheduling_class; // not required 7
+			int scheduling_class; // not required 7 (category based on saber paper definition)
 			int priority; // required 8
 			float cpu_request; // not required 9 
 			float ram_request; // not required 10

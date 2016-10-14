@@ -4,8 +4,13 @@
 #include <algorithm>
 #include <cinttypes>
 
+#ifndef CIRCULAR_BUFFER_H_
 #include "CircularBuffer.h"
+#endif // !CIRCULAR_BUFFER_H_
+
+#ifndef BASIC_WINDOW_H_
 #include "BasicWindow.h"
+#endif // !BASIC_WINDOW_H_
 
 #ifndef WINDOW_LOAD_H_
 #define WINDOW_LOAD_H_
