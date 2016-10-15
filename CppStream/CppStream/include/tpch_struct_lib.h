@@ -444,6 +444,55 @@ namespace Experiment
 			std::string l_comment;
 		}lineitem;
 
+		typedef struct lineitem_order_str
+		{
+			lineitem_order_str() {}
+			lineitem_order_str(const order& o, const lineitem& l) : _order(o), _lineitem(l) {}
+			lineitem_order_str(const lineitem_order_str& o)
+			{
+				_order = o._order;
+				_lineitem = o._lineitem;
+			}
+			~lineitem_order_str() {}
+			lineitem_order_str& operator= (const lineitem_order_str& o)
+			{
+				if (this != &o)
+				{
+					_order = o._order;
+					_lineitem = o._lineitem;
+				}
+				return *this;
+			}
+			order _order;
+			lineitem _lineitem;
+		}lineitem_order;
+
+		typedef struct customer_lineitem_order_str
+		{
+			customer_lineitem_order_str() {}
+			customer_lineitem_order_str(const customer& c, const lineitem& l, const order& o) : _customer(c), _lineitem(l), _order(o) {}
+			customer_lineitem_order_str(const customer_lineitem_order_str& o)
+			{
+				_customer = o._customer;
+				_lineitem = o._lineitem;
+				_order = o._order;
+			}
+			~customer_lineitem_order_str() {}
+			customer_lineitem_order_str& operator= (const customer_lineitem_order_str& o)
+			{
+				if (this != &o)
+				{
+					_customer = o._customer;
+					_lineitem = o._lineitem;
+					_order = o._order;
+				}
+				return *this;
+			}
+			customer _customer;
+			lineitem _lineitem;
+			order _order;
+		}customer_lineitem_order;
+
 		typedef struct nation_str
 		{
 			nation_str() : n_comment() {}
