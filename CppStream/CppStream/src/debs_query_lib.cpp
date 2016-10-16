@@ -435,7 +435,7 @@ double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partit
 	return partition_time.count();
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number)
 {
 	RoundRobinPartitioner* rrg;
 	PkgPartitioner* pkg;
@@ -447,31 +447,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	std::vector<uint16_t> tasks;
 
 	// tasks: 10
-	for (uint16_t i = 0; i < 10; i++)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-	std::cout << "# of Tasks: " << tasks.size() << ".\n";
-	rrg = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	frequent_route_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
-	frequent_route_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
-	frequent_route_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	frequent_route_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
-	frequent_route_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
-
-	delete rrg;
-	delete fld;
-	delete pkg;
-	delete ca_naive;
-	delete la_naive;
-	tasks.clear();
-	// tasks: 100
-	for (uint16_t i = 0; i < 100; i++)
+	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
 	}
@@ -963,7 +939,7 @@ double Experiment::DebsChallenge::ProfitableAreaPartition::debs_concurrent_parti
 	return partition_time.count();
 }
 
-void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines)
+void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number)
 {
 	RoundRobinPartitioner* rrg;
 	PkgPartitioner* pkg;
@@ -976,31 +952,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	std::vector<uint16_t> tasks;
 
 	// tasks: 10
-	for (uint16_t i = 0; i < 10; i++)
-	{
-		tasks.push_back(i);
-	}
-	tasks.shrink_to_fit();
-	std::cout << "# of Tasks: " << tasks.size() << ".\n";
-	rrg = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	most_profitable_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
-	most_profitable_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
-	most_profitable_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	most_profitable_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
-	most_profitable_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
-
-	delete rrg;
-	delete fld;
-	delete pkg;
-	delete ca_naive;
-	delete la_naive;
-	tasks.clear();
-	// tasks: 100
-	for (uint16_t i = 0; i < 100; i++)
+	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
 	}

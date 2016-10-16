@@ -29,9 +29,14 @@
 #include "../include/lognormal_experiment.h"
 #endif // !EXPERIMENT_LOGNORMAL_SIMULATION_H_
 
-#ifndef GOOGLE_CLUSTER_MONITOR_UTIL_H_
-#include "../include/google_cluster_monitor_util.h"
-#endif // !GOOGLE_CLUSTER_MONITOR_UTIL_H_
+#ifndef GOOGLE_CLUSTER_MONITOR_QUERY_H_
+#include "../include/google_cluster_monitor_query.h"
+#endif // !GOOGLE_CLUSTER_MONITOR_QUERY_H_
+
+#ifndef TPCH_QUERY_LIB_H_
+#include "../include/tpch_query_lib.h"
+#endif // !TPCH_QUERY_LIB_H_
+
 
 void log_normal_simulation(std::string input_file);
 
@@ -46,23 +51,29 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-
+	/*std::vector<Experiment::Tpch::customer> customer_table;
+	std::vector<Experiment::Tpch::lineitem> lineitem_table;
+	std::vector<Experiment::Tpch::order> order_table;
+	Experiment::Tpch::DataParser::parse_tpch_customer(input_file_name, customer_table);
+	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name, lineitem_table);
+	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name, order_table);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);*/
 	/*
 	 * DEBS queries
 	 */
-	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
+	//Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	//std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
 	// std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
-	debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &frequent_ride_table);
-	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table);
-	frequent_ride_table.clear();
-
-	Experiment::DebsChallenge::ProfitableAreaPartition profitable_area;
+	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &frequent_ride_table);
+	//debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table);
+	//frequent_ride_table.clear();
+	//
+	//Experiment::DebsChallenge::ProfitableAreaPartition profitable_area;
 	//std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table;
-	std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
+	//std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
 	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &most_profitable_cell_table);
-	profitable_area.most_profitable_cell_simulation(most_profitable_cell_table);
-	most_profitable_cell_table.clear();
+	//profitable_area.most_profitable_cell_simulation(most_profitable_cell_table);
+	//most_profitable_cell_table.clear();
 
 	//log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
 	/*
@@ -71,6 +82,17 @@ int main(int argc, char** argv)
 	//upper_bound_experiment(input_file_name);
 	//const unsigned int p = 16;
 	//plot_cardinality_estimation_correctness(p, 10, (uint64_t)1e+5, (size_t)1e+6);
+
+	/*
+	 * GOOGLE-MONITOR-CLUSTER queries
+	 */
+	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
+	//Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(input_file_name, task_event_table);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(input_file_name, task_event_table);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 10);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 10);
+	task_event_table.clear();
+
 	return 0;
 }
 

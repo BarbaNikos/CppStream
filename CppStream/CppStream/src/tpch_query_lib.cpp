@@ -92,9 +92,20 @@ void Experiment::Tpch::QueryOneOfflineAggregator::sort_final_result(const std::v
 	// do nothing here - just print out the result
 	FILE* fd;
 	fd = fopen(output_file.c_str(), "w");
+	/*std::map<std::string, query_one_result> final_result;
+	for (std::vector<query_one_result>::const_iterator cit = buffer.cbegin(); cit != buffer.cend(); ++cit)
+	{
+		std::string key = cit->return_flag + "," + cit->line_status;
+		final_result[key] = *cit;
+	}
+	for (std::map<std::string, query_one_result>::const_iterator it = final_result.begin(); it != final_result.end(); ++it)
+	{
+		std::string buffer = it->second.to_string() + "\n";
+		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+	}*/
 	for (std::vector<query_one_result>::const_iterator it = buffer.cbegin(); it != buffer.cend(); ++it)
 	{
-		std::string buffer = it->to_string().c_str();
+		std::string buffer = it->to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
 	}
 	fflush(fd);
@@ -106,7 +117,7 @@ void Experiment::Tpch::QueryOneOfflineAggregator::calculate_and_produce_final_re
 	FILE* fd;
 	fd = fopen(output_file.c_str(), "w");
 	// first merge results
-	std::unordered_map<std::string, query_one_result> final_result;
+	std::map<std::string, query_one_result> final_result;
 	for (std::vector<query_one_result>::const_iterator it = buffer.cbegin(); it != buffer.cend(); ++it)
 	{
 		std::string key = it->return_flag + "," + it->line_status;
@@ -128,16 +139,16 @@ void Experiment::Tpch::QueryOneOfflineAggregator::calculate_and_produce_final_re
 		}
 	}
 	// and then produce them
-	for (std::unordered_map<std::string, query_one_result>::const_iterator it = final_result.begin(); it != final_result.end(); ++it)
+	for (std::map<std::string, query_one_result>::const_iterator it = final_result.begin(); it != final_result.end(); ++it)
 	{
-		std::string buffer = it->second.to_string();
+		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
 	}
 	fflush(fd);
 	fclose(fd);
 }
 
-void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines)
+void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num)
 {
 	RoundRobinPartitioner* rrg;
 	PkgPartitioner* pkg;
@@ -148,8 +159,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
 	std::vector<uint16_t> tasks;
 
-	// tasks: 10
-	for (uint16_t i = 0; i < 10; i++)
+	for (uint16_t i = 0; i < task_num; i++)
 	{
 		tasks.push_back(i);
 	}
@@ -165,6 +175,12 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	query_one_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
 	query_one_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
 	query_one_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
 }
 
 void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, 

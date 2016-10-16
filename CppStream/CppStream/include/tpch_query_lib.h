@@ -4,6 +4,7 @@
 #include <future>
 #include <queue>
 #include <unordered_map>
+#include <map>
 #include <cstdio>
 
 #ifndef PARTITIONER_H_
@@ -29,6 +30,11 @@
 #ifndef TPCH_STRUCT_LIB_H_
 #include "tpch_struct_lib.h"
 #endif // !TPCH_STRUCT_LIB_H_
+
+#ifndef TPCH_UTIL_H_
+#include "tpch_util.h"
+#endif // !TPCH_UTIL_H_
+
 
 #ifndef TPCH_QUERY_LIB_H_
 #define TPCH_QUERY_LIB_H_
@@ -85,10 +91,9 @@ namespace Experiment
 		class QueryOnePartition
 		{
 		public:
-			void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines);
-			void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
+			static void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num);
+			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
 				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
-		private:
 		};
 	}
 }
