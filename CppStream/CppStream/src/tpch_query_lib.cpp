@@ -280,7 +280,9 @@ void Experiment::Tpch::LineitemOrderWorker::update(Tpch::lineitem & line_item, b
 	{
 		if (order_index_it != order_index.end())
 		{
-			this->result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
+			//std::cout << "update():: with partial-flag set to: " << partial_flag << ", found a match: [" << line_item.l_order_key << "," << 
+			//	line_item.l_linenumber << "].\n";
+			result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
 		}
 		else
 		{
@@ -305,8 +307,13 @@ void Experiment::Tpch::LineitemOrderWorker::finalize(std::vector<lineitem_order>
 		auto o_it = order_index.find(l_it->second.l_order_key);
 		if (o_it != order_index.end())
 		{
+			//std::cout << "LineitemOrderWorker::finalize(): result: " << l_it->second.to_string() << ".\n";
 			buffer.push_back(Tpch::lineitem_order(o_it->second, l_it->second));
 		}
+	}
+	for (std::unordered_map<uint32_t, lineitem_order>::const_iterator r_it = result.cbegin(); r_it != result.cend(); ++r_it)
+	{
+		buffer.push_back(r_it->second);
 	}
 }
 
@@ -377,6 +384,7 @@ void Experiment::Tpch::LineitemOrderOfflineAggregator::sort_final_result(const s
 	{
 		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+		//std::cout << "sort_final_result(): writing result: " << buffer;
 	}
 	/*for (std::vector<lineitem_order>::const_iterator it = final_result.cbegin(); it != final_result.cend(); ++it)
 	{
@@ -444,11 +452,11 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(co
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *rrg, "shg", "shuffle_worker_partial_result");
-	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *fld, "fld", "fld_full_result");
-	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
-	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *rrg, "shg", "shuffle_li_join_order_result.csv");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *fld, "fld", "fld_li_join_order_result.csv");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *pkg, "pkg", "pkg_li_join_order_result.csv");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *ca_naive, "ca-naive", "ca_naive_li_join_order_result.csv");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *la_naive, "la-naive", "la_naive_li_join_order_result.csv");
 	delete rrg;
 	delete fld;
 	delete pkg;

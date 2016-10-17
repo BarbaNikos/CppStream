@@ -35,7 +35,7 @@ namespace Experiment
 			std::string to_string() const
 			{
 				std::stringstream ss;
-				ss << year << "-" << month << "-" << day;
+				ss << (unsigned int) year << "-" << (unsigned int) month << "-" << (unsigned int) day;
 				return ss.str();
 			}
 			uint16_t year;
@@ -444,8 +444,8 @@ namespace Experiment
 				ss << l_order_key << "," << l_part_key << "," << l_supp_key << "," <<
 					l_linenumber << "," << l_quantity << "," << l_extendedprice << "," <<
 					l_discount << "," << l_tax << "," << l_returnflag << "," << l_linestatus;
-				ss << "," << l_shipdate.to_string() << "," << l_commitdate.to_string() << "," << 
-					l_receiptdate.to_string();
+				// ss << "," << l_shipdate.to_string() << "," << l_commitdate.to_string() << "," << 
+				//	l_receiptdate.to_string();
 					return ss.str();
 			}
 			uint32_t l_order_key;
