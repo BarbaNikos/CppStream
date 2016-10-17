@@ -88,7 +88,7 @@ namespace Experiment
 		public:
 			FrequentRoutePartition();
 			~FrequentRoutePartition();
-			void produce_compact_ride_file(const std::string input_file_name, const std::string output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
+			void produce_compact_ride_file(const std::string& input_file_name, const std::string& output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			std::vector<Experiment::DebsChallenge::CompactRide> parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			void parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer);
 			void debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner, const std::string partioner_name, std::vector<Experiment::DebsChallenge::CompactRide>& rides);

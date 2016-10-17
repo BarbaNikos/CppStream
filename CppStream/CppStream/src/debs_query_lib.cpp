@@ -253,7 +253,8 @@ Experiment::DebsChallenge::FrequentRoutePartition::~FrequentRoutePartition()
 {
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::produce_compact_ride_file(const std::string input_file_name, const std::string output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells)
+void Experiment::DebsChallenge::FrequentRoutePartition::produce_compact_ride_file(const std::string& input_file_name, const std::string& output_file_name, 
+	uint32_t cell_side_size, uint32_t grid_side_size_in_cells)
 {
 	std::string line;
 	std::ifstream file(input_file_name);

@@ -61,8 +61,10 @@ int main(int argc, char** argv)
 	/*
 	 * DEBS queries
 	 */
-	//Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 	//std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
+	debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_frequent_route_compact_ride.csv", 500, 300);
+	debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_profitable_cell_compact_ride.csv", 250, 600);
 	// std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &frequent_ride_table);
 	//debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table);
@@ -86,12 +88,12 @@ int main(int argc, char** argv)
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries
 	 */
-	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
-	//Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(input_file_name, task_event_table);
-	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(input_file_name, task_event_table);
-	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 10);
-	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 10);
-	task_event_table.clear();
+	//std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
+	////Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(input_file_name, task_event_table);
+	//Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(input_file_name, task_event_table);
+	//Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 10);
+	//Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 10);
+	//task_event_table.clear();
 
 	return 0;
 }
