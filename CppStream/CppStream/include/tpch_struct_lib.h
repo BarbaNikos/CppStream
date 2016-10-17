@@ -32,6 +32,12 @@ namespace Experiment
 				}
 				return *this;
 			}
+			std::string to_string() const
+			{
+				std::stringstream ss;
+				ss << year << "-" << month << "-" << day;
+				return ss.str();
+			}
 			uint16_t year;
 			uint8_t month;
 			uint8_t day;
@@ -315,6 +321,13 @@ namespace Experiment
 				o_shippriority = std::stoi(tokens[7]);
 				o_comment = tokens[8];
 			}
+			std::string to_string() const
+			{
+				std::stringstream ss;
+				ss << o_orderkey << "," << o_custkey << "," << o_orderstatus << "," <<
+					o_totalprice << "," << o_orderdate.to_string() << "," << o_shippriority;
+				return ss.str();
+			}
 			uint32_t o_orderkey;
 			uint32_t o_custkey;
 			char o_orderstatus;
@@ -425,7 +438,16 @@ namespace Experiment
 				memcpy(l_shipmode, tokens[14].c_str(), 10 * sizeof(char));
 				l_comment = tokens[15];
 			}
-
+			std::string to_string() const
+			{
+				std::stringstream ss;
+				ss << l_order_key << "," << l_part_key << "," << l_supp_key << "," <<
+					l_linenumber << "," << l_quantity << "," << l_extendedprice << "," <<
+					l_discount << "," << l_tax << "," << l_returnflag << "," << l_linestatus;
+				ss << "," << l_shipdate.to_string() << "," << l_commitdate.to_string() << "," << 
+					l_receiptdate.to_string();
+					return ss.str();
+			}
 			uint32_t l_order_key;
 			uint32_t l_part_key;
 			uint32_t l_supp_key;
@@ -462,6 +484,10 @@ namespace Experiment
 					_lineitem = o._lineitem;
 				}
 				return *this;
+			}
+			std::string to_string() const
+			{
+				return _lineitem.to_string() + "," + _order.to_string();
 			}
 			order _order;
 			lineitem _lineitem;

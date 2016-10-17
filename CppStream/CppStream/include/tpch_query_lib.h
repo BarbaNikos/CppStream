@@ -103,19 +103,33 @@ namespace Experiment
 					std::queue<Experiment::Tpch::order>* o_queue, std::mutex* o_mu, std::condition_variable* o_cond);
 			~LineitemOrderWorker();
 			void operate();
-			void update(Tpch::lineitem& line_item);
-			void update(Tpch::order& o);
-			void partial_finalize(std::vector<lineitem_order>& buffer);
+			void final_update(Tpch::lineitem& line_item);
+			void final_update(Tpch::order& o);
+			void partial_update(Tpch::lineitem& line_item);
+			void partial_update(Tpch::order& o);
 			void finalize(std::vector<lineitem_order>& buffer);
+			void partial_finalize(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer, 
+				std::unordered_map<uint32_t, lineitem_order>& result_buffer);
 		private:
 			std::mutex* li_mu;
 			std::mutex* o_mu;
 			std::condition_variable* li_cond;
 			std::condition_variable* o_cond;
 			std::unordered_map<uint32_t, Tpch::order> order_index;
-			std::vector<Tpch::lineitem> li_table;
+			std::unordered_map<uint32_t, lineitem> li_index;
+			std::unordered_map<uint32_t, Tpch::lineitem_order> result;
 			std::queue<Experiment::Tpch::lineitem>* li_queue;
 			std::queue<Experiment::Tpch::order>* o_queue;
+		};
+
+		class LineitemOrderOfflineAggregator
+		{
+		public:
+			LineitemOrderOfflineAggregator();
+			~LineitemOrderOfflineAggregator();
+			void sort_final_result(const std::vector<lineitem_order>& final_result, const std::string& output_file);
+			void calculate_and_produce_final_result(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer,
+				std::unordered_map<uint32_t, lineitem_order>& result_buffer, const std::string& output_file);
 		};
 	}
 }
