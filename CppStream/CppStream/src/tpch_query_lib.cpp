@@ -267,26 +267,29 @@ void Experiment::Tpch::LineitemOrderWorker::operate()
 
 void Experiment::Tpch::LineitemOrderWorker::update(Tpch::lineitem & line_item, bool partial_flag)
 {
-	auto order_index_it = this->order_index.find(line_item.l_order_key);
+	auto order_index_it = order_index.find(line_item.l_order_key);
+	uint32_t li_key = line_item.l_order_key ^ line_item.l_linenumber;
 	if (partial_flag)
 	{
 		if (order_index_it != order_index.end())
 		{
-			this->result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
+			if (line_item.l_order_key == 999 && line_item.l_linenumber == 1)
+			{
+				std::cout << "caught the bugger" << "\n";
+			}
+			result[li_key] = Tpch::lineitem_order(order_index_it->second, line_item);
 		}
-		li_index[line_item.l_order_key ^ line_item.l_linenumber] = line_item;
+		li_index[li_key] = line_item;
 	}
 	else
 	{
 		if (order_index_it != order_index.end())
 		{
-			//std::cout << "update():: with partial-flag set to: " << partial_flag << ", found a match: [" << line_item.l_order_key << "," << 
-			//	line_item.l_linenumber << "].\n";
-			result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
+			result[li_key] = Tpch::lineitem_order(order_index_it->second, line_item);
 		}
 		else
 		{
-			li_index[line_item.l_order_key ^ line_item.l_linenumber] = line_item;
+			li_index[li_key] = line_item;
 		}
 	}
 }
@@ -304,10 +307,10 @@ void Experiment::Tpch::LineitemOrderWorker::finalize(std::vector<lineitem_order>
 {
 	for (std::unordered_map<uint32_t, Tpch::lineitem>::const_iterator l_it = li_index.cbegin(); l_it != li_index.cend(); ++l_it)
 	{
-		auto o_it = order_index.find(l_it->second.l_order_key);
-		if (o_it != order_index.end())
+		std::unordered_map<uint32_t, Tpch::order>::iterator o_it = order_index.find(l_it->second.l_order_key);
+		std::unordered_map<uint32_t, Tpch::lineitem_order>::iterator r_it = result.find(l_it->first);
+		if (o_it != order_index.end() && r_it == result.end())
 		{
-			//std::cout << "LineitemOrderWorker::finalize(): result: " << l_it->second.to_string() << ".\n";
 			buffer.push_back(Tpch::lineitem_order(o_it->second, l_it->second));
 		}
 	}
@@ -317,16 +320,21 @@ void Experiment::Tpch::LineitemOrderWorker::finalize(std::vector<lineitem_order>
 	}
 }
 
-void Experiment::Tpch::LineitemOrderWorker::partial_finalize(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer, 
-	std::unordered_map<uint32_t, lineitem_order>& result_buffer)
+void Experiment::Tpch::LineitemOrderWorker::partial_finalize(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, 
+	std::unordered_map<uint32_t, Tpch::order>& o_buffer, std::unordered_map<uint32_t, lineitem_order>& result_buffer)
 {
-	// first calculate remaining results and append records in the li_buffer only if they are not joined
+	// step 1: calculate remaining results and append records in the li_buffer only if they are not joined and if 
+	// they do not exist
 	for (std::unordered_map<uint32_t, Tpch::lineitem>::const_iterator l_it = li_index.cbegin(); l_it != li_index.cend(); ++l_it)
 	{
+		if (l_it->second.l_order_key == 999 && l_it->second.l_linenumber == 1)
+		{
+			std::cout << "caught the bugger" << "\n";
+		}
 		auto o_it = order_index.find(l_it->second.l_order_key);
 		if (o_it != order_index.end())
 		{
-			auto result_it = result.find(l_it->first);
+			auto result_it = result.find(l_it->second.l_order_key);
 			if (result_it == result.end())
 			{
 				result[l_it->first] = Tpch::lineitem_order(o_it->second, l_it->second);
@@ -355,6 +363,10 @@ void Experiment::Tpch::LineitemOrderWorker::partial_finalize(std::unordered_map<
 	// append records to result_buffer
 	for (std::unordered_map<uint32_t, lineitem_order>::const_iterator result_it = result.cbegin(); result_it != result.cend(); result_it++)
 	{
+		if (result_it->second._lineitem.l_order_key == 999 && result_it->second._lineitem.l_linenumber == 1)
+		{
+			std::cout << "caught the bugger" << "\n";
+		}
 		auto r_buffer_it = result_buffer.find(result_it->first);
 		if (r_buffer_it == result_buffer.end())
 		{
@@ -375,16 +387,16 @@ void Experiment::Tpch::LineitemOrderOfflineAggregator::sort_final_result(const s
 {
 	FILE* fd;
 	fd = fopen(output_file.c_str(), "w");
-	std::map<uint32_t, lineitem_order> ordered_final_result;
+	std::map<std::string, lineitem_order> ordered_final_result;
 	for (std::vector<lineitem_order>::const_iterator cit = final_result.cbegin(); cit != final_result.cend(); ++cit)
 	{
-		ordered_final_result[cit->_lineitem.l_order_key ^ cit->_lineitem.l_linenumber] = *cit;
+		std::string key = std::to_string(cit->_lineitem.l_order_key) + "," + std::to_string(cit->_lineitem.l_linenumber);
+		ordered_final_result[key] = *cit;
 	}
-	for (std::map<uint32_t, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
+	for (std::map<std::string, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
 	{
 		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
-		//std::cout << "sort_final_result(): writing result: " << buffer;
 	}
 	/*for (std::vector<lineitem_order>::const_iterator it = final_result.cbegin(); it != final_result.cend(); ++it)
 	{
@@ -401,9 +413,13 @@ void Experiment::Tpch::LineitemOrderOfflineAggregator::calculate_and_produce_fin
 	// first materialize result
 	FILE* fd;
 	fd = fopen(output_file.c_str(), "w");
-	std::map<uint32_t, lineitem_order> ordered_final_result;
+	std::map<std::string, lineitem_order> ordered_final_result;
 	for (std::unordered_map<uint32_t, Tpch::lineitem>::const_iterator li_it = li_buffer.cbegin(); li_it != li_buffer.cend(); li_it++)
 	{
+		if (li_it->second.l_order_key == 999 && li_it->second.l_linenumber == 1)
+		{
+			std::cout << "caught the bugger" << "\n";
+		}
 		auto o_it = o_buffer.find(li_it->second.l_order_key);
 		auto r_it = result_buffer.find(li_it->second.l_order_key ^ li_it->second.l_linenumber);
 		if (o_it != o_buffer.end() && r_it == result_buffer.end())
@@ -411,11 +427,13 @@ void Experiment::Tpch::LineitemOrderOfflineAggregator::calculate_and_produce_fin
 			result_buffer[li_it->second.l_order_key ^ li_it->second.l_linenumber] = Tpch::lineitem_order(o_it->second, li_it->second);
 		}
 	}
+	// sort final result
 	for (std::unordered_map<uint32_t, lineitem_order>::const_iterator cit = result_buffer.cbegin(); cit != result_buffer.cend(); ++cit)
 	{
-		ordered_final_result[cit->first] = cit->second;
+		std::string key = std::to_string(cit->second._lineitem.l_order_key) + "," + std::to_string(cit->second._lineitem.l_linenumber);
+		ordered_final_result[key] = cit->second;
 	}
-	for (std::map<uint32_t, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
+	for (std::map<std::string, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
 	{
 		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
