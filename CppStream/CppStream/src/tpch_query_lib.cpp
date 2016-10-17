@@ -170,11 +170,11 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	query_one_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_worker_partial_result");
-	query_one_partitioner_simulation(lines, tasks, *fld, "fld", "fld_full_result");
-	query_one_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_worker_partial_result");
-	query_one_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
-	query_one_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+	query_one_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_q1_result.csv");
+	query_one_partitioner_simulation(lines, tasks, *fld, "fld", "fld_q1_result.csv");
+	query_one_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_q1_result.csv");
+	query_one_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_q1_result.csv");
+	query_one_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_q1_result.csv");
 	delete rrg;
 	delete fld;
 	delete pkg;
@@ -228,11 +228,11 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
 	if (partitioner_name.compare("fld") != 0)
 	{
-		aggregator.calculate_and_produce_final_result(intermediate_buffer, partitioner_name + "_full_result.csv");
+		aggregator.calculate_and_produce_final_result(intermediate_buffer, worker_output_file_name_prefix);
 	}
 	else
 	{
-		aggregator.sort_final_result(intermediate_buffer, partitioner_name + "_full_result.csv");
+		aggregator.sort_final_result(intermediate_buffer, worker_output_file_name_prefix);
 	}
 	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
 	// TIME CRITICAL - END
@@ -265,41 +265,37 @@ void Experiment::Tpch::LineitemOrderWorker::operate()
 {
 }
 
-void Experiment::Tpch::LineitemOrderWorker::final_update(Tpch::lineitem & line_item)
+void Experiment::Tpch::LineitemOrderWorker::update(Tpch::lineitem & line_item, bool partial_flag)
 {
 	auto order_index_it = this->order_index.find(line_item.l_order_key);
-	if (order_index_it != order_index.end())
+	if (partial_flag)
 	{
-		this->result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
+		if (order_index_it != order_index.end())
+		{
+			this->result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
+		}
+		li_index[line_item.l_order_key ^ line_item.l_linenumber] = line_item;
 	}
 	else
 	{
-		li_index[line_item.l_order_key ^ line_item.l_linenumber] = line_item;
+		if (order_index_it != order_index.end())
+		{
+			this->result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
+		}
+		else
+		{
+			li_index[line_item.l_order_key ^ line_item.l_linenumber] = line_item;
+		}
 	}
 }
 
-void Experiment::Tpch::LineitemOrderWorker::final_update(Tpch::order & o)
+void Experiment::Tpch::LineitemOrderWorker::update(Tpch::order & o)
 {
 	auto order_index_it = order_index.find(o.o_orderkey);
 	if (order_index_it == order_index.end())
 	{
 		order_index[o.o_orderkey] = o;
 	}
-}
-
-void Experiment::Tpch::LineitemOrderWorker::partial_update(Tpch::lineitem & line_item)
-{
-	auto order_index_it = this->order_index.find(line_item.l_order_key);
-	if (order_index_it != order_index.end())
-	{
-		this->result[line_item.l_order_key ^ line_item.l_linenumber] = Tpch::lineitem_order(order_index_it->second, line_item);
-	}
-	li_index[line_item.l_order_key ^ line_item.l_linenumber] = line_item;
-}
-
-void Experiment::Tpch::LineitemOrderWorker::partial_update(Tpch::order & o)
-{
-	final_update(o);
 }
 
 void Experiment::Tpch::LineitemOrderWorker::finalize(std::vector<lineitem_order>& buffer)
@@ -423,4 +419,132 @@ void Experiment::Tpch::LineitemOrderOfflineAggregator::calculate_and_produce_fin
 	}*/
 	fflush(fd);
 	fclose(fd);
+}
+
+void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, 
+	const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num)
+{
+	RoundRobinPartitioner* rrg;
+	PkgPartitioner* pkg;
+	HashFieldPartitioner* fld;
+	CardinalityAwarePolicy ca_policy;
+	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	LoadAwarePolicy la_policy;
+	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	std::vector<uint16_t> tasks;
+
+	for (uint16_t i = 0; i < task_num; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	std::cout << "# of Tasks: " << tasks.size() << ".\n";
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *rrg, "shg", "shuffle_worker_partial_result");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *fld, "fld", "fld_full_result");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *pkg, "pkg", "pkg_worker_partial_result");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *ca_naive, "ca-naive", "ca_naive_worker_partial_result");
+	lineitem_order_join_partitioner_simulation(li_table, o_table, tasks, *la_naive, "la-naive", "la_naive_worker_partial_result");
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+}
+
+void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, 
+	const std::vector<Experiment::Tpch::order>& o_table, const std::vector<uint16_t> tasks, Partitioner & partitioner, 
+	const std::string partitioner_name, const std::string worker_output_file_name)
+{
+	double min_duration = -1, max_duration = 0, sum_of_durations = 0;
+	std::queue<Experiment::Tpch::lineitem> li_queue;
+	std::queue<Experiment::Tpch::order> o_queue;
+	std::mutex li_mu, o_mu;
+	std::condition_variable li_cond, o_cond;
+	std::vector<Tpch::lineitem_order> intermediate_buffer;
+	std::unordered_map<uint32_t, Tpch::lineitem> li_inter_buffer; 
+	std::unordered_map<uint32_t, Tpch::order> o_inter_buffer;
+	std::unordered_map<uint32_t, lineitem_order> result_inter_buffer;
+	std::vector<std::vector<Tpch::lineitem>> li_worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
+	std::vector<std::vector<Tpch::order>> o_worker_input_buffer(tasks.size(), std::vector<Tpch::order>());
+	// partition order tuples
+	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
+	{
+		uint16_t task = partitioner.partition_next(&it->o_orderkey, sizeof(it->o_orderkey));
+		o_worker_input_buffer[task].push_back(*it);
+	}
+	o_worker_input_buffer.shrink_to_fit();
+	// partition lineitem tuples
+	for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
+	{
+		uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
+		li_worker_input_buffer[task].push_back(*it);
+	}
+	li_worker_input_buffer.shrink_to_fit();
+
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::Tpch::LineitemOrderWorker worker(&li_queue, &li_mu, &li_cond, &o_queue, &o_mu, &o_cond);
+		bool partial_flag = true;
+		if (partitioner_name.compare("fld") == 0)
+		{
+			partial_flag = false;
+		}
+		// TIME CRITICAL - START
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		for (auto it = o_worker_input_buffer[i].begin(); it != o_worker_input_buffer[i].end(); ++it)
+		{
+			worker.update(*it);
+		}
+		for (auto it = li_worker_input_buffer[i].begin(); it != li_worker_input_buffer[i].end(); ++it)
+		{
+			worker.update(*it, partial_flag);
+		}
+		if (partitioner_name.compare("fld") == 0)
+		{
+			worker.finalize(intermediate_buffer);
+		}
+		else
+		{
+			worker.partial_finalize(li_inter_buffer, o_inter_buffer, result_inter_buffer);
+		}
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		// TIME CRITICAL - END
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+		sum_of_durations += execution_time.count();
+		if (max_duration < execution_time.count())
+		{
+			max_duration = execution_time.count();
+		}
+		min_duration = i == 0 ? execution_time.count() : (min_duration > execution_time.count() ? execution_time.count() : min_duration);
+		li_worker_input_buffer[i].clear();
+		o_worker_input_buffer[i].clear();
+	}
+	Experiment::Tpch::LineitemOrderOfflineAggregator aggregator;
+	// TIME CRITICAL - START
+	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+	if (partitioner_name.compare("fld") != 0)
+	{
+		aggregator.calculate_and_produce_final_result(li_inter_buffer, o_inter_buffer, result_inter_buffer, worker_output_file_name);
+	}
+	else
+	{
+		aggregator.sort_final_result(intermediate_buffer, worker_output_file_name);
+	}
+	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+	// TIME CRITICAL - END
+	std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
+
+	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
+		max_duration << ", average execution worker time: " << sum_of_durations / tasks.size() <<
+		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
+	intermediate_buffer.clear();
+	li_inter_buffer.clear();
+	o_inter_buffer.clear();
+	result_inter_buffer.clear();
 }

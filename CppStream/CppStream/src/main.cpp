@@ -51,20 +51,20 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	/*std::vector<Experiment::Tpch::customer> customer_table;
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
-	Experiment::Tpch::DataParser::parse_tpch_customer(input_file_name, customer_table);
 	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name, lineitem_table);
 	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name, order_table);
-	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);*/
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
+	Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 10);
+
 	/*
 	 * DEBS queries
 	 */
-	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	//Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 	//std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
-	debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_frequent_route_compact_ride.csv", 500, 300);
-	debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_profitable_cell_compact_ride.csv", 250, 600);
+	//debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_frequent_route_compact_ride.csv", 500, 300);
+	//debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_profitable_cell_compact_ride.csv", 250, 600);
 	// std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &frequent_ride_table);
 	//debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table);

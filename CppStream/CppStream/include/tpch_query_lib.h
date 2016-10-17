@@ -103,10 +103,8 @@ namespace Experiment
 					std::queue<Experiment::Tpch::order>* o_queue, std::mutex* o_mu, std::condition_variable* o_cond);
 			~LineitemOrderWorker();
 			void operate();
-			void final_update(Tpch::lineitem& line_item);
-			void final_update(Tpch::order& o);
-			void partial_update(Tpch::lineitem& line_item);
-			void partial_update(Tpch::order& o);
+			void update(Tpch::lineitem& line_item, bool partial_flag);
+			void update(Tpch::order& o);
 			void finalize(std::vector<lineitem_order>& buffer);
 			void partial_finalize(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer, 
 				std::unordered_map<uint32_t, lineitem_order>& result_buffer);
@@ -130,6 +128,15 @@ namespace Experiment
 			void sort_final_result(const std::vector<lineitem_order>& final_result, const std::string& output_file);
 			void calculate_and_produce_final_result(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer,
 				std::unordered_map<uint32_t, lineitem_order>& result_buffer, const std::string& output_file);
+		};
+
+		class LineitemOrderPartition
+		{
+		public:
+			static void lineitem_order_join_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
+				const size_t task_num);
+			static void lineitem_order_join_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
+				const std::vector<uint16_t> tasks, Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		};
 	}
 }
