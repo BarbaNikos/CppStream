@@ -242,7 +242,22 @@ int Experiment::DebsChallenge::DebsCellAssignment::parse_compact_ride(std::strin
 		tokens.push_back(token);
 	}
 	memcpy(ride.medallion, tokens[0].c_str(), 32 * sizeof(char));
-	ride.trip_distance = std::stof(tokens[5]);
+	try
+	{
+		ride.trip_distance = std::stof(tokens[5]);
+	}
+	catch (const std::exception&)
+	{
+		std::cerr << "DebsCellAssignment::parse_compact_ride():: failed on trip-distance: " << tokens[1] << ", line: " << ride_info << "\n";
+	}
+	try
+	{
+		ride.dropoff_datetime = produce_timestamp(tokens[2]);
+	}
+	catch (const std::exception&)
+	{
+		std::cerr << "DebsCellAssignment::parse_compact_ride():: failed on drop-off datetime: " << tokens[2] << ", line: " << ride_info << "\n";
+	}
 	try
 	{
 		pickup_longitude = std::stod(tokens[6]);
