@@ -44,17 +44,22 @@ int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cout << "usage: <input-file>\n";
+		std::cout << "usage: <input-file-1> optional: <input-file-2>\n";
 		exit(1);
 	}
 	std::string input_file_name = argv[1];
+	std::string input_file_name_2;
+	if (argc > 2)
+	{
+		input_file_name_2 = argv[2];
+	}
 	/*
 	 * TPC-H query
 	 */
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
 	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name, lineitem_table);
-	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name, order_table);
+	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name_2, order_table);
 	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
 	Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 10);
 
