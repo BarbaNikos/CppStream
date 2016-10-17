@@ -95,6 +95,28 @@ namespace Experiment
 			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
 				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
+
+		class LineitemOrderWorker
+		{
+		public:
+			LineitemOrderWorker(std::queue<Experiment::Tpch::lineitem>* li_queue, std::mutex* li_mu, std::condition_variable* li_cond, 
+					std::queue<Experiment::Tpch::order>* o_queue, std::mutex* o_mu, std::condition_variable* o_cond);
+			~LineitemOrderWorker();
+			void operate();
+			void update(Tpch::lineitem& line_item);
+			void update(Tpch::order& o);
+			void partial_finalize(std::vector<lineitem_order>& buffer);
+			void finalize(std::vector<lineitem_order>& buffer);
+		private:
+			std::mutex* li_mu;
+			std::mutex* o_mu;
+			std::condition_variable* li_cond;
+			std::condition_variable* o_cond;
+			std::unordered_map<uint32_t, Tpch::order> order_index;
+			std::vector<Tpch::lineitem> li_table;
+			std::queue<Experiment::Tpch::lineitem>* li_queue;
+			std::queue<Experiment::Tpch::order>* o_queue;
+		};
 	}
 }
 #endif // !TPCH_QUERY_LIB_H_
