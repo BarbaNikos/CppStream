@@ -60,8 +60,10 @@ int main(int argc, char** argv)
 	std::vector<Experiment::Tpch::order> order_table;
 	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name, lineitem_table);
 	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name_2, order_table);
-	// Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 100);
 	Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 10);
+	Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 100);
 
 	/*
 	 * DEBS queries

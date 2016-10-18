@@ -244,7 +244,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	intermediate_buffer.clear();
 }
 
-Experiment::Tpch::LineitemOrderWorker::LineitemOrderWorker(std::queue<Experiment::Tpch::lineitem>* li_queue, std::mutex * li_mu, std::condition_variable * li_cond, std::queue<Experiment::Tpch::order>* o_queue, std::mutex * o_mu, std::condition_variable * o_cond)
+Experiment::Tpch::LineitemOrderWorker::LineitemOrderWorker(std::queue<Experiment::Tpch::lineitem>* li_queue, std::mutex * li_mu, 
+	std::condition_variable * li_cond, std::queue<Experiment::Tpch::order>* o_queue, std::mutex * o_mu, std::condition_variable * o_cond)
 {
 	this->li_queue = li_queue;
 	this->li_mu = li_mu;
@@ -268,28 +269,38 @@ void Experiment::Tpch::LineitemOrderWorker::operate()
 void Experiment::Tpch::LineitemOrderWorker::update(Tpch::lineitem & line_item, bool partial_flag)
 {
 	auto order_index_it = order_index.find(line_item.l_order_key);
-	uint32_t li_key = line_item.l_order_key ^ line_item.l_linenumber;
+	std::string li_key = std::to_string(line_item.l_order_key) + ":" + std::to_string(line_item.l_linenumber);
+	auto result_index_it = result.find(li_key);
+	auto li_index_it = li_index.find(li_key);
 	if (partial_flag)
 	{
 		if (order_index_it != order_index.end())
 		{
-			if (line_item.l_order_key == 999 && line_item.l_linenumber == 1)
+			if (result_index_it == result.end())
 			{
-				std::cout << "caught the bugger" << "\n";
+				result.insert(std::make_pair(li_key, Tpch::lineitem_order(order_index_it->second, line_item)));
 			}
-			result[li_key] = Tpch::lineitem_order(order_index_it->second, line_item);
 		}
-		li_index[li_key] = line_item;
+		if (li_index_it == li_index.end())
+		{
+			li_index.insert(std::make_pair(li_key, Tpch::lineitem(line_item)));
+		}
 	}
 	else
 	{
 		if (order_index_it != order_index.end())
 		{
-			result[li_key] = Tpch::lineitem_order(order_index_it->second, line_item);
+			if (result_index_it == result.end())
+			{
+				result.insert(std::make_pair(li_key, Tpch::lineitem_order(order_index_it->second, line_item)));
+			}
 		}
 		else
 		{
-			li_index[li_key] = line_item;
+			if (li_index_it == li_index.end())
+			{
+				li_index.insert(std::make_pair(li_key, Tpch::lineitem(line_item)));
+			}
 		}
 	}
 }
@@ -303,52 +314,48 @@ void Experiment::Tpch::LineitemOrderWorker::update(Tpch::order & o)
 	}
 }
 
-void Experiment::Tpch::LineitemOrderWorker::finalize(std::vector<lineitem_order>& buffer)
+void Experiment::Tpch::LineitemOrderWorker::finalize(std::unordered_map<std::string, lineitem_order>& buffer)
 {
-	for (std::unordered_map<uint32_t, Tpch::lineitem>::const_iterator l_it = li_index.cbegin(); l_it != li_index.cend(); ++l_it)
+	for (std::unordered_map<std::string, Tpch::lineitem>::const_iterator l_it = li_index.cbegin(); l_it != li_index.cend(); ++l_it)
 	{
 		std::unordered_map<uint32_t, Tpch::order>::iterator o_it = order_index.find(l_it->second.l_order_key);
-		std::unordered_map<uint32_t, Tpch::lineitem_order>::iterator r_it = result.find(l_it->first);
-		if (o_it != order_index.end() && r_it == result.end())
+		std::unordered_map<std::string, Tpch::lineitem_order>::iterator r_it = result.find(l_it->first);
+		auto b_it = buffer.find(l_it->first);
+		if (o_it != order_index.end() && r_it == result.end() && b_it == buffer.end())
 		{
-			buffer.push_back(Tpch::lineitem_order(o_it->second, l_it->second));
+			buffer.insert(std::make_pair(l_it->first, Tpch::lineitem_order(o_it->second, l_it->second)));
 		}
 	}
-	for (std::unordered_map<uint32_t, lineitem_order>::const_iterator r_it = result.cbegin(); r_it != result.cend(); ++r_it)
+	for (std::unordered_map<std::string, lineitem_order>::const_iterator r_it = result.cbegin(); r_it != result.cend(); ++r_it)
 	{
-		buffer.push_back(r_it->second);
+		auto b_it = buffer.find(r_it->first);
+		if (b_it == buffer.end())
+		{
+			buffer.insert(std::make_pair(r_it->first, Tpch::lineitem_order(r_it->second)));
+		}
 	}
 }
 
-void Experiment::Tpch::LineitemOrderWorker::partial_finalize(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, 
-	std::unordered_map<uint32_t, Tpch::order>& o_buffer, std::unordered_map<uint32_t, lineitem_order>& result_buffer)
+void Experiment::Tpch::LineitemOrderWorker::partial_finalize(std::unordered_map<std::string, Tpch::lineitem>& li_buffer, 
+	std::unordered_map<uint32_t, Tpch::order>& o_buffer, std::unordered_map<std::string, lineitem_order>& result_buffer)
 {
 	// step 1: calculate remaining results and append records in the li_buffer only if they are not joined and if 
 	// they do not exist
-	for (std::unordered_map<uint32_t, Tpch::lineitem>::const_iterator l_it = li_index.cbegin(); l_it != li_index.cend(); ++l_it)
+	for (std::unordered_map<std::string, Tpch::lineitem>::const_iterator l_it = li_index.cbegin(); l_it != li_index.cend(); ++l_it)
 	{
-		if (l_it->second.l_order_key == 999 && l_it->second.l_linenumber == 1)
-		{
-			std::cout << "caught the bugger" << "\n";
-		}
 		auto o_it = order_index.find(l_it->second.l_order_key);
+		auto li_buffer_it = li_buffer.find(l_it->first);
 		if (o_it != order_index.end())
 		{
-			auto result_it = result.find(l_it->second.l_order_key);
+			auto result_it = result.find(l_it->first);
 			if (result_it == result.end())
 			{
-				result[l_it->first] = Tpch::lineitem_order(o_it->second, l_it->second);
+				result.insert(std::make_pair(l_it->first, Tpch::lineitem_order(o_it->second, l_it->second)));
 			}
-			else
-			{
-				// THE FOLLOWING IS AN OPTIMIZATION: it can be avoided and have a naive way of iterating
-				// over the lineitem buffer one more time to push the line-items in the li_buffer
-				auto li_buffer_it = li_buffer.find(l_it->first);
-				if (li_buffer_it == li_buffer.end())
-				{
-					li_buffer[l_it->first] = l_it->second;
-				}
-			}
+		}
+		if (li_buffer_it == li_buffer.end())
+		{
+			li_buffer.insert(std::make_pair(l_it->first, Tpch::lineitem(l_it->second)));
 		}
 	}
 	// append records to o_buffer
@@ -357,20 +364,16 @@ void Experiment::Tpch::LineitemOrderWorker::partial_finalize(std::unordered_map<
 		auto o_buffer_it = o_buffer.find(o_it->first);
 		if (o_buffer_it == o_buffer.end())
 		{
-			o_buffer[o_it->first] = o_it->second;
+			o_buffer.insert(std::make_pair(o_it->first, Tpch::order(o_it->second)));
 		}
 	}
 	// append records to result_buffer
-	for (std::unordered_map<uint32_t, lineitem_order>::const_iterator result_it = result.cbegin(); result_it != result.cend(); result_it++)
+	for (std::unordered_map<std::string, lineitem_order>::const_iterator result_it = result.cbegin(); result_it != result.cend(); result_it++)
 	{
-		if (result_it->second._lineitem.l_order_key == 999 && result_it->second._lineitem.l_linenumber == 1)
-		{
-			std::cout << "caught the bugger" << "\n";
-		}
 		auto r_buffer_it = result_buffer.find(result_it->first);
 		if (r_buffer_it == result_buffer.end())
 		{
-			result_buffer[result_it->first] = result_it->second;
+			result_buffer.insert(std::make_pair(result_it->first, Tpch::lineitem_order(result_it->second)));
 		}
 	}
 }
@@ -383,66 +386,60 @@ Experiment::Tpch::LineitemOrderOfflineAggregator::~LineitemOrderOfflineAggregato
 {
 }
 
-void Experiment::Tpch::LineitemOrderOfflineAggregator::sort_final_result(const std::vector<lineitem_order>& final_result, const std::string & output_file)
+void Experiment::Tpch::LineitemOrderOfflineAggregator::sort_final_result(const std::unordered_map<std::string, lineitem_order>& final_result, const std::string & output_file)
 {
 	FILE* fd;
 	fd = fopen(output_file.c_str(), "w");
-	std::map<std::string, lineitem_order> ordered_final_result;
-	for (std::vector<lineitem_order>::const_iterator cit = final_result.cbegin(); cit != final_result.cend(); ++cit)
+	/*std::map<std::string, lineitem_order> ordered_final_result;
+	for (std::unordered_map<std::string, lineitem_order>::const_iterator cit = final_result.cbegin(); cit != final_result.cend(); ++cit)
 	{
-		std::string key = std::to_string(cit->_lineitem.l_order_key) + "," + std::to_string(cit->_lineitem.l_linenumber);
-		ordered_final_result[key] = *cit;
-	}
-	for (std::map<std::string, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
+		ordered_final_result.insert(std::make_pair(cit->first, cit->second));
+	}*/
+	/*for (std::map<std::string, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
+	{
+		std::string buffer = it->second.to_string() + "\n";
+		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+	}*/
+	for (std::unordered_map<std::string, lineitem_order>::const_iterator it = final_result.cbegin(); it != final_result.cend(); ++it)
 	{
 		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
 	}
-	/*for (std::vector<lineitem_order>::const_iterator it = final_result.cbegin(); it != final_result.cend(); ++it)
-	{
-		std::string buffer = it->to_string() + "\n";
-		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
-	}*/
 	fflush(fd);
 	fclose(fd);
 }
 
-void Experiment::Tpch::LineitemOrderOfflineAggregator::calculate_and_produce_final_result(std::unordered_map<uint32_t, Tpch::lineitem>& li_buffer, 
-	std::unordered_map<uint32_t, Tpch::order>& o_buffer, std::unordered_map<uint32_t, lineitem_order>& result_buffer, const std::string & output_file)
+void Experiment::Tpch::LineitemOrderOfflineAggregator::calculate_and_produce_final_result(std::unordered_map<std::string, Tpch::lineitem>& li_buffer, 
+	std::unordered_map<uint32_t, Tpch::order>& o_buffer, std::unordered_map<std::string, lineitem_order>& result_buffer, const std::string & output_file)
 {
 	// first materialize result
 	FILE* fd;
 	fd = fopen(output_file.c_str(), "w");
 	std::map<std::string, lineitem_order> ordered_final_result;
-	for (std::unordered_map<uint32_t, Tpch::lineitem>::const_iterator li_it = li_buffer.cbegin(); li_it != li_buffer.cend(); li_it++)
+	for (std::unordered_map<std::string, Tpch::lineitem>::const_iterator li_it = li_buffer.cbegin(); li_it != li_buffer.cend(); li_it++)
 	{
-		if (li_it->second.l_order_key == 999 && li_it->second.l_linenumber == 1)
-		{
-			std::cout << "caught the bugger" << "\n";
-		}
 		auto o_it = o_buffer.find(li_it->second.l_order_key);
-		auto r_it = result_buffer.find(li_it->second.l_order_key ^ li_it->second.l_linenumber);
+		auto r_it = result_buffer.find(li_it->first);
 		if (o_it != o_buffer.end() && r_it == result_buffer.end())
 		{
-			result_buffer[li_it->second.l_order_key ^ li_it->second.l_linenumber] = Tpch::lineitem_order(o_it->second, li_it->second);
+			result_buffer[li_it->first] = Tpch::lineitem_order(o_it->second, li_it->second);
 		}
 	}
 	// sort final result
-	for (std::unordered_map<uint32_t, lineitem_order>::const_iterator cit = result_buffer.cbegin(); cit != result_buffer.cend(); ++cit)
+	/*for (std::unordered_map<std::string, lineitem_order>::const_iterator cit = result_buffer.cbegin(); cit != result_buffer.cend(); ++cit)
 	{
-		std::string key = std::to_string(cit->second._lineitem.l_order_key) + "," + std::to_string(cit->second._lineitem.l_linenumber);
-		ordered_final_result[key] = cit->second;
+		ordered_final_result[cit->first] = cit->second;
 	}
 	for (std::map<std::string, lineitem_order>::const_iterator it = ordered_final_result.begin(); it != ordered_final_result.end(); ++it)
 	{
 		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
-	}
-	/*for (std::unordered_map<uint32_t, lineitem_order>::const_iterator it = result_buffer.cbegin(); it != result_buffer.cend(); ++it)
+	}*/
+	for (std::unordered_map<std::string, lineitem_order>::const_iterator it = result_buffer.cbegin(); it != result_buffer.cend(); ++it)
 	{
 		std::string buffer = it->second.to_string() + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
-	}*/
+	}
 	fflush(fd);
 	fclose(fd);
 }
@@ -464,7 +461,6 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(co
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	std::cout << "# of Tasks: " << tasks.size() << ".\n";
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
@@ -492,13 +488,13 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 	std::queue<Experiment::Tpch::order> o_queue;
 	std::mutex li_mu, o_mu;
 	std::condition_variable li_cond, o_cond;
-	std::vector<Tpch::lineitem_order> intermediate_buffer;
-	std::unordered_map<uint32_t, Tpch::lineitem> li_inter_buffer; 
+	std::unordered_map<std::string, Tpch::lineitem> li_inter_buffer; 
 	std::unordered_map<uint32_t, Tpch::order> o_inter_buffer;
-	std::unordered_map<uint32_t, lineitem_order> result_inter_buffer;
+	std::unordered_map<std::string, lineitem_order> result_inter_buffer;
 	std::vector<std::vector<Tpch::lineitem>> li_worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
 	std::vector<std::vector<Tpch::order>> o_worker_input_buffer(tasks.size(), std::vector<Tpch::order>());
 	// partition order tuples
+	std::cout << "Iniating partitioning. Lineitems: " << li_table.size() << ", orders size: " << o_table.size() << ".\n";
 	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->o_orderkey, sizeof(it->o_orderkey));
@@ -533,7 +529,7 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 		}
 		if (partitioner_name.compare("fld") == 0)
 		{
-			worker.finalize(intermediate_buffer);
+			worker.finalize(result_inter_buffer);
 		}
 		else
 		{
@@ -560,7 +556,7 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 	}
 	else
 	{
-		aggregator.sort_final_result(intermediate_buffer, worker_output_file_name);
+		aggregator.sort_final_result(result_inter_buffer, worker_output_file_name);
 	}
 	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
 	// TIME CRITICAL - END
@@ -569,7 +565,6 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
 		max_duration << ", average execution worker time: " << sum_of_durations / tasks.size() <<
 		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
-	intermediate_buffer.clear();
 	li_inter_buffer.clear();
 	o_inter_buffer.clear();
 	result_inter_buffer.clear();
