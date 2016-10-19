@@ -569,3 +569,197 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 	o_inter_buffer.clear();
 	result_inter_buffer.clear();
 }
+
+Experiment::Tpch::QueryThreeJoinWorker::QueryThreeJoinWorker(const Experiment::Tpch::query_three_predicate & predicate, bool partial_flag)
+{
+	this->predicate = predicate;
+	this->partial_partition_flag = partial_flag;
+}
+
+Experiment::Tpch::QueryThreeJoinWorker::~QueryThreeJoinWorker()
+{
+	
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::step_one_update(const Experiment::Tpch::customer & customer)
+{
+	if (strncmp(this->predicate.c_mktsegment, customer.c_mktsegment, 10) == 0)
+	{
+		this->cu_index.insert(customer.c_custkey);
+	}
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::step_one_update(const Experiment::Tpch::order & order)
+{
+	if (order.o_orderdate.day < this->predicate.order_date.day)
+	{
+		auto it = cu_index.find(order.o_custkey);
+		if (this->partial_partition_flag)
+		{
+			if (it != cu_index.end())
+			{
+				step_one_result.insert(std::make_pair(order.o_orderkey, Tpch::query_three_step_one(order.o_orderdate, order.o_shippriority)));
+			}
+			else
+			{
+				// you need to add the order, because during aggregation there might be unmatched orders
+				this->o_index.insert(std::make_pair(order.o_orderkey, order)); 
+			}
+		}
+		else
+		{
+			if (it != cu_index.end())
+			{
+				this->o_index.insert(std::make_pair(order.o_orderkey, order));
+			}
+			else
+			{
+				this->step_one_result.insert(std::make_pair(order.o_orderkey, Tpch::query_three_step_one(order.o_orderdate, order.o_shippriority)));
+			}
+		}
+	}
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::step_one_finalize(std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer)
+{
+	// attempt to match all un-matched tuples
+	for (auto it = o_index.cbegin(); it != o_index.cend(); ++it)
+	{
+		auto c_it = cu_index.find(it->second.o_custkey);
+		if (c_it != cu_index.end())
+		{
+			// materialize the result if it does not exist in the result buffer
+			auto result_buffer_it = step_one_result_buffer.find(it->first);
+			if (result_buffer_it == step_one_result_buffer.end())
+			{
+				step_one_result_buffer.insert(std::make_pair(it->first, Tpch::query_three_step_one(it->second.o_orderdate, it->second.o_shippriority)));
+			}
+		}
+	}
+	// transfer all (non-existent) results in the result-buffer
+	for (auto it = this->step_one_result.cbegin(); it != this->step_one_result.cend(); ++it)
+	{
+		auto result_buffer_it = step_one_result_buffer.find(it->first);
+		if (result_buffer_it == step_one_result_buffer.end())
+		{
+			step_one_result_buffer.insert(std::make_pair(it->first, it->second));
+		}
+	}
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::step_one_partial_finalize(std::unordered_set<uint32_t>& c_index, 
+	std::unordered_map<uint32_t,Tpch::order>& o_index, 
+	std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer)
+{
+	// gather all qualifying customers
+	for (auto c_it = this->cu_index.cbegin(); c_it != this->cu_index.cend(); c_it++)
+	{
+		c_index.insert(*c_it);
+	}
+	// go over all un-matched orders to check if they match with any qualifying customer
+	for (auto o_it = this->o_index.cbegin(); o_it != this->o_index.cend(); o_it++)
+	{
+		auto c_it = c_index.find(o_it->second.o_custkey);
+		if (c_it != c_index.end())
+		{
+			auto result_buffer_it = step_one_result_buffer.find(o_it->first);
+			if (result_buffer_it == step_one_result_buffer.end())
+			{
+				step_one_result_buffer.insert(std::make_pair(o_it->first, Tpch::query_three_step_one(o_it->second.o_orderdate, o_it->second.o_shippriority)));
+			}
+		}
+		else
+		{
+			// if the customer is not found, add the order in the order-index
+			if (o_index.find(o_it->first) == o_index.end())
+			{
+				o_index.insert(std::make_pair(o_it->first, o_it->second));
+			}
+		}
+	}
+	// transfer all results from the step_one_result to the result buffer
+	for (auto r_it = this->step_one_result.cbegin(); r_it != this->step_one_result.cend(); r_it++)
+	{
+		auto rb_it = step_one_result_buffer.find(r_it->first);
+		if (rb_it == step_one_result_buffer.end())
+		{
+			step_one_result_buffer.insert(std::make_pair(rb_it->first, rb_it->second));
+		}
+	}
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::step_two_init(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result)
+{
+	this->step_one_result.clear();
+	this->step_one_result = step_one_result;
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::step_two_update(const Experiment::Tpch::lineitem & line_item)
+{
+	if (line_item.l_shipdate.day > this->predicate.order_date.day)
+	{
+		auto it = step_one_result.find(line_item.l_order_key);
+		if (it != step_one_result.end())
+		{
+			std::string key = std::to_string(line_item.l_order_key) + "," +
+				it->second.o_orderdate.to_string() + "," + std::to_string(it->second.o_shippriority);
+			float revenue_update = (line_item.l_extendedprice * (1 - line_item.l_discount));
+			auto result_it = final_result.find(key);
+			if (result_it != final_result.end())
+			{
+				result_it->second.revenue += revenue_update;
+			}
+			else
+			{
+				final_result.insert(std::make_pair(key, Experiment::Tpch::query_three_result(it->first, it->second.o_shippriority, 
+					it->second.o_orderdate, revenue_update)));
+			}
+		}
+	}
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::finalize(std::unordered_map<std::string, Experiment::Tpch::query_three_result>& result_buffer)
+{
+	for (auto it = final_result.cbegin(); it != final_result.cend(); it++)
+	{
+		if (result_buffer.find(it->first) == result_buffer.end())
+		{
+			result_buffer.insert(std::make_pair(it->first, it->second));
+		}
+	}
+}
+
+void Experiment::Tpch::QueryThreeJoinWorker::partial_finalize(std::unordered_map<std::string, Experiment::Tpch::query_three_result>& result_buffer)
+{
+	for (auto it = final_result.cbegin(); it != final_result.cend(); it++)
+	{
+		auto r_it = result_buffer.find(it->first);
+		if (r_it == result_buffer.end())
+		{
+			result_buffer.insert(std::make_pair(it->first, it->second));
+		}
+		else
+		{
+			r_it->second.revenue += it->second.revenue;
+		}
+	}
+}
+
+void Experiment::Tpch::QueryThreeOfflineAggregator::sort_final_result(const std::unordered_map<std::string, query_three_result>& result, const std::string & output_file)
+{
+	FILE* fd;
+	fd = fopen(output_file.c_str(), "w");
+	std::map<uint32_t, query_three_result> sorted_result;
+	for (auto it = result.cbegin(); it != result.cend(); ++it)
+	{
+		sorted_result[it->second.o_orderkey] = it->second;
+	}
+	for (std::map<uint32_t, query_three_result>::const_iterator i = sorted_result.cbegin(); i != sorted_result.cend(); ++i)
+	{
+		std::string buffer = std::to_string(i->first) + "," + std::to_string(i->second.revenue) + "," + 
+			i->second.o_orderdate.to_string() + "," + std::to_string(i->second.o_shippriority) + "\n";
+		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+	}
+	fflush(fd);
+	fclose(fd);
+}
