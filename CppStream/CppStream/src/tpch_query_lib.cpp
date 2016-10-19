@@ -494,7 +494,6 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 	std::vector<std::vector<Tpch::lineitem>> li_worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
 	std::vector<std::vector<Tpch::order>> o_worker_input_buffer(tasks.size(), std::vector<Tpch::order>());
 	// partition order tuples
-	std::cout << "Iniating partitioning. Lineitems: " << li_table.size() << ", orders size: " << o_table.size() << ".\n";
 	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->o_orderkey, sizeof(it->o_orderkey));
@@ -570,10 +569,10 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 	result_inter_buffer.clear();
 }
 
-Experiment::Tpch::QueryThreeJoinWorker::QueryThreeJoinWorker(const Experiment::Tpch::query_three_predicate & predicate, bool partial_flag)
+Experiment::Tpch::QueryThreeJoinWorker::QueryThreeJoinWorker(const Experiment::Tpch::query_three_predicate & predicate)
 {
 	this->predicate = predicate;
-	this->partial_partition_flag = partial_flag;
+	//this->partial_partition_flag = partial_flag;
 }
 
 Experiment::Tpch::QueryThreeJoinWorker::~QueryThreeJoinWorker()
@@ -594,28 +593,14 @@ void Experiment::Tpch::QueryThreeJoinWorker::step_one_update(const Experiment::T
 	if (order.o_orderdate.day < this->predicate.order_date.day)
 	{
 		auto it = cu_index.find(order.o_custkey);
-		if (this->partial_partition_flag)
+		if (it != cu_index.end())
 		{
-			if (it != cu_index.end())
-			{
-				step_one_result.insert(std::make_pair(order.o_orderkey, Tpch::query_three_step_one(order.o_orderdate, order.o_shippriority)));
-			}
-			else
-			{
-				// you need to add the order, because during aggregation there might be unmatched orders
-				this->o_index.insert(std::make_pair(order.o_orderkey, order)); 
-			}
+			step_one_result.insert(std::make_pair(order.o_orderkey, Tpch::query_three_step_one(order.o_orderdate, order.o_shippriority)));
 		}
 		else
 		{
-			if (it != cu_index.end())
-			{
-				this->o_index.insert(std::make_pair(order.o_orderkey, order));
-			}
-			else
-			{
-				this->step_one_result.insert(std::make_pair(order.o_orderkey, Tpch::query_three_step_one(order.o_orderdate, order.o_shippriority)));
-			}
+			// you need to add the order, because during aggregation there might be unmatched orders
+			this->o_index.insert(std::make_pair(order.o_orderkey, order));
 		}
 	}
 }
@@ -677,7 +662,20 @@ void Experiment::Tpch::QueryThreeJoinWorker::step_one_partial_finalize(std::unor
 			}
 		}
 	}
-	// transfer all results from the step_one_result to the result buffer
+	// go over the o_index to see if there are additional matches to produce
+	for (auto o_it = o_index.cbegin(); o_it != o_index.cend(); o_it++)
+	{
+		auto c_it = c_index.find(o_it->second.o_custkey);
+		if (c_it != c_index.end())
+		{
+			auto result_buffer_it = step_one_result_buffer.find(o_it->first);
+			if (result_buffer_it == step_one_result_buffer.end())
+			{
+				step_one_result_buffer.insert(std::make_pair(o_it->first, Tpch::query_three_step_one(o_it->second.o_orderdate, o_it->second.o_shippriority)));
+			}
+		}
+	}
+	// transfer all (remaining) results from the step_one_result to the result buffer
 	for (auto r_it = this->step_one_result.cbegin(); r_it != this->step_one_result.cend(); r_it++)
 	{
 		auto rb_it = step_one_result_buffer.find(r_it->first);
@@ -762,4 +760,170 @@ void Experiment::Tpch::QueryThreeOfflineAggregator::sort_final_result(const std:
 	}
 	fflush(fd);
 	fclose(fd);
+}
+
+void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::vector<Experiment::Tpch::customer>& c_table, 
+	const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num)
+{
+	RoundRobinPartitioner* rrg;
+	PkgPartitioner* pkg;
+	HashFieldPartitioner* fld;
+	CardinalityAwarePolicy ca_policy;
+	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	LoadAwarePolicy la_policy;
+	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	std::vector<uint16_t> tasks;
+
+	for (uint16_t i = 0; i < task_num; i++)
+	{
+		tasks.push_back(i);
+	}
+	tasks.shrink_to_fit();
+	rrg = new RoundRobinPartitioner(tasks);
+	fld = new HashFieldPartitioner(tasks);
+	pkg = new PkgPartitioner(tasks);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *rrg, "shg", "shuffle_query_three_result.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *fld, "fld", "fld_query_three_result.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *pkg, "pkg", "pkg_query_three_result.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *ca_naive, "ca-naive", "ca_naive_query_three_result.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *la_naive, "la-naive", "la_naive_query_three_result.csv");
+	delete rrg;
+	delete fld;
+	delete pkg;
+	delete ca_naive;
+	delete la_naive;
+	tasks.clear();
+}
+
+void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(const std::vector<Experiment::Tpch::customer>& c_table, 
+	const std::vector<Experiment::Tpch::lineitem>& li_table, 
+	const std::vector<Experiment::Tpch::order>& o_table, 
+	const std::vector<uint16_t> tasks, Partitioner & partitioner, 
+	const std::string partitioner_name, const std::string worker_output_file_name)
+{
+	double min_duration_step_one = -1, max_duration_step_one = 0, sum_of_durations_step_one = 0;
+	double min_duration_step_two = -1, max_duration_step_two = 0, sum_of_durations_step_two = 0;
+	Experiment::Tpch::query_three_predicate predicate;
+	std::vector<std::vector<Tpch::customer>> c_worker_input_buffer(tasks.size(), std::vector<Tpch::customer>());
+	std::vector<std::vector<Tpch::lineitem>> li_worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
+	std::vector<std::vector<Tpch::order>> o_worker_input_buffer(tasks.size(), std::vector<Tpch::order>());
+	std::unordered_set<uint32_t> step_one_customer_buffer;
+	std::unordered_map<uint32_t, Tpch::order> step_one_order_buffer;
+	std::unordered_map<uint32_t, Experiment::Tpch::query_three_step_one> step_one_result_buffer;
+	std::unordered_map<std::string, Tpch::query_three_result> result_buffer;
+	// initialize predicate
+	predicate.order_date.day = 15;
+	predicate.order_date.month = 3;
+	predicate.order_date.year = 1995;
+	memcpy(predicate.c_mktsegment, "BUILDING\0\0", 10 * sizeof(char));
+	// Step One: Join customer and order tables
+	// partition order tuples and customer tuples based on cust_key
+	for (auto it = c_table.cbegin(); it != c_table.cend(); ++it)
+	{
+		uint16_t task = partitioner.partition_next(&it->c_custkey, sizeof(it->c_custkey));
+		c_worker_input_buffer[task].push_back(*it);
+	}
+	c_worker_input_buffer.shrink_to_fit();
+	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
+	{
+		uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(it->o_custkey));
+		o_worker_input_buffer[task].push_back(*it);
+	}
+	o_worker_input_buffer.shrink_to_fit();
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::Tpch::QueryThreeJoinWorker worker(predicate);
+		// TIME CRITICAL - START
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		// feed customers first
+		for (auto it = c_worker_input_buffer[i].begin(); it != c_worker_input_buffer[i].end(); ++it)
+		{
+			worker.step_one_update(*it);
+		}
+		// feed orders
+		for (auto it = o_worker_input_buffer[i].begin(); it != o_worker_input_buffer[i].end(); ++it)
+		{
+			worker.step_one_update(*it);
+		}
+		// finalize
+		if (partitioner_name.compare("fld") == 0)
+		{
+			worker.step_one_finalize(step_one_result_buffer);
+		}
+		else
+		{
+			worker.step_one_partial_finalize(step_one_customer_buffer, step_one_order_buffer, step_one_result_buffer);
+		}
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		// TIME CRITICAL - END
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+		sum_of_durations_step_one += execution_time.count();
+		if (max_duration_step_one < execution_time.count())
+		{
+			max_duration_step_one = execution_time.count();
+		}
+		min_duration_step_one = i == 0 ? execution_time.count() : (min_duration_step_one > execution_time.count() ? 
+			execution_time.count() : min_duration_step_one);
+		c_worker_input_buffer[i].clear();
+		o_worker_input_buffer[i].clear();
+	}
+	c_worker_input_buffer.clear();
+	o_worker_input_buffer.clear();
+	step_one_customer_buffer.clear();
+	step_one_order_buffer.clear();
+	// step Two: join lineitem table and calculate group by aggregate-sum()
+	// partition lineitem tuples
+	for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
+	{
+		uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
+		li_worker_input_buffer[task].push_back(*it);
+	}
+	li_worker_input_buffer.shrink_to_fit();
+	for (size_t i = 0; i < tasks.size(); ++i)
+	{
+		Experiment::Tpch::QueryThreeJoinWorker worker(predicate);
+		worker.step_two_init(step_one_result_buffer);
+		// TIME CRITICAL - START
+		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+		for (auto it = li_worker_input_buffer[i].begin(); it != li_worker_input_buffer[i].end(); ++it)
+		{
+			worker.step_two_update(*it);
+		}
+		// finalize
+		if (partitioner_name.compare("fld") == 0)
+		{
+			worker.finalize(result_buffer);
+		}
+		else
+		{
+			worker.partial_finalize(result_buffer);
+		}
+		std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+		// TIME CRITICAL - END
+		std::chrono::duration<double, std::milli> execution_time = end - start;
+		sum_of_durations_step_two += execution_time.count();
+		if (max_duration_step_two < execution_time.count())
+		{
+			max_duration_step_two = execution_time.count();
+		}
+		min_duration_step_two = i == 0 ? execution_time.count() : (min_duration_step_two > execution_time.count() ? 
+			execution_time.count() : min_duration_step_two);
+		li_worker_input_buffer[i].clear();
+	}
+	li_worker_input_buffer.clear();
+	Experiment::Tpch::QueryThreeOfflineAggregator aggregator;
+	// TIME CRITICAL - START
+	std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+	aggregator.sort_final_result(result_buffer, worker_output_file_name);
+	std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+	// TIME CRITICAL - END
+	std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
+
+	std::cout << partitioner_name << " :: Min duration: " << min_duration_step_one << " (msec). Max duration: " <<
+		max_duration_step_one << ", average execution worker time: " << sum_of_durations_step_one / tasks.size() <<
+		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
+	result_buffer.clear();
+	step_one_result_buffer.clear();
 }

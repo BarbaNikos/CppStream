@@ -44,27 +44,35 @@ int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cout << "usage: <input-file-1> optional: <input-file-2>\n";
+		std::cout << "usage: <input-file-1> optional: <input-file-2> optional: <input-file-3>\n";
 		exit(1);
 	}
 	std::string input_file_name = argv[1];
 	std::string input_file_name_2;
-	if (argc > 2)
+	std::string input_file_name_3;
+	if (argc > 2 && argc <= 3)
 	{
 		input_file_name_2 = argv[2];
+	}
+	else if (argc > 3)
+	{
+		input_file_name_2 = argv[2];
+		input_file_name_3 = argv[3];
 	}
 	/*
 	 * TPC-H query
 	 */
+	std::vector<Experiment::Tpch::customer> customer_table;
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
-	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name, lineitem_table);
-	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name_2, order_table);
-	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
-	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 100);
-	Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 10);
-	Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 100);
-
+	Experiment::Tpch::DataParser::parse_tpch_customer(input_file_name, customer_table);
+	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name_2, lineitem_table);
+	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name_3, order_table);
+	//Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
+	//Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 100);
+	//Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 10);
+	//Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_simulation(lineitem_table, order_table, 100);
+	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 10);
 	/*
 	 * DEBS queries
 	 */
