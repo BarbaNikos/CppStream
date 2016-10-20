@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <map>
 #include <cstdio>
+#include <numeric>
 
 #ifndef PARTITIONER_H_
 #include "partitioner.h"
@@ -61,7 +62,7 @@ namespace Experiment
 			float avg_qty;
 			float avg_price;
 			float avg_disc;
-			uint32_t count_order;
+			unsigned int count_order;
 		}query_one_result;
 
 		typedef struct query_three_result_str
@@ -121,11 +122,11 @@ namespace Experiment
 		public:
 			QueryOneOfflineAggregator();
 			~QueryOneOfflineAggregator();
-			void sort_final_result(const std::vector<query_one_result>& buffer, const std::string& output_file);
-			void calculate_and_produce_final_result(const std::vector<query_one_result>& buffer, const std::string& output_file);
+			void sort_final_result(const std::vector<query_one_result>& buffer, std::map<std::string, query_one_result>& result);
+			void calculate_and_produce_final_result(const std::vector<query_one_result>& buffer, std::map<std::string, query_one_result>& result);
+			void write_output_result(const std::map<std::string, query_one_result>& result, const std::string& output_file);
 		};
 
-		// simulator
 		class QueryOnePartition
 		{
 		public:
@@ -158,6 +159,25 @@ namespace Experiment
 			std::queue<Experiment::Tpch::order>* o_queue;
 		};
 
+		class LineitemOrderOfflineAggregator
+		{
+		public:
+			LineitemOrderOfflineAggregator();
+			~LineitemOrderOfflineAggregator();;
+			void calculate_and_produce_final_result(std::unordered_map<std::string, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer,
+				std::unordered_map<std::string, Tpch::lineitem_order>& result);
+			void write_output_result(const std::unordered_map<std::string, Tpch::lineitem_order>& result, const std::string& output_file);
+		};
+
+		class LineitemOrderPartition
+		{
+		public:
+			static void lineitem_order_join_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
+				const size_t task_num);
+			static void lineitem_order_join_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
+				const std::vector<uint16_t> tasks, Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+		};
+
 		class QueryThreeJoinWorker
 		{
 		public:
@@ -173,7 +193,6 @@ namespace Experiment
 			void finalize(std::unordered_map<std::string, Experiment::Tpch::query_three_result>& result_buffer);
 			void partial_finalize(std::unordered_map<std::string, Experiment::Tpch::query_three_result>& result_buffer);
 		private:
-			//bool partial_partition_flag;
 			Experiment::Tpch::query_three_predicate predicate;
 			std::unordered_set<uint32_t> cu_index;
 			std::unordered_map<uint32_t, Tpch::order> o_index;
@@ -184,7 +203,7 @@ namespace Experiment
 		class QueryThreeOfflineAggregator
 		{
 		public:
-			void sort_final_result(const std::unordered_map<std::string, query_three_result>& result, const std::string& output_file);
+			void write_output_to_file(const std::unordered_map<std::string, query_three_result>& result, const std::string& output_file);
 		};
 
 		class QueryThreePartition
@@ -197,24 +216,6 @@ namespace Experiment
 				const std::string worker_output_file_name);
 		};
 
-		class LineitemOrderOfflineAggregator
-		{
-		public:
-			LineitemOrderOfflineAggregator();
-			~LineitemOrderOfflineAggregator();
-			void sort_final_result(const std::unordered_map<std::string, lineitem_order>& final_result, const std::string& output_file);
-			void calculate_and_produce_final_result(std::unordered_map<std::string, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer,
-				std::unordered_map<std::string, lineitem_order>& result_buffer, const std::string& output_file);
-		};
-
-		class LineitemOrderPartition
-		{
-		public:
-			static void lineitem_order_join_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
-				const size_t task_num);
-			static void lineitem_order_join_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
-				const std::vector<uint16_t> tasks, Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
-		};
 	}
 }
 #endif // !TPCH_QUERY_LIB_H_

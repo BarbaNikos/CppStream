@@ -15,6 +15,7 @@ namespace Experiment
 		typedef struct date_str
 		{
 			date_str() {}
+			date_str(uint16_t year, uint8_t month, uint8_t day) : year(year), month(month), day(day) {}
 			date_str(const date_str& obj)
 			{
 				year = obj.year;
@@ -31,6 +32,48 @@ namespace Experiment
 					day = o.day;
 				}
 				return *this;
+			}
+			bool operator== (const date_str& date_1) const
+			{
+				return (year == date_1.year && month == date_1.month && day == date_1.day);
+			}
+			bool operator<= (const date_str& date_1) const 
+			{
+				if (year <= date_1.year)
+				{
+					return true;
+				}
+				else if (year == date_1.year && month <= date_1.month)
+				{
+					return true;
+				}
+				else if (year == date_1.year && month == date_1.month && day <= date_1.day)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			bool operator< (const date_str& date_1) const
+			{
+				if (year < date_1.year)
+				{
+					return true;
+				}
+				else if (year == date_1.year && month < date_1.month)
+				{
+					return true;
+				}
+				else if (year == date_1.year && month == date_1.month && day < date_1.day)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}
 			std::string to_string() const
 			{
