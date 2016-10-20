@@ -562,7 +562,7 @@ void Experiment::Tpch::LineitemOrderPartition::lineitem_order_join_partitioner_s
 
 	std::cout << partitioner_name << " :: Min duration: " << min_duration << " (msec). Max duration: " <<
 		max_duration << ", average execution worker time: " << sum_of_durations / tasks.size() <<
-		" (msec), aggregation time: " << aggregation_time.count() << " (msec).\n";
+		" (msec), aggregation time: " << aggregation_time.count() << " (msec), write output time: " << write_output_duration.count() << "\n";
 	li_inter_buffer.clear();
 	o_inter_buffer.clear();
 	result_inter_buffer.clear();
