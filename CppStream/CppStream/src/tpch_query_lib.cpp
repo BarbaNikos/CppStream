@@ -162,8 +162,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	query_one_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *fld, "fld", "fld_q1_result_" + std::to_string(tasks.size()) + ".csv");
+	query_one_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_q1_result_" + std::to_string(tasks.size()) + ".csv");
@@ -267,7 +267,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	double sum_of_exec_times = std::accumulate(duration_vector.begin(), duration_vector.end(), 0.0);
 	double avg_exec_time = sum_of_exec_times / duration_vector.size();
 
-	std::cout << "TPC-H Q1 *** (msec) Max exec. time: " << *max_it << ", MIN exec. time: " << *min_it << ", AVG exec. time: " << avg_exec_time <<
+	std::cout << "TPC-H Q1 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << 
+		", (msec) Max exec. time: " << *max_it << ", MIN exec. time: " << *min_it << ", AVG exec. time: " << avg_exec_time <<
 		", AVG aggr. time: " << average_aggr_duration << ", write output time: " << write_output_duration_in_msec << ".\n";
 	intermediate_buffer.clear();
 }
@@ -825,6 +826,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		c_worker_input_buffer[task].push_back(*it);
 	}
 	c_worker_input_buffer.shrink_to_fit();
+	partitioner.init();
 	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(it->o_custkey));
@@ -889,6 +891,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	step_one_order_buffer.clear();
 	// step Two: join lineitem table and calculate group by aggregate-sum()
 	// partition lineitem tuples
+	partitioner.init();
 	for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
@@ -967,7 +970,8 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 
 	double sum_step_two_aggr_time = std::accumulate(step_two_aggr_durations.begin(), step_two_aggr_durations.end(), 0.0);
 	
-	std::cout << "TPC-H Q3 *** (msec) Max (S1) exec. time: " << *max_step_one_it << ", MIN (S1) exec. time: " << *min_step_one_it << ", AVG (S1) exec. time: " << avg_step_one_exec_time <<
+	std::cout << "TPC-H Q3 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << 
+		", (msec) Max (S1) exec. time: " << *max_step_one_it << ", MIN (S1) exec. time: " << *min_step_one_it << ", AVG (S1) exec. time: " << avg_step_one_exec_time <<
 		"Max (S2) exec.time: " << *max_step_two_it << ", MIN (S2) exec.time: " << *min_step_two_it << ", AVG (S2) exec.time : " << avg_step_two_exec_time <<
 		", SUM aggr. time: " << sum_step_two_aggr_time << ", write output time: " << write_to_output_time.count() << ".\n";
 
