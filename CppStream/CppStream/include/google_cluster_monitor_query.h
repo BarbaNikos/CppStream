@@ -13,6 +13,7 @@
 #include <future>
 #include <algorithm>
 #include <unordered_set>
+#include <numeric>
 
 #ifndef _PARTITIONER_H_
 #include "partitioner.h"
@@ -129,10 +130,9 @@ namespace Experiment
 		public:
 			TotalCpuPerCategoryOfflineAggregator();
 			~TotalCpuPerCategoryOfflineAggregator();
-			void sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_one_result>&full_aggregates, const std::string& outfile_name);
-			void calculate_and_sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_one_result>& partial_aggregates, const std::string& outfile_name);
-		private:
-			std::map<int, cm_one_result> result;
+			void sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_one_result>&full_aggregates, std::vector<cm_one_result>& final_result);
+			void calculate_and_sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_one_result>& partial_aggregates, std::vector<cm_one_result>& final_result);
+			void write_output_to_file(const std::vector<GoogleClusterMonitor::cm_one_result>& final_result, const std::string& outfile_name);
 		};
 
 		class TotalCpuPerCategoryPartition
@@ -142,7 +142,7 @@ namespace Experiment
 			static void parse_task_events_from_directory(const std::string input_dir_name, std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer);
 			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
 			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
-				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
+				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		private:
 		};
 
@@ -166,8 +166,9 @@ namespace Experiment
 		public:
 			MeanCpuPerJobIdOfflineAggregator();
 			~MeanCpuPerJobIdOfflineAggregator();
-			void sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_two_result>&full_aggregates, const std::string& outfile_name);
-			void calculate_and_sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_two_result>& partial_aggregates, const std::string& outfile_name);
+			void sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_two_result>&full_aggregates, std::vector<cm_two_result>& final_result);
+			void calculate_and_sort_final_aggregation(const std::vector<Experiment::GoogleClusterMonitor::cm_two_result>& partial_aggregates, std::vector<cm_two_result>& final_result);
+			void write_output_to_file(const std::vector<cm_two_result>& final_result, const std::string& outfile_name);
 		private:
 			std::map<int, cm_two_result> result;
 		};
@@ -177,7 +178,7 @@ namespace Experiment
 		public:
 			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
 			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
-				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
+				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		};
 	}
 }

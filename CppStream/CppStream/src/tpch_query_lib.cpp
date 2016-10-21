@@ -578,7 +578,7 @@ Experiment::Tpch::QueryThreeJoinWorker::~QueryThreeJoinWorker()
 {	
 }
 
-void Experiment::Tpch::QueryThreeJoinWorker::step_one_update(const Experiment::Tpch::customer & customer)
+void Experiment::Tpch::QueryThreeJoinWorker::step_one_update(const Experiment::Tpch::q3_customer& customer)
 {
 	if (strncmp(this->predicate.c_mktsegment, customer.c_mktsegment, 10) == 0)
 	{
@@ -761,7 +761,7 @@ void Experiment::Tpch::QueryThreeOfflineAggregator::write_output_to_file(const s
 	fclose(fd);
 }
 
-void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::vector<Experiment::Tpch::customer>& c_table, 
+void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, 
 	const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num)
 {
 	RoundRobinPartitioner* rrg;
@@ -796,7 +796,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	tasks.clear();
 }
 
-void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(const std::vector<Experiment::Tpch::customer>& c_table, 
+void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, 
 	const std::vector<Experiment::Tpch::lineitem>& li_table, 
 	const std::vector<Experiment::Tpch::order>& o_table, 
 	const std::vector<uint16_t> tasks, Partitioner & partitioner, 
@@ -806,7 +806,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	std::vector<double> step_two_exec_durations(tasks.size(), double(0));
 	std::vector<double> step_two_aggr_durations(tasks.size(), double(0));
 	Experiment::Tpch::query_three_predicate predicate;
-	std::vector<std::vector<Tpch::customer>> c_worker_input_buffer(tasks.size(), std::vector<Tpch::customer>());
+	std::vector<std::vector<Tpch::q3_customer>> c_worker_input_buffer(tasks.size(), std::vector<Tpch::q3_customer>());
 	std::vector<std::vector<Tpch::lineitem>> li_worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
 	std::vector<std::vector<Tpch::order>> o_worker_input_buffer(tasks.size(), std::vector<Tpch::order>());
 	std::unordered_set<uint32_t> step_one_customer_buffer;

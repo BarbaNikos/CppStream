@@ -63,10 +63,10 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	std::vector<Experiment::Tpch::customer> customer_table;
+	std::vector<Experiment::Tpch::q3_customer> customer_table;
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
-	Experiment::Tpch::DataParser::parse_tpch_customer(input_file_name, customer_table);
+	Experiment::Tpch::DataParser::parse_tpch_q3_customer(input_file_name, customer_table);
 	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name_2, lineitem_table);
 	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name_3, order_table);
 	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);

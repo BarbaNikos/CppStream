@@ -304,6 +304,19 @@ namespace Experiment
 			std::string c_comment;
 		}customer;
 
+		typedef struct q3_customer_str
+		{
+			q3_customer_str() {}
+			q3_customer_str(const customer& c)
+			{
+				c_custkey = c.c_custkey;
+				memcpy(c_mktsegment, c.c_mktsegment, 10 * sizeof(char));
+			}
+			~q3_customer_str() {}
+			uint32_t c_custkey;
+			char c_mktsegment[10];
+		}q3_customer;
+
 		typedef struct order_str
 		{
 			order_str() : o_comment() {}

@@ -44,7 +44,7 @@ namespace Experiment
 {
 	namespace Tpch
 	{
-		typedef struct
+		typedef struct query_one_result_str
 		{
 			std::string to_string() const
 			{
@@ -183,7 +183,7 @@ namespace Experiment
 		public:
 			QueryThreeJoinWorker(const Experiment::Tpch::query_three_predicate& predicate);
 			~QueryThreeJoinWorker();
-			void step_one_update(const Experiment::Tpch::customer& customer);
+			void step_one_update(const Experiment::Tpch::q3_customer& customer);
 			void step_one_update(const Experiment::Tpch::order& order);
 			void step_one_finalize(std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer);
 			void step_one_partial_finalize(std::unordered_set<uint32_t>& c_index, std::unordered_map<uint32_t, Tpch::order>& o_index,
@@ -209,9 +209,9 @@ namespace Experiment
 		class QueryThreePartition
 		{
 		public:
-			static void query_three_simulation(const std::vector<Experiment::Tpch::customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table, 
+			static void query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table, 
 				const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num);
-			static void query_three_partitioner_simulation(const std::vector<Experiment::Tpch::customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table,
+			static void query_three_partitioner_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table,
 				const std::vector<Experiment::Tpch::order>& o_table, const std::vector<uint16_t> tasks, Partitioner& partitioner, const std::string partitioner_name, 
 				const std::string worker_output_file_name);
 		};

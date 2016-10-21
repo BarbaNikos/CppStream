@@ -23,6 +23,7 @@ namespace Experiment
 			static void parse_tpch_supplier(const std::string input_file_name, std::vector<Experiment::Tpch::supplier>& buffer);
 			static void parse_tpch_partsupp(const std::string input_file_name, std::vector<Experiment::Tpch::partsupp>& buffer);
 			static void parse_tpch_customer(const std::string input_file_name, std::vector<Experiment::Tpch::customer>& buffer);
+			static void parse_tpch_q3_customer(const std::string input_file_name, std::vector<Experiment::Tpch::q3_customer>& buffer);
 			static void parse_tpch_lineitem(const std::string input_file_name, std::vector<Experiment::Tpch::lineitem>& buffer);
 			static void parse_tpch_order(const std::string input_file_name, std::vector<Experiment::Tpch::order>& buffer);
 			static void parse_tpch_region(const std::string input_file_name, std::vector<Experiment::Tpch::region>& buffer);
@@ -115,6 +116,25 @@ inline void Experiment::Tpch::DataParser::parse_tpch_customer(const std::string 
 		Tpch::customer customer;
 		customer.parse(line, '|');
 		buffer.push_back(customer);
+	}
+	file.close();
+	buffer.shrink_to_fit();
+}
+
+inline void Experiment::Tpch::DataParser::parse_tpch_q3_customer(const std::string input_file_name, std::vector<Experiment::Tpch::q3_customer>& buffer)
+{
+	std::string line;
+	std::ifstream file(input_file_name);
+	if (!file.is_open())
+	{
+		std::cout << "failed to open file.\n";
+		exit(1);
+	}
+	while (getline(file, line))
+	{
+		Tpch::customer customer;
+		customer.parse(line, '|');
+		buffer.push_back(Tpch::q3_customer(customer));
 	}
 	file.close();
 	buffer.shrink_to_fit();
