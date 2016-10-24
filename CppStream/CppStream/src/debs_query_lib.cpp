@@ -456,7 +456,6 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	std::cout << "# of Tasks: " << tasks.size() << ".\n";
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
@@ -465,8 +464,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	frequent_route_partitioner_simulation(lines, tasks, *rrg, "shg", "shg_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	frequent_route_partitioner_simulation(lines, tasks, *fld, "fld", "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	frequent_route_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
-	frequent_route_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
-	frequent_route_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
+	frequent_route_partitioner_simulation(lines, tasks, *ca_naive, "ca_naive", "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
+	frequent_route_partitioner_simulation(lines, tasks, *la_naive, "la_naive", "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	delete rrg;
 	delete fld;
 	delete pkg;

@@ -156,7 +156,6 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	std::cout << "# of Tasks: " << tasks.size() << ".\n";
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
@@ -783,7 +782,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *rrg, "shg", "shuffle_query_three_result_" + std::to_string(tasks.size()) + ".csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *rrg, "shg", "shg_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *fld, "fld", "fld_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *pkg, "pkg", "pkg_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *ca_naive, "ca-naive", "ca_naive_query_three_result_" + std::to_string(tasks.size()) + ".csv");

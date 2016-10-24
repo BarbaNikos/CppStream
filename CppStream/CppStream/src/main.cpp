@@ -43,56 +43,56 @@ void log_normal_simulation(std::string input_file);
 
 int main(int argc, char** argv)
 {
-	if (argc < 2)
+	if (argc < 7)
 	{
-		std::cout << "usage: <input-file-1> optional: <input-file-2> optional: <input-file-3>\n";
+		std::cout << "usage: <customer_file.tbl> <lineitem_file.tbl> <orders_file.tbl> <debs_ride_q1.csv> <debs_ride_q2.csv> <google_task_event_dir>\n";
 		exit(1);
 	}
-	std::string input_file_name = argv[1];
-	std::string input_file_name_2;
-	std::string input_file_name_3;
-	if (argc > 2 && argc <= 3)
-	{
-		input_file_name_2 = argv[2];
-	}
-	else if (argc > 3)
-	{
-		input_file_name_2 = argv[2];
-		input_file_name_3 = argv[3];
-	}
+	std::string customer_file = argv[1];
+	std::string lineitem_file = argv[2];
+	std::string orders_file = argv[3];
+	std::string ride_q1_file = argv[4];
+	std::string ride_q2_file = argv[5];
+	std::string google_task_event_dir = argv[6];
 	/*
 	 * TPC-H query
 	 */
 	std::vector<Experiment::Tpch::q3_customer> customer_table;
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
-	Experiment::Tpch::DataParser::parse_tpch_q3_customer(input_file_name, customer_table);
-	Experiment::Tpch::DataParser::parse_tpch_lineitem(input_file_name_2, lineitem_table);
-	Experiment::Tpch::DataParser::parse_tpch_order(input_file_name_3, order_table);
-	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 10);
-	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 100);
-	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 10);
-	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 100);
+	
+	Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);
+
+	Experiment::Tpch::DataParser::parse_tpch_q3_customer(customer_file, customer_table);
+	Experiment::Tpch::DataParser::parse_tpch_order(orders_file, order_table);
+	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 8);
+	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 16);
+	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
+	customer_table.clear();
+	lineitem_table.clear();
+	order_table.clear();
 	/*
 	 * DEBS queries
 	 */
-	//Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	//std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 500, 300);
-	//debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_frequent_route_compact_ride.csv", 500, 300);
-	//debs_experiment_frequent_route.produce_compact_ride_file(input_file_name, "debs_profitable_cell_compact_ride.csv", 250, 600);
-	// std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
-	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &frequent_ride_table);
-	//debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table);
-	//frequent_ride_table.clear();
-	//
-	//Experiment::DebsChallenge::ProfitableAreaPartition profitable_area;
-	//std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table;
-	//std::vector<Experiment::DebsChallenge::CompactRide> most_profitable_cell_table = debs_experiment_frequent_route.parse_debs_rides(input_file_name, 250, 600);
-	//debs_experiment_frequent_route.parse_debs_rides_with_to_string(input_file_name, &most_profitable_cell_table);
-	//profitable_area.most_profitable_cell_simulation(most_profitable_cell_table);
-	//most_profitable_cell_table.clear();
+	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
+	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 8);
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 16);
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 32);
+	frequent_ride_table.clear();
 
-	//log_normal_simulation("Z:\\Documents\\ln1_stream.tbl");
+	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
+	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
+	debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 8);
+	debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 16);
+	debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 32);
+	profitable_cell_table.clear();
+
 	/*
 	 * Upper bound benefit experiment
 	 */
@@ -103,12 +103,16 @@ int main(int argc, char** argv)
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries
 	 */
-	//std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
-	////Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(input_file_name, task_event_table);
-	//Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(input_file_name, task_event_table);
-	//Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 10);
-	//Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 10);
-	//task_event_table.clear();
+	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 8);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 16);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 32);
+
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 8);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 16);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);
+	task_event_table.clear();
 
 	return 0;
 }
