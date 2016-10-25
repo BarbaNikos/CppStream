@@ -77,14 +77,14 @@ int main(int argc, char** argv)
 	/*
 	 * DEBS queries
 	 */
-	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	//std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
 	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+	/*debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
 	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 8);
 	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 16);
-	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 32);
-	frequent_ride_table.clear();
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 32);*/
+	//frequent_ride_table.clear();
 
 	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
 	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
