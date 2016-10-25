@@ -623,12 +623,21 @@ void Experiment::DebsChallenge::ProfitableArea::operate()
 
 void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRide & ride)
 {
+	char medal_buffer[33];
 	float total = ride.fare_amount + ride.tip_amount;
 	std::string pickup_cell = std::to_string(ride.pickup_cell.first) + "." +
 		std::to_string(ride.pickup_cell.second);
 	std::string dropoff_cell = std::to_string(ride.dropoff_cell.first) + "." + 
 		std::to_string(ride.dropoff_cell.second);
-	std::string medal = std::string(reinterpret_cast<const char*> (ride.medallion), sizeof(ride.medallion) / sizeof(ride.medallion[0]));
+	std::cout << "medal: ";
+	for (size_t i = 0; i < 32; i++)
+	{
+		std::cout << ride.medallion[i];
+		medal_buffer[i] = ride.medallion[i];
+	}
+	medal_buffer[32] = '\0';
+	std::cout << "\n";
+	std::string medal = std::string(medal_buffer, sizeof(medal_buffer) / sizeof(medal_buffer[0]));
 	// update fare table
 	auto it = fare_map.find(pickup_cell);
 	if (it != fare_map.end())
