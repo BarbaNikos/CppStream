@@ -629,14 +629,8 @@ void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRid
 		std::to_string(ride.pickup_cell.second);
 	std::string dropoff_cell = std::to_string(ride.dropoff_cell.first) + "." + 
 		std::to_string(ride.dropoff_cell.second);
-	std::cout << "medal: ";
-	for (size_t i = 0; i < 32; i++)
-	{
-		std::cout << ride.medallion[i];
-		medal_buffer[i] = ride.medallion[i];
-	}
+	memcpy(medal_buffer, ride.medallion, sizeof(char) * 32);
 	medal_buffer[32] = '\0';
-	std::cout << "\n";
 	std::string medal = std::string(medal_buffer);
 	// update fare table
 	auto it = fare_map.find(pickup_cell);
@@ -724,22 +718,23 @@ void Experiment::DebsChallenge::ProfitableArea::second_round_init()
 	this->dropoff_cell_empty_taxi_count.clear();
 }
 
-void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::string & pickup_cell, std::vector<float>& fare_list)
+void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::string & pickup_cell, const std::vector<float>& fare_list)
 {
 	// calculate median
 	float median_fare = 0.0;
+	std::vector<float> fare_list_copy(fare_list);
 	if (fare_list.size() > 0)
 	{
 		if (fare_list.size() % 2 != 0)
 		{
-			std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2, fare_list.end());
-			median_fare = fare_list[fare_list.size() / 2];
+			std::nth_element(fare_list_copy.begin(), fare_list_copy.begin() + fare_list_copy.size() / 2, fare_list_copy.end());
+			median_fare = fare_list_copy[fare_list_copy.size() / 2];
 		}
 		else
 		{
-			std::sort(fare_list.begin(), fare_list.end());
-			median_fare = fare_list[fare_list.size() / 2] + fare_list[1 + fare_list.size() / 2] / 2;
-			median_fare = (fare_list[fare_list.size() / 2] + fare_list[fare_list.size() / 2 + 1]) / 2;
+			std::sort(fare_list_copy.begin(), fare_list_copy.end());
+			median_fare = fare_list_copy[fare_list_copy.size() / 2] + fare_list_copy[1 + fare_list_copy.size() / 2] / 2;
+			median_fare = (fare_list_copy[fare_list_copy.size() / 2] + fare_list_copy[fare_list_copy.size() / 2 + 1]) / 2;
 		}
 		auto it = pickup_cell_median_fare.find(pickup_cell);
 		if (it != pickup_cell_median_fare.end())

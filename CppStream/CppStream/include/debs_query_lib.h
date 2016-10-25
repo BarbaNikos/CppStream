@@ -119,7 +119,7 @@ namespace Experiment
 			void first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map, 
 				std::unordered_map<std::string, std::pair<std::string, std::time_t>>& dropoff_table, const bool two_choice_partition_used);
 			void second_round_init();
-			void second_round_update(const std::string& pickup_cell, std::vector<float>& fare_list);
+			void second_round_update(const std::string& pickup_cell, const std::vector<float>& fare_list);
 			void second_round_update(const std::string& medallion, const std::string& dropoff_cell, const time_t& timestamp);
 			void partial_finalize(std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer); // place results in intermediate buffer - 2 choice partitioner
 			void finalize(std::unordered_map<std::string, float>& cell_profit_buffer); // place results in intermediate buffer - 1 choice partitioner
