@@ -628,6 +628,7 @@ void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRid
 		std::to_string(ride.pickup_cell.second);
 	std::string dropoff_cell = std::to_string(ride.dropoff_cell.first) + "." + 
 		std::to_string(ride.dropoff_cell.second);
+	std::string medal = std::string(reinterpret_cast<const char*> (ride.medallion), sizeof(ride.medallion) / sizeof(ride.medallion[0]));
 	// update fare table
 	auto it = fare_map.find(pickup_cell);
 	if (it != fare_map.end())
@@ -641,7 +642,7 @@ void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRid
 		fare_map[pickup_cell] = fares;
 	}
 	// update area cell
-	auto med_it = this->dropoff_table.find(ride.medallion);
+	auto med_it = this->dropoff_table.find(medal);
 	if (med_it != dropoff_table.end())
 	{
 		if (med_it->second.second <= ride.dropoff_datetime)
@@ -653,7 +654,7 @@ void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRid
 	}
 	else
 	{
-		dropoff_table.insert(std::make_pair(ride.medallion, std::make_pair(dropoff_cell, ride.dropoff_datetime)));
+		dropoff_table.insert(std::make_pair(medal, std::make_pair(dropoff_cell, ride.dropoff_datetime)));
 	}
 }
 
