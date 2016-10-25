@@ -637,7 +637,7 @@ void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRid
 	}
 	medal_buffer[32] = '\0';
 	std::cout << "\n";
-	std::string medal = std::string(medal_buffer, sizeof(medal_buffer) / sizeof(medal_buffer[0]));
+	std::string medal = std::string(medal_buffer);
 	// update fare table
 	auto it = fare_map.find(pickup_cell);
 	if (it != fare_map.end())
@@ -727,29 +727,33 @@ void Experiment::DebsChallenge::ProfitableArea::second_round_init()
 void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::string & pickup_cell, std::vector<float>& fare_list)
 {
 	// calculate median
-	float median_fare;
-	if (fare_list.size() % 2 != 0)
+	float median_fare = 0.0;
+	if (fare_list.size() > 0)
 	{
-		std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2, fare_list.end());
-		median_fare = fare_list[fare_list.size() / 2];
-	}
-	else
-	{
-		std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2, fare_list.end());
-		std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2 + 1, fare_list.end());
-		median_fare = (fare_list[fare_list.size() / 2] + fare_list[fare_list.size() / 2 + 1]) / 2;
-	}
-	auto it = pickup_cell_median_fare.find(pickup_cell);
-	if (it != pickup_cell_median_fare.end())
-	{
-		// this is probably a mistake since each pickup-cell has a single list of fare lists
-		// it->second = median_fare;
-		std::cerr << "second_round_update() identified duplicate pickup-cell record. the cell-id: " << pickup_cell << " was encountered twice. current median value found: " << it->second <<
-			", new value: " << median_fare << ".\n";
-	}
-	else
-	{
-		pickup_cell_median_fare.insert(std::make_pair(pickup_cell, median_fare));
+		if (fare_list.size() % 2 != 0)
+		{
+			std::nth_element(fare_list.begin(), fare_list.begin() + fare_list.size() / 2, fare_list.end());
+			median_fare = fare_list[fare_list.size() / 2];
+		}
+		else
+		{
+			std::sort(fare_list.begin(), fare_list.end());
+			median_fare = fare_list[fare_list.size() / 2] + fare_list[1 + fare_list.size() / 2] / 2;
+			median_fare = (fare_list[fare_list.size() / 2] + fare_list[fare_list.size() / 2 + 1]) / 2;
+		}
+		auto it = pickup_cell_median_fare.find(pickup_cell);
+		if (it != pickup_cell_median_fare.end())
+		{
+			// this is probably a mistake since each pickup-cell has a single list of fare lists
+			// it->second = median_fare;
+			std::cerr << "second_round_update() identified duplicate pickup-cell record. the cell-id: " << pickup_cell <<
+				" was encountered twice. current median value found: " << it->second <<
+				", new value: " << median_fare << ".\n";
+		}
+		else
+		{
+			pickup_cell_median_fare.insert(std::make_pair(pickup_cell, median_fare));
+		}
 	}
 }
 
