@@ -77,21 +77,21 @@ int main(int argc, char** argv)
 	/*
 	 * DEBS queries
 	 */
-	// std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
-	// std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
-	// Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	// debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
-	// debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 8);
-	// debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 16);
-	// debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 32);
-	// frequent_ride_table.clear();
+	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
+	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 8);
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 16);
+	debs_experiment_frequent_route.frequent_route_simulation(frequent_ride_table, 32);
+	frequent_ride_table.clear();
 
-	// debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
-	// Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
-	// debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 8);
-	// debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 16);
-	// debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 32);
-	// profitable_cell_table.clear();
+	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
+	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
+	debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 8);
+	debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 16);
+	debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 32);
+	profitable_cell_table.clear();
 
 	/*
 	 * Upper bound benefit experiment
@@ -103,16 +103,16 @@ int main(int argc, char** argv)
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries
 	 */
-	// std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
-	// Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
-	// Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 8);
-	// Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 16);
-	// Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 32);
+	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 8);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 16);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 32);
 
-	// Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 8);
-	// Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 16);
-	// Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);
-	// task_event_table.clear();
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 8);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 16);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);
+	task_event_table.clear();
 
 	return 0;
 }
