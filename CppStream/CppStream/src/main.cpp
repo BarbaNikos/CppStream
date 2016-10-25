@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	std::vector<Experiment::Tpch::q3_customer> customer_table;
+	/*std::vector<Experiment::Tpch::q3_customer> customer_table;
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
 	
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
 	customer_table.clear();
 	lineitem_table.clear();
-	order_table.clear();
+	order_table.clear();*/
 	/*
 	 * DEBS queries
 	 */

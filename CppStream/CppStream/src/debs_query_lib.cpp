@@ -450,10 +450,10 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
 	LoadAwarePolicy la_policy;
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
-	std::vector<uint16_t> tasks;
+	std::vector<uint16_t> tasks(task_number, uint16_t(0));
 	for (uint16_t i = 0; i < task_number; i++)
 	{
-		tasks.push_back(i);
+		tasks[i] = i;
 	}
 	tasks.shrink_to_fit();
 	rrg = new RoundRobinPartitioner(tasks);
@@ -499,6 +499,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	{
 		it->shrink_to_fit();
 	}
+	worker_input_buffer.shrink_to_fit();
 	// for every task - calculate (partial) workload
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -567,12 +568,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	auto min_it = std::min_element(aggr_durations.begin(), aggr_durations.end());
 	aggr_durations.erase(min_it);
 	aggr_duration = std::accumulate(aggr_durations.begin(), aggr_durations.end(), 0.0) / aggr_durations.size();
-	std::cout << "DEBS Q1 *** partitioner: " << partitioner_name << " (msec):: MIN exec. time: " << 
+	std::cout << "DEBS Q1 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << ", (msec):: MIN exec. time: " << 
 		*std::min_element(exec_durations.begin(), exec_durations.end()) << 
 		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) << 
 		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
 		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << "\n";
 	partial_result.clear();
+	exec_durations.clear();
+	aggr_durations.clear();
+
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route)
@@ -1168,7 +1172,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 	final_aggr_duration = std::accumulate(aggr_durations.begin(), aggr_durations.end(), 0.0) / aggr_durations.size();
 	aggr_durations.clear();
 	
-	std::cout << "DEBS Q2 *** partitioner: " << partitioner_name << " (msec):: MIN (S1) exec. time: " <<
+	std::cout << "DEBS Q2 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << " (msec):: MIN (S1) exec. time: " <<
 		*std::min_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) <<
 		", MAX (S1) exec. time: " << *std::max_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) <<
 		", AVG (S1) exec. time: " << (std::accumulate(first_round_exec_duration.begin(), first_round_exec_duration.end(), 0.0) / first_round_exec_duration.size()) << 
