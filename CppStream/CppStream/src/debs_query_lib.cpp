@@ -623,15 +623,12 @@ void Experiment::DebsChallenge::ProfitableArea::operate()
 
 void Experiment::DebsChallenge::ProfitableArea::update(DebsChallenge::CompactRide & ride)
 {
-	char medal_buffer[33];
 	float total = ride.fare_amount + ride.tip_amount;
 	std::string pickup_cell = std::to_string(ride.pickup_cell.first) + "." +
 		std::to_string(ride.pickup_cell.second);
 	std::string dropoff_cell = std::to_string(ride.dropoff_cell.first) + "." + 
 		std::to_string(ride.dropoff_cell.second);
-	memcpy(medal_buffer, ride.medallion, sizeof(char) * 32);
-	medal_buffer[32] = '\0';
-	std::string medal = std::string(medal_buffer);
+	std::string medal = std::string(ride.medallion, sizeof(ride.medallion) / sizeof(ride.medallion[0]));
 	// update fare table
 	auto it = fare_map.find(pickup_cell);
 	if (it != fare_map.end())
@@ -733,8 +730,9 @@ void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::s
 		else
 		{
 			std::sort(fare_list_copy.begin(), fare_list_copy.end());
-			median_fare = fare_list_copy[fare_list_copy.size() / 2] + fare_list_copy[1 + fare_list_copy.size() / 2] / 2;
-			median_fare = (fare_list_copy[fare_list_copy.size() / 2] + fare_list_copy[fare_list_copy.size() / 2 + 1]) / 2;
+			size_t index_one = (fare_list_copy.size() / 2) - 1;
+			size_t index_two = 1 + index_one;
+			median_fare = (fare_list_copy[index_one] + fare_list_copy[index_two]) / 2;
 		}
 		auto it = pickup_cell_median_fare.find(pickup_cell);
 		if (it != pickup_cell_median_fare.end())
@@ -781,8 +779,7 @@ void Experiment::DebsChallenge::ProfitableArea::partial_finalize(std::unordered_
 			}
 			else
 			{
-				cell_profit_buffer_it->second.first = dropoff_cell_it->second;
-				cell_profit_buffer_it->second.second = pickup_cell_it->second;
+				cell_profit_buffer[dropoff_cell_it->first] = std::make_pair(dropoff_cell_it->second, pickup_cell_it->second);
 			}
 		}
 	}

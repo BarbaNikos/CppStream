@@ -131,12 +131,12 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_
 {
 	const std::string file_suffix = ".csv";
 	std::vector<std::string> file_names;
-	Experiment::GoogleClusterMonitor::get_files(file_names, input_dir_name);
+	Experiment::GoogleClusterMonitor::Util::get_files(file_names, input_dir_name);
 	for (std::vector<std::string>::const_iterator file_it = file_names.cbegin(); file_it != file_names.cend(); ++file_it)
 	{
 		// check if it is a task_event file
 		std::cout << "GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_dir(): parsing task-events from file: " << *file_it << "...\n";
-		if (Experiment::GoogleClusterMonitor::ends_with(*file_it, file_suffix))
+		if (Experiment::GoogleClusterMonitor::Util::ends_with(*file_it, file_suffix))
 		{
 			std::vector<Experiment::GoogleClusterMonitor::task_event> partial_buffer;
 			GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(*file_it, partial_buffer);

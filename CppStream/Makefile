@@ -1,6 +1,6 @@
 CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
 #CC = g++
-FLAGS = -std=c++11 -g -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
+FLAGS = -std=c++11 -O3 -g -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
 LIBS = -lpthread -lm							# additional libraries
 OBJS = bit_trick_utils.o cardinality_estimation_utils.o murmurhash_3.o \

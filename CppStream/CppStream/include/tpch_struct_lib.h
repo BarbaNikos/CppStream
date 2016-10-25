@@ -127,11 +127,35 @@ namespace Experiment
 				}
 				p_partkey = std::stoi(tokens[0]);
 				p_name = tokens[1];
-				memcpy(p_mfgr, tokens[2].c_str(), 25 * sizeof(char));
-				memcpy(p_brand, tokens[3].c_str(), 10 * sizeof(char));
+				memset(p_mfgr, 0, 25 * sizeof(char));
+				if (tokens[2].length() < 25)
+				{
+					memcpy(p_mfgr, tokens[2].c_str(), tokens[2].length());
+				}
+				else 
+				{
+					memcpy(p_mfgr, tokens[2].c_str(), 25 * sizeof(char));
+				}
+				memset(p_brand, 0, 10 * sizeof(char));
+				if (tokens[3].length())
+				{
+					memcpy(p_brand, tokens[3].c_str(), tokens[3].length());
+				} 
+				else 
+				{
+					memcpy(p_brand, tokens[3].c_str(), 10 * sizeof(char));
+				}
 				p_type = tokens[4];
 				p_size = std::stoi(tokens[5]);
-				memcpy(p_container, tokens[6].c_str(), 10 * sizeof(char));
+				memset(p_container, 0, 10 * sizeof(char));
+				if (tokens[6].length())
+				{
+					memcpy(p_container, tokens[6].c_str(), tokens[6].length());
+				}
+				else
+				{
+					memcpy(p_container, tokens[6].c_str(), 10 * sizeof(char));
+				}
 				p_retailprice = std::stof(tokens[7]);
 				p_comment = tokens[8];
 			}
@@ -184,10 +208,26 @@ namespace Experiment
 					tokens.push_back(token);
 				}
 				s_suppkey = std::stoi(tokens[0]);
-				memcpy(s_name, tokens[1].c_str(), 25 * sizeof(char));
+				memset(s_name, 0, 25 * sizeof(char));
+				if (tokens[1].length() < 25)
+				{
+					memcpy(s_name, tokens[1].c_str(), tokens[1].length());
+				}
+				else 
+				{
+					memcpy(s_name, tokens[1].c_str(), 25 * sizeof(char));
+				}
 				s_address = tokens[2];
 				s_nationkey = std::stoi(tokens[3]);
-				memcpy(s_phone, tokens[4].c_str(), 15 * sizeof(char));
+				memset(s_phone, 0, 15 * sizeof(char));
+				if (tokens[4].length() < 15)
+				{
+					memcpy(s_phone, tokens[4].c_str(), tokens[4].length());
+				}
+				else
+				{
+					memcpy(s_phone, tokens[4].c_str(), 15 * sizeof(char));
+				}
 				s_acctbal = std::stof(tokens[5]);
 				s_comment = tokens[6];
 			}
@@ -289,9 +329,25 @@ namespace Experiment
 				c_name = tokens[1];
 				c_address = tokens[2];
 				c_nationkey = std::stoi(tokens[3]);
-				memcpy(c_phone, tokens[4].c_str(), 15 * sizeof(char));
+				memset(c_phone, 0, 15 * sizeof(char));
+				if (tokens[4].length() < 15)
+				{
+					memcpy(c_phone, tokens[4].c_str(), tokens[4].length());
+				}
+				else 
+				{
+					memcpy(c_phone, tokens[4].c_str(), 15 * sizeof(char));
+				}
 				c_acctbal = std::stof(tokens[5]);
-				memcpy(c_mktsegment, tokens[6].c_str(), 10 * sizeof(char));
+				memset(c_mktsegment, 0, 10 * sizeof(char));
+				if (tokens[6].length() < 10)
+				{
+					memcpy(c_mktsegment, tokens[6].c_str(), tokens[6].length());
+				} 
+				else 
+				{
+					memcpy(c_mktsegment, tokens[6].c_str(), 10 * sizeof(char));
+				}
 				c_comment = tokens[7];
 			}
 			uint32_t c_custkey;
@@ -372,8 +428,24 @@ namespace Experiment
 				o_orderdate.year = std::stoi(order_date_tokens[0]);
 				o_orderdate.month = std::stoi(order_date_tokens[1]);
 				o_orderdate.day = std::stoi(order_date_tokens[2]);
-				memcpy(o_orderpriority, tokens[5].c_str(), 15 * sizeof(char));
-				memcpy(o_clerk, tokens[6].c_str(), 15 * sizeof(char));
+				memset(o_orderpriority, 0, 15 * sizeof(char));
+				if (tokens[5].length() < 15) 
+				{
+					memcpy(o_orderpriority, tokens[5].c_str(), tokens[5].length());
+				}
+				else 
+				{
+					memcpy(o_orderpriority, tokens[5].c_str(), 15 * sizeof(char));
+				}
+				memset(o_clerk, 0, 15 * sizeof(char));
+				if (tokens[6].length() < 15)
+				{
+					memcpy(o_clerk, tokens[6].c_str(), tokens[6].length());
+				}
+				else
+				{
+					memcpy(o_clerk, tokens[6].c_str(), 15 * sizeof(char));
+				}
 				o_shippriority = std::stoi(tokens[7]);
 				o_comment = tokens[8];
 			}
@@ -490,8 +562,24 @@ namespace Experiment
 				l_receiptdate.year = std::stoi(receipt_date_tokens[0]);
 				l_receiptdate.month = std::stoi(receipt_date_tokens[1]);
 				l_receiptdate.day = std::stoi(receipt_date_tokens[2]);
-				memcpy(l_shipinstruct, tokens[13].c_str(), 25 * sizeof(char));
-				memcpy(l_shipmode, tokens[14].c_str(), 10 * sizeof(char));
+				memset(l_shipinstruct, 0, 25 * sizeof(char));
+				if (tokens[13].length() < 25)
+				{
+					memcpy(l_shipinstruct, tokens[13].c_str(), tokens[13].length());
+				}
+				else
+				{
+					memcpy(l_shipinstruct, tokens[13].c_str(), 25 * sizeof(char));
+				}
+				memset(l_shipmode, 0, 0 * sizeof(char));
+				if (tokens[14].length() < 10)
+				{
+					memcpy(l_shipmode, tokens[14].c_str(), tokens[14].length());
+				}
+				else 
+				{
+					memcpy(l_shipmode, tokens[14].c_str(), 10 * sizeof(char));
+				}
 				l_comment = tokens[15];
 			}
 			std::string to_string() const
@@ -607,7 +695,15 @@ namespace Experiment
 					tokens.push_back(token);
 				}
 				n_nationkey = std::stoi(tokens[0]);
-				memcpy(n_name, tokens[1].c_str(), 25 * sizeof(char));
+				memset(n_name, 0, 25 * sizeof(char));
+				if (tokens[1].length() < 25)
+				{
+					memcpy(n_name, tokens[1].c_str(), tokens[1].length());
+				}
+				else
+				{
+					memcpy(n_name, tokens[1].c_str(), 25 * sizeof(char));
+				}
 				n_regionkey = std::stoi(tokens[2]);
 				n_comment = tokens[3];
 			}
@@ -647,7 +743,15 @@ namespace Experiment
 					tokens.push_back(token);
 				}
 				r_regionkey = std::stoi(tokens[0]);
-				memcpy(r_name, tokens[1].c_str(), 25 * sizeof(char));
+				memset(r_name, 0, 25 * sizeof(char));
+				if (tokens[1].length() < 25)
+				{
+					memcpy(r_name, tokens[1].c_str(), tokens[1].length());
+				}
+				else
+				{
+					memcpy(r_name, tokens[1].c_str(), 25 * sizeof(char));
+				}
 				r_comment = tokens[2];
 			}
 			uint32_t r_regionkey;
