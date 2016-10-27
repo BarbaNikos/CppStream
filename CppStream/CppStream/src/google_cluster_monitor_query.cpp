@@ -122,28 +122,41 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_
 	}
 	while (getline(input, line))
 	{
-		buffer.push_back(Experiment::GoogleClusterMonitor::task_event(line));
+		Experiment::GoogleClusterMonitor::task_event t_e;
+		try 
+		{
+			t_e.deserealize(line);
+			buffer.push_back(t_e);
+		}
+		catch (std::exception& e)
+		{
+			std::cout << "Experiment::GoogleClusterMonitor::TotalCpuPerCategoryOfflineAggregator::parse_task_events() threw an exception: " << e.what() << "\n";
+		}
 	}
 	input.close();
 }
 
 void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(const std::string input_dir_name, std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer)
 {
+	unsigned int number_of_files_scanned = 0;
 	const std::string file_suffix = ".csv";
 	std::vector<std::string> file_names;
 	Experiment::GoogleClusterMonitor::Util::get_files(file_names, input_dir_name);
+	std::cout << "parse_task_events_from_directory():: total files found in directory " << input_dir_name << " are: " << file_names.size() << ".\n";
 	for (std::vector<std::string>::const_iterator file_it = file_names.cbegin(); file_it != file_names.cend(); ++file_it)
 	{
 		// check if it is a task_event file
-		std::cout << "GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_dir(): parsing task-events from file: " << *file_it << "...\n";
+		// std::cout << "GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_dir(): parsing task-events from file: " << *file_it << "...\n";
 		if (Experiment::GoogleClusterMonitor::Util::ends_with(*file_it, file_suffix))
 		{
-			std::vector<Experiment::GoogleClusterMonitor::task_event> partial_buffer;
-			GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(*file_it, partial_buffer);
-			buffer.reserve(buffer.size() + partial_buffer.size());
-			std::move(partial_buffer.begin(), partial_buffer.end(), std::inserter(buffer, buffer.end()));
+			//std::vector<Experiment::GoogleClusterMonitor::task_event> partial_buffer;
+			Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events(*file_it, buffer);
+			// buffer.reserve(buffer.size() + partial_buffer.size());
+			// std::move(partial_buffer.begin(), partial_buffer.end(), std::inserter(buffer, buffer.end()));
+			number_of_files_scanned++;
 		}
 	}
+	std::cout << "parse_task_events_from_directory():: total files scanned: " << number_of_files_scanned << ".\n";
 }
 
 void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number)
@@ -157,13 +170,11 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simul
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
 	std::vector<uint16_t> tasks;
 
-	// tasks: 10
 	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	std::cout << "# of Tasks: " << tasks.size() << ".\n";
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
@@ -202,6 +213,12 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		uint16_t task = partitioner.partition_next(&key, sizeof(it->scheduling_class));
 		worker_input_buffer[task].push_back(*it);
 	}
+	for	(size_t i = 0; i < tasks.size(); ++i)
+	{
+		worker_input_buffer[i].shrink_to_fit();
+		std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation():: partitioner: " << partitioner_name << ", input workload for task " << i << 
+			" has size: " << worker_input_buffer[i].size() << " tuples.\n";
+	}
 	worker_input_buffer.shrink_to_fit();
 
 	for (size_t i = 0; i < tasks.size(); ++i)
@@ -235,6 +252,8 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		durations.clear();
 		worker_input_buffer[i].clear();
 	}
+	std::cout << "partitioner: " << partitioner_name << " intermediate buffer size: " << intermediate_buffer.size() << 
+	", with size of each element: " << sizeof(cm_one_result) << " (bytes).\n";
 	std::vector<double> aggr_durations;
 	for (size_t aggr_run = 0; aggr_run < 7; ++aggr_run)
 	{
@@ -439,6 +458,12 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		uint16_t task = partitioner.partition_next(&key, sizeof(it->scheduling_class));
 		worker_input_buffer[task].push_back(*it);
 	}
+	for	(size_t i = 0; i < tasks.size(); ++i)
+	{
+		worker_input_buffer[i].shrink_to_fit();
+		std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation():: partitioner: " << partitioner_name << ", input workload for task " << i << 
+			" has size: " << worker_input_buffer[i].size() << " tuples.\n";
+	}
 	worker_input_buffer.shrink_to_fit();
 
 	for (size_t i = 0; i < tasks.size(); ++i)
@@ -472,6 +497,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		worker_input_buffer[i].clear();
 	}
 	worker_input_buffer.clear();
+	std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation(): partitioner: " << partitioner_name << ", intermediate buffer size: " << intermediate_buffer.size() << ".\n";
 	std::vector<double> aggr_durations;
 	for (size_t aggr_run = 0; aggr_run < 7; ++aggr_run)
 	{

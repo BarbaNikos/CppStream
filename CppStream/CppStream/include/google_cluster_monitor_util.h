@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <cstdio>
+#include <exception>
 
 #ifdef _WIN32
 #include <Windows.h>
