@@ -331,49 +331,49 @@ void Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides_with_to
 	file.close();
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner,
-	const std::string partioner_name, std::vector<Experiment::DebsChallenge::CompactRide>& rides)
-{
-	std::vector<std::unordered_set<std::string>> key_per_task;
-	for (size_t i = 0; i < tasks.size(); ++i)
-	{
-		key_per_task.push_back(std::unordered_set<std::string>());
-	}
-	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides.begin(); it != rides.end(); ++it)
-	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "-" + dropoff_cell;
-		short task = partitioner.partition_next(key.c_str(), key.length());
-		key_per_task[task].insert(key);
-	}
-	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-	std::chrono::duration<double, std::milli> partition_time = part_end - part_start;
-	size_t min_cardinality = std::numeric_limits<uint64_t>::max();
-	size_t max_cardinality = std::numeric_limits<uint64_t>::min();
-	double average_cardinality = 0;
-	std::cout << "Cardinalities: ";
-	for (size_t i = 0; i < tasks.size(); ++i)
-	{
-		if (min_cardinality > key_per_task[i].size())
-		{
-			min_cardinality = key_per_task[i].size();
-		}
-		if (max_cardinality < key_per_task[i].size())
-		{
-			max_cardinality = key_per_task[i].size();
-		}
-		average_cardinality += key_per_task[i].size();
-		std::cout << key_per_task[i].size() << " ";
-		key_per_task[i].clear();
-	}
-	std::cout << "\n";
-	average_cardinality = average_cardinality / tasks.size();
-	key_per_task.clear();
-	std::cout << "Time partition using " << partioner_name << ": " << partition_time.count() << " (msec). Min: " << min_cardinality <<
-		", Max: " << max_cardinality << ", AVG: " << average_cardinality << "\n";
-}
+//void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner,
+//	const std::string partioner_name, std::vector<Experiment::DebsChallenge::CompactRide>& rides)
+//{
+//	std::vector<std::unordered_set<std::string>> key_per_task;
+//	for (size_t i = 0; i < tasks.size(); ++i)
+//	{
+//		key_per_task.push_back(std::unordered_set<std::string>());
+//	}
+//	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+//	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides.begin(); it != rides.end(); ++it)
+//	{
+//		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+//		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+//		std::string key = pickup_cell + "-" + dropoff_cell;
+//		short task = partitioner.partition_next(key.c_str(), key.length());
+//		key_per_task[task].insert(key);
+//	}
+//	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+//	std::chrono::duration<double, std::milli> partition_time = part_end - part_start;
+//	size_t min_cardinality = std::numeric_limits<unsigned long>::max();
+//	size_t max_cardinality = std::numeric_limits<unsigned long>::min();
+//	double average_cardinality = 0;
+//	std::cout << "Cardinalities: ";
+//	for (size_t i = 0; i < tasks.size(); ++i)
+//	{
+//		if (min_cardinality > key_per_task[i].size())
+//		{
+//			min_cardinality = key_per_task[i].size();
+//		}
+//		if (max_cardinality < key_per_task[i].size())
+//		{
+//			max_cardinality = key_per_task[i].size();
+//		}
+//		average_cardinality += key_per_task[i].size();
+//		std::cout << key_per_task[i].size() << " ";
+//		key_per_task[i].clear();
+//	}
+//	std::cout << "\n";
+//	average_cardinality = average_cardinality / tasks.size();
+//	key_per_task.clear();
+//	std::cout << "Time partition using " << partioner_name << ": " << partition_time.count() << " (msec). Min: " << min_cardinality <<
+//		", Max: " << max_cardinality << ", AVG: " << average_cardinality << "\n";
+//}
 
 double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table,
 	Partitioner& partitioner, const std::string partitioner_name, const size_t max_queue_size)
@@ -448,8 +448,11 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	HashFieldPartitioner* fld;
 	CardinalityAwarePolicy ca_policy;
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	CaPartitionLib::CA_HLL_Partitioner* ca_hll;
+	CaPartitionLib::CA_HLL_Aff_Partitioner* ca_aff_hll;
 	LoadAwarePolicy la_policy;
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	CaPartitionLib::CA_HLL_Partitioner* la_hll;
 	std::vector<uint16_t> tasks(task_number, uint16_t(0));
 	for (uint16_t i = 0; i < task_number; i++)
 	{
@@ -460,23 +463,34 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
 	frequent_route_partitioner_simulation(lines, tasks, *rrg, "shg", "shg_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	frequent_route_partitioner_simulation(lines, tasks, *fld, "fld", "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	frequent_route_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	frequent_route_partitioner_simulation(lines, tasks, *ca_naive, "ca_naive", "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
+	frequent_route_partitioner_simulation(lines, tasks, *ca_hll, "ca_hll", "ca_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
+	frequent_route_partitioner_simulation(lines, tasks, *ca_aff_hll, "ca_aff_hll", "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	frequent_route_partitioner_simulation(lines, tasks, *la_naive, "la_naive", "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
+	frequent_route_partitioner_simulation(lines, tasks, *la_hll, "la_hll", "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv");
 	delete rrg;
 	delete fld;
 	delete pkg;
 	delete ca_naive;
+	delete ca_hll;
+	delete ca_aff_hll;
 	delete la_naive;
+	delete la_hll;
 	tasks.clear();
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks, 
 	Partitioner & partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
+	float imbalance, key_imbalance;
+	std::vector<double> partition_duration_vector;
 	std::vector<double> exec_durations(tasks.size(), double(0));
 	std::vector<double> aggr_durations;
 	double aggr_duration, write_output_duration;
@@ -487,19 +501,50 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	std::mutex mu;
 	std::condition_variable cond;
 	// distribute tuples
-	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "-" + dropoff_cell;
-		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
-		worker_input_buffer[task].push_back(*it);
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+			{
+				std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+				std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+				std::string key = pickup_cell + "-" + dropoff_cell;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				worker_input_buffer[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			partition_duration_vector.push_back((std::chrono::duration<double, std::milli>(part_end - part_start)).count());
+		}
+		else
+		{
+			std::vector<std::vector<Experiment::DebsChallenge::CompactRide>> worker_input_buffer_copy(tasks.size(),
+				std::vector<Experiment::DebsChallenge::CompactRide>());
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+			{
+				std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
+				std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
+				std::string key = pickup_cell + "-" + dropoff_cell;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				worker_input_buffer_copy[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			partition_duration_vector.push_back((std::chrono::duration<double, std::milli>(part_end - part_start)).count());
+		}
 	}
 	for (auto it = worker_input_buffer.begin(); it != worker_input_buffer.end(); ++it)
 	{
 		it->shrink_to_fit();
 	}
 	worker_input_buffer.shrink_to_fit();
+	ImbalanceScoreAggr<Experiment::DebsChallenge::CompactRide, std::string> imbalance_aggregator;
+	DebsFrequentRideKeyExtractor key_extractor;
+	imbalance_aggregator.measure_score(worker_input_buffer, key_extractor);
+	imbalance = imbalance_aggregator.imbalance();
+	key_imbalance = imbalance_aggregator.cardinality_imbalance();
 	// for every task - calculate (partial) workload
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -568,11 +613,19 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	auto min_it = std::min_element(aggr_durations.begin(), aggr_durations.end());
 	aggr_durations.erase(min_it);
 	aggr_duration = std::accumulate(aggr_durations.begin(), aggr_durations.end(), 0.0) / aggr_durations.size();
+
+	auto part_max_it = std::max_element(partition_duration_vector.begin(), partition_duration_vector.end());
+	partition_duration_vector.erase(part_max_it);
+	auto part_min_it = std::min_element(partition_duration_vector.begin(), partition_duration_vector.end());
+	partition_duration_vector.erase(part_min_it);
+	float mean_part_time = std::accumulate(partition_duration_vector.begin(), partition_duration_vector.end(), 0.0) / partition_duration_vector.size();
+
 	std::cout << "DEBS Q1 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << ", (msec):: MIN exec. time: " << 
 		*std::min_element(exec_durations.begin(), exec_durations.end()) << 
 		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) << 
 		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
-		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << "\n";
+		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << ", Mean part time: " << mean_part_time << 
+		" (msec), Imbalance: " << imbalance << ", Key Imbalance: " << key_imbalance << ".\n";
 	partial_result.clear();
 	exec_durations.clear();
 	aggr_durations.clear();
@@ -968,8 +1021,11 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	HashFieldPartitioner* fld;
 	CardinalityAwarePolicy ca_policy;
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	CaPartitionLib::CA_HLL_Partitioner* ca_hll;
+	CaPartitionLib::CA_HLL_Aff_Partitioner* ca_aff_hll;
 	LoadAwarePolicy la_policy;
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	CaPartitionLib::CA_HLL_Partitioner* la_hll;
 	Experiment::DebsChallenge::FrequentRoutePartition experiment;
 	std::vector<uint16_t> tasks;
 
@@ -983,22 +1039,34 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12); 
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
 	most_profitable_partitioner_simulation(lines, tasks, *rrg, "shg", "shg_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
 	most_profitable_partitioner_simulation(lines, tasks, *fld, "fld", "fld_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
 	most_profitable_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
 	most_profitable_partitioner_simulation(lines, tasks, *ca_naive, "ca_naive", "ca_naive_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
+	most_profitable_partitioner_simulation(lines, tasks, *ca_hll, "ca_hll", "ca_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
+	most_profitable_partitioner_simulation(lines, tasks, *ca_aff_hll, "ca_aff_hll", "ca_aff_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
 	most_profitable_partitioner_simulation(lines, tasks, *la_naive, "la_naive", "la_naive_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
+	most_profitable_partitioner_simulation(lines, tasks, *la_hll, "la_hll", "la_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv");
 	delete rrg;
 	delete fld;
 	delete pkg;
 	delete ca_naive;
 	delete la_naive;
+	delete ca_hll;
+	delete ca_aff_hll;
+	delete la_hll;
 	tasks.clear();
 }
 
 void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, 
 	const std::vector<uint16_t> tasks, Partitioner & partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
+	std::vector<double> part_medallion_durations, part_cell_durations;
+	float med_imbalance, med_key_imbalance, dropoff_cell_imbalance, dropoff_cell_key_imbalance, 
+		complete_fare_imbalance, complete_fare_key_imbalance;
 	// auxiliary variables
 	std::queue<Experiment::DebsChallenge::CompactRide> queue;
 	std::mutex mu;
@@ -1011,21 +1079,55 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 	std::vector<std::vector<CompactRide>> worker_input_buffer(tasks.size(), std::vector<CompactRide>());
 	std::unordered_map<std::string, std::vector<float>> complete_fare_table;
 	std::unordered_map<std::string, std::pair<std::string, std::time_t>> dropoff_table;
-	std::vector<std::vector<std::pair<std::string, std::vector<float>>>> complete_fare_sub_table;
-	std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>> dropoff_cell_sub_table;
+	std::vector<std::vector<std::pair<std::string, std::vector<float>>>> complete_fare_sub_table(tasks.size(), std::vector<std::pair<std::string, std::vector<float>>>());
+	std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>> dropoff_cell_sub_table(tasks.size(), std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>());
 	std::unordered_map<std::string, std::pair<float, int>> cell_partial_result_buffer;
 	std::unordered_map<std::string, float> cell_full_result_buffer;
 	// Partition Data - Key: Medallion
-	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		std::string key = it->medallion;
-		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
-		worker_input_buffer[task].push_back(*it);
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+			{
+				char med_buffer[33];
+				memcpy(med_buffer, it->medallion, 32 * sizeof(char));
+				med_buffer[32] = '\0';
+				std::string key = med_buffer;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				worker_input_buffer[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_medallion_durations.push_back((std::chrono::duration<double, std::milli>(part_end - part_start)).count());
+		}
+		else
+		{
+			std::vector<std::vector<CompactRide>> worker_input_buffer_copy(tasks.size(), std::vector<CompactRide>());
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = rides.cbegin(); it != rides.cend(); ++it)
+			{
+				char med_buffer[33];
+				memcpy(med_buffer, it->medallion, 32 * sizeof(char));
+				med_buffer[32] = '\0';
+				std::string key = med_buffer;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				worker_input_buffer_copy[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_medallion_durations.push_back((std::chrono::duration<double, std::milli>(part_end - part_start)).count());
+		}
 	}
 	for (size_t i = 0; i < tasks.size(); i++)
 	{
 		worker_input_buffer[i].shrink_to_fit();
 	}
+	ImbalanceScoreAggr<Experiment::DebsChallenge::CompactRide, std::string> med_imbalance_aggregator;
+	DebsProfitCellMedallionKeyExtractor med_key_extractor;
+	med_imbalance_aggregator.measure_score(worker_input_buffer, med_key_extractor);
+	med_imbalance = med_imbalance_aggregator.imbalance();
+	med_key_imbalance = med_imbalance_aggregator.cardinality_imbalance();
 	// first parallel round of processing (for each pickup cell gather full-fares, for each medallion keep track of the latest dropoff-cell)
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -1070,31 +1172,70 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 		durations.clear();
 	}
 	// re-initialize the partitioners
-	partitioner.init();
-	for (size_t i = 0; i < tasks.size(); ++i)
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		complete_fare_sub_table.push_back(std::vector<std::pair<std::string, std::vector<float>>>());
-		dropoff_cell_sub_table.push_back(std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>());
-	}
-	// 2nd - round
-	// partition fare_map
-	for (auto it = complete_fare_table.begin(); it != complete_fare_table.end(); ++it)
-	{
-		std::string key = it->first;
-		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
-		complete_fare_sub_table[task].push_back(std::make_pair(it->first, it->second));
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_one_start = std::chrono::system_clock::now();
+			for (auto it = complete_fare_table.begin(); it != complete_fare_table.end(); ++it)
+			{
+				std::string key = it->first;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				complete_fare_sub_table[task].push_back(std::make_pair(it->first, it->second));
+			}
+			std::chrono::system_clock::time_point part_one_end = std::chrono::system_clock::now();
+			partitioner.init();
+			std::chrono::system_clock::time_point part_two_start = std::chrono::system_clock::now();
+			for (auto it = dropoff_table.begin(); it != dropoff_table.end(); ++it)
+			{
+				std::string key = it->second.first;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				dropoff_cell_sub_table[task].push_back(std::make_pair(it->first, it->second));
+			}
+			std::chrono::system_clock::time_point part_two_end = std::chrono::system_clock::now();
+			part_cell_durations.push_back((std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_one_start))).count());
+		}
+		else
+		{
+			std::vector<std::vector<std::pair<std::string, std::vector<float>>>> complete_fare_sub_table_copy(tasks.size(), 
+				std::vector<std::pair<std::string, std::vector<float>>>());
+			std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>> dropoff_cell_sub_table_copy(tasks.size(), 
+				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>());
+			std::chrono::system_clock::time_point part_one_start = std::chrono::system_clock::now();
+			for (auto it = complete_fare_table.begin(); it != complete_fare_table.end(); ++it)
+			{
+				std::string key = it->first;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				complete_fare_sub_table_copy[task].push_back(std::make_pair(it->first, it->second));
+			}
+			std::chrono::system_clock::time_point part_one_end = std::chrono::system_clock::now();
+			partitioner.init();
+			std::chrono::system_clock::time_point part_two_start = std::chrono::system_clock::now();
+			for (auto it = dropoff_table.begin(); it != dropoff_table.end(); ++it)
+			{
+				std::string key = it->second.first;
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				dropoff_cell_sub_table_copy[task].push_back(std::make_pair(it->first, it->second));
+			}
+			std::chrono::system_clock::time_point part_two_end = std::chrono::system_clock::now();
+			part_cell_durations.push_back((std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_one_start))).count());
+		}
 	}
 	complete_fare_sub_table.shrink_to_fit();
-	complete_fare_table.clear();
-	// partition dropoff_cells
-	for (auto it = dropoff_table.begin(); it != dropoff_table.end(); ++it)
-	{
-		std::string key = it->second.first;
-		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
-		dropoff_cell_sub_table[task].push_back(std::make_pair(it->first, it->second));
-	}
 	dropoff_cell_sub_table.shrink_to_fit();
+	complete_fare_table.clear();
 	dropoff_table.clear();
+	ImbalanceScoreAggr<std::pair<std::string, std::vector<float>>, std::string> complete_fare_imb_aggregator;
+	ImbalanceScoreAggr<std::pair<std::string, std::pair<std::string, std::time_t>>, std::string> dropoff_cell_imb_aggregator;
+	DebsProfCellCompleteFareKeyExtractor complete_fare_key_extractor;
+	DebsProfCellDropoffCellKeyExtractor dropoff_cell_key_extractor;
+	complete_fare_imb_aggregator.measure_score(complete_fare_sub_table, complete_fare_key_extractor);
+	dropoff_cell_imb_aggregator.measure_score(dropoff_cell_sub_table, dropoff_cell_key_extractor);
+	complete_fare_imbalance = complete_fare_imb_aggregator.imbalance();
+	complete_fare_key_imbalance = complete_fare_imb_aggregator.cardinality_imbalance();
+	dropoff_cell_imbalance = dropoff_cell_imb_aggregator.imbalance();
+	dropoff_cell_key_imbalance = dropoff_cell_imb_aggregator.cardinality_imbalance();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -1177,7 +1318,19 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 	aggr_durations.erase(max_it);
 	final_aggr_duration = std::accumulate(aggr_durations.begin(), aggr_durations.end(), 0.0) / aggr_durations.size();
 	aggr_durations.clear();
-	
+
+	//part_medallion_durations, part_cell_durations
+	auto part_it = std::max_element(part_medallion_durations.begin(), part_medallion_durations.end());
+	part_medallion_durations.erase(part_it);
+	part_it = std::min_element(part_medallion_durations.begin(), part_medallion_durations.end());
+	part_medallion_durations.erase(part_it);
+	part_it = std::max_element(part_cell_durations.begin(), part_cell_durations.end());
+	part_cell_durations.erase(part_it);
+	part_it = std::min_element(part_cell_durations.begin(), part_cell_durations.end());
+	part_cell_durations.erase(part_it);
+	double mean_part_med_duration = std::accumulate(part_medallion_durations.begin(), part_medallion_durations.end(), 0.0) / part_medallion_durations.size();
+	double mean_part_cell_duration = std::accumulate(part_cell_durations.begin(), part_cell_durations.end(), 0.0) / part_cell_durations.size();
+
 	std::cout << "DEBS Q2 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << " (msec):: MIN (S1) exec. time: " <<
 		*std::min_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) <<
 		", MAX (S1) exec. time: " << *std::max_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) <<
@@ -1185,7 +1338,10 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 		", MIN (S2) exec. time: " << *std::min_element(second_round_exec_duration.begin(), second_round_exec_duration.end()) <<
 		", MAX (S2) exec. time: " << *std::max_element(second_round_exec_duration.begin(), second_round_exec_duration.end()) <<
 		", AVG (S2) exec. time: " << (std::accumulate(second_round_exec_duration.begin(), second_round_exec_duration.end(), 0.0) / second_round_exec_duration.size()) <<
-		", AVG aggr. time: " << final_aggr_duration << ", IO time:" << output_to_file_duration << "\n";
+		", AVG aggr. time: " << final_aggr_duration << ", IO time:" << output_to_file_duration << ", Mean part-med time: " << mean_part_med_duration << 
+		" (msec), Mean part-cell time: " << mean_part_cell_duration << ", Med imb: " << med_imbalance << ", key-imb: " << med_key_imbalance << 
+		", dropoff-cell imb: " << dropoff_cell_imbalance << ", dropoff-cell key-imb: " << dropoff_cell_key_imbalance << 
+		", complete-fare imb: " << complete_fare_imbalance << ", complete-fare key imb: " << complete_fare_key_imbalance << ".\n";
 }
 
 void Experiment::DebsChallenge::ProfitableAreaPartition::debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area)

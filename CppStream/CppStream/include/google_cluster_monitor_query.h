@@ -47,6 +47,10 @@
 #include "google_cluster_monitor_util.h"
 #endif // !GOOGLE_CLUSTER_MONITOR_UTIL_H_
 
+#ifndef IMBALANCE_SCORE_AGGR_H_
+#include "imbalance_score_aggr.h"
+#endif // !IMBALANCE_SCORE_AGGR_H_
+
 #ifndef GOOGLE_CLUSTER_MONITOR_QUERY_H_
 #define GOOGLE_CLUSTER_MONITOR_QUERY_H_
 namespace Experiment

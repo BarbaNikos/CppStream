@@ -147,8 +147,11 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	HashFieldPartitioner* fld;
 	CardinalityAwarePolicy ca_policy;
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	CaPartitionLib::CA_HLL_Partitioner* ca_hll;
+	CaPartitionLib::CA_HLL_Aff_Partitioner* ca_aff_hll;
 	LoadAwarePolicy la_policy;
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	CaPartitionLib::CA_HLL_Partitioner* la_hll;
 	std::vector<uint16_t> tasks;
 
 	for (uint16_t i = 0; i < task_num; i++)
@@ -160,17 +163,26 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
 	query_one_partitioner_simulation(lines, tasks, *fld, "fld", "fld_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *rrg, "shg", "shuffle_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *pkg, "pkg", "pkg_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *ca_naive, "ca-naive", "ca_naive_q1_result_" + std::to_string(tasks.size()) + ".csv");
+	query_one_partitioner_simulation(lines, tasks, *ca_hll, "ca-hll", "ca_hll_q1_result_" + std::to_string(tasks.size()) + ".csv");
+	query_one_partitioner_simulation(lines, tasks, *ca_aff_hll, "ca-aff-hll", "ca_aff_hll_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	query_one_partitioner_simulation(lines, tasks, *la_naive, "la-naive", "la_naive_q1_result_" + std::to_string(tasks.size()) + ".csv");
+	query_one_partitioner_simulation(lines, tasks, *la_hll, "la-hll", "la_hll_q1_result_" + std::to_string(tasks.size()) + ".csv");
 	delete rrg;
 	delete fld;
 	delete pkg;
 	delete ca_naive;
+	delete ca_hll;
+	delete ca_aff_hll;
 	delete la_naive;
+	delete la_hll;
 	tasks.clear();
 }
 
@@ -811,8 +823,11 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	HashFieldPartitioner* fld;
 	CardinalityAwarePolicy ca_policy;
 	CaPartitionLib::CA_Exact_Partitioner* ca_naive;
+	CaPartitionLib::CA_HLL_Partitioner* ca_hll;
+	CaPartitionLib::CA_HLL_Aff_Partitioner* ca_aff_hll;
 	LoadAwarePolicy la_policy;
 	CaPartitionLib::CA_Exact_Partitioner* la_naive;
+	CaPartitionLib::CA_HLL_Partitioner* la_hll;
 	std::vector<uint16_t> tasks;
 
 	for (uint16_t i = 0; i < task_num; i++)
@@ -824,17 +839,26 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *rrg, "shg", "shg_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *fld, "fld", "fld_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *pkg, "pkg", "pkg_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *ca_naive, "ca-naive", "ca_naive_query_three_result_" + std::to_string(tasks.size()) + ".csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *ca_hll, "ca-hll", "ca_hll_query_three_result_" + std::to_string(tasks.size()) + ".csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *ca_aff_hll, "ca-aff-hll", "ca_aff_hll_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *la_naive, "la-naive", "la_naive_query_three_result_" + std::to_string(tasks.size()) + ".csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, *la_hll, "la-hll", "la_hll_query_three_result_" + std::to_string(tasks.size()) + ".csv");
 	delete rrg;
 	delete fld;
 	delete pkg;
 	delete ca_naive;
+	delete ca_hll;
+	delete ca_aff_hll;
 	delete la_naive;
+	delete la_hll;
 	tasks.clear();
 }
 
