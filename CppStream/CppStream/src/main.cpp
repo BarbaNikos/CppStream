@@ -57,23 +57,23 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	// std::vector<Experiment::Tpch::q3_customer> customer_table;
-	// std::vector<Experiment::Tpch::lineitem> lineitem_table;
-	// std::vector<Experiment::Tpch::order> order_table;
+	 std::vector<Experiment::Tpch::q3_customer> customer_table;
+	 std::vector<Experiment::Tpch::lineitem> lineitem_table;
+	 std::vector<Experiment::Tpch::order> order_table;
 	
-	// Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
+	 Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
 	// Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
 	// Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
 	// Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);
 
-	// Experiment::Tpch::DataParser::parse_tpch_q3_customer(customer_file, customer_table);
-	// Experiment::Tpch::DataParser::parse_tpch_order(orders_file, order_table);
-	// Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 8);
-	// Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 16);
-	// Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
-	// customer_table.clear();
-	// lineitem_table.clear();
-	// order_table.clear();
+	 Experiment::Tpch::DataParser::parse_tpch_q3_customer(customer_file, customer_table);
+	 Experiment::Tpch::DataParser::parse_tpch_order(orders_file, order_table);
+	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 8);
+	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 16);
+	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
+	 customer_table.clear();
+	 lineitem_table.clear();
+	 order_table.clear();
 	/*
 	 * DEBS queries
 	 */
@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries
 	 */
-	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
+	/*std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
 	std::cout << "parsed all task events: total size: " << task_event_table.size() << ".\n";
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 8);
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 8);
 	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 16);
 	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);
-	task_event_table.clear();
+	task_event_table.clear();*/
 
 	return 0;
 }

@@ -884,6 +884,8 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		c_worker_input_buffer[i].clear();
 		o_worker_input_buffer[i].clear();
 	}
+	std::cout << "query_three_partitioner_simulation() :: step-one customer buffer size: " << step_one_customer_buffer.size() <<
+		", step-one order buffer size: " << step_one_order_buffer.size() << ", step-one result buffer size: " << step_one_result_buffer.size() << ".\n";
 	c_worker_input_buffer.clear();
 	o_worker_input_buffer.clear();
 	step_one_customer_buffer.clear();
