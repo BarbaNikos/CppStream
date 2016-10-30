@@ -67,8 +67,8 @@ inline unsigned int PkgPartitioner::partition_next(const void* key, const size_t
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_one = long_hash_one[0] ^ long_hash_one[1];
 	hash_two = long_hash_two[0] ^ long_hash_two[1];
-	first_choice = hash_one % tasks.size();
-	second_choice = hash_two % tasks.size();
+	first_choice = (unsigned int)hash_one % tasks.size();
+	second_choice = (unsigned int)hash_two % tasks.size();
 	unsigned int selected_choice = policy->get_score(first_choice, task_count[first_choice], 0,
 		second_choice, task_count[second_choice], 0, min_task_count, max_task_count, 0, 0);
 	task_count[selected_choice] += 1;

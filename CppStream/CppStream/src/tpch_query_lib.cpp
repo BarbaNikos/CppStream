@@ -177,7 +177,9 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, 
 	const std::vector<uint16_t> tasks, Partitioner & partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
+	float imbalance, cardinality_imbalance;
 	std::vector<double> duration_vector(tasks.size(), 0.0);
+	std::vector<double> partition_duration_vector;
 	std::vector<double> aggregation_duration_vector;
 	double write_output_duration_in_msec;
 	std::queue<Experiment::Tpch::lineitem> queue;
@@ -185,15 +187,48 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	std::condition_variable cond;
 	std::vector<Tpch::query_one_result> intermediate_buffer;
 	std::vector<std::vector<Tpch::lineitem>> worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
-	// partition tuples
-	for (auto it = lineitem_table.cbegin(); it != lineitem_table.cend(); ++it)
+	TpchQueryOneKeyExtractor key_extractor;
+	ImbalanceScoreAggr<Experiment::Tpch::lineitem, std::string> imbalance_aggregator;
+	// partition tuples - run 7 times to measure partitioning latency
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		std::string key = std::to_string(it->l_returnflag) + "," + std::to_string(it->l_linestatus);
-		uint16_t task = partitioner.partition_next(key.c_str(), key.length());
-		worker_input_buffer[task].push_back(*it);
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = lineitem_table.cbegin(); it != lineitem_table.cend(); ++it)
+			{
+				std::string key = std::to_string(it->l_returnflag) + "," + std::to_string(it->l_linestatus);
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				worker_input_buffer[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			partition_duration_vector.push_back((std::chrono::duration<double, std::milli>(part_end - part_start)).count());
+		}
+		else
+		{
+			std::vector<std::vector<Tpch::lineitem>> worker_input_buffer_copy(tasks.size(), std::vector<Tpch::lineitem>());
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = lineitem_table.cbegin(); it != lineitem_table.cend(); ++it)
+			{
+				std::string key = std::to_string(it->l_returnflag) + "," + std::to_string(it->l_linestatus);
+				uint16_t task = partitioner.partition_next(key.c_str(), key.length());
+				worker_input_buffer_copy[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			partition_duration_vector.push_back((std::chrono::duration<double, std::milli>(part_end - part_start)).count());
+			worker_input_buffer_copy.clear();
+		}
+	}
+	for (size_t i = 0; i < tasks.size(); i++)
+	{
+		worker_input_buffer[i].shrink_to_fit();
 	}
 	worker_input_buffer.shrink_to_fit();
-
+	// measure cardinality imbalance and imbalance
+	imbalance_aggregator.measure_score(worker_input_buffer, key_extractor);
+	imbalance = imbalance_aggregator.imbalance();
+	cardinality_imbalance = imbalance_aggregator.cardinality_imbalance();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -266,9 +301,17 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	double sum_of_exec_times = std::accumulate(duration_vector.begin(), duration_vector.end(), 0.0);
 	double avg_exec_time = sum_of_exec_times / duration_vector.size();
 
+	std::vector<double>::iterator part_max_it = std::max_element(partition_duration_vector.begin(), partition_duration_vector.end());
+	partition_duration_vector.erase(part_max_it);
+	std::vector<double>::iterator part_min_it = std::min_element(partition_duration_vector.begin(), partition_duration_vector.end());
+	partition_duration_vector.erase(part_min_it);
+	double sum_of_part_durations = std::accumulate(partition_duration_vector.begin(), partition_duration_vector.end(), 0.0);
+	double average_part_duration = sum_of_part_durations / partition_duration_vector.size();
+
 	std::cout << "TPC-H Q1 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << 
 		", (msec) Max exec. time: " << *max_it << ", MIN exec. time: " << *min_it << ", AVG exec. time: " << avg_exec_time <<
-		", AVG aggr. time: " << average_aggr_duration << ", write output time: " << write_output_duration_in_msec << ".\n";
+		", AVG aggr. time: " << average_aggr_duration << ", write output time: " << write_output_duration_in_msec << 
+		", MEAN part time: " << average_part_duration << " (msec), Imbalance: " << imbalance << ", key imbalance: " << cardinality_imbalance << ".\n";
 	intermediate_buffer.clear();
 }
 
@@ -801,6 +844,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	const std::vector<uint16_t> tasks, Partitioner & partitioner, 
 	const std::string partitioner_name, const std::string worker_output_file_name)
 {
+	std::vector<double> part_customer_durations, part_order_durations, part_li_durations;
 	std::vector<double> step_one_exec_durations(tasks.size(), double(0));
 	std::vector<double> step_two_exec_durations(tasks.size(), double(0));
 	std::vector<double> step_two_aggr_durations(tasks.size(), double(0));
@@ -812,6 +856,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	std::unordered_map<uint32_t, Tpch::order> step_one_order_buffer;
 	std::unordered_map<uint32_t, Experiment::Tpch::query_three_step_one> step_one_result_buffer;
 	std::unordered_map<std::string, Tpch::query_three_result> result_buffer;
+	float c_imbalance, c_key_imbalance, o_imbalance, o_key_imbalance, li_imbalance, li_key_imbalance;
 	// initialize predicate
 	predicate.order_date.day = 15;
 	predicate.order_date.month = 3;
@@ -819,19 +864,76 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	memcpy(predicate.c_mktsegment, "BUILDING\0\0", 10 * sizeof(char));
 	// Step One: Join customer and order tables
 	// partition order tuples and customer tuples based on cust_key
-	for (auto it = c_table.cbegin(); it != c_table.cend(); ++it)
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		uint16_t task = partitioner.partition_next(&it->c_custkey, sizeof(it->c_custkey));
-		c_worker_input_buffer[task].push_back(*it);
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = c_table.cbegin(); it != c_table.cend(); ++it)
+			{
+				uint16_t task = partitioner.partition_next(&it->c_custkey, sizeof(it->c_custkey));
+				c_worker_input_buffer[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_customer_durations.push_back(std::chrono::duration<double, std::milli>(part_end - part_start).count());
+		}
+		else
+		{
+			std::vector<std::vector<Tpch::q3_customer>> c_worker_input_buffer_copy(tasks.size(), std::vector<Tpch::q3_customer>());
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = c_table.cbegin(); it != c_table.cend(); ++it)
+			{
+				uint16_t task = partitioner.partition_next(&it->c_custkey, sizeof(it->c_custkey));
+				c_worker_input_buffer_copy[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_customer_durations.push_back(std::chrono::duration<double, std::milli>(part_end - part_start).count());
+		}
 	}
 	c_worker_input_buffer.shrink_to_fit();
-	partitioner.init();
-	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
+
+	ImbalanceScoreAggr<Experiment::Tpch::q3_customer, uint32_t> c_imbalance_aggregator;
+	TpchQueryThreeCustomerKeyExtractor c_key_extractor;
+	c_imbalance_aggregator.measure_score(c_worker_input_buffer, c_key_extractor);
+	c_imbalance = c_imbalance_aggregator.imbalance();
+	c_key_imbalance = c_imbalance_aggregator.cardinality_imbalance();
+
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(it->o_custkey));
-		o_worker_input_buffer[task].push_back(*it);
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
+			{
+				uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(it->o_custkey));
+				o_worker_input_buffer[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_order_durations.push_back(std::chrono::duration<double, std::milli>(part_end - part_start).count());
+		}
+		else
+		{
+			std::vector<std::vector<Tpch::order>> o_worker_input_buffer_copy(tasks.size(), std::vector<Tpch::order>());
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
+			{
+				uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(it->o_custkey));
+				o_worker_input_buffer_copy[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_order_durations.push_back(std::chrono::duration<double, std::milli>(part_end - part_start).count());
+		}
 	}
 	o_worker_input_buffer.shrink_to_fit();
+
+	ImbalanceScoreAggr<Experiment::Tpch::order, uint32_t> o_imbalance_aggregator;
+	TpchQueryThreeOrderKeyExtractor o_key_extractor;
+	o_imbalance_aggregator.measure_score(o_worker_input_buffer, o_key_extractor);
+	o_imbalance = o_imbalance_aggregator.imbalance();
+	o_key_imbalance = o_imbalance_aggregator.cardinality_imbalance();
+	
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -892,13 +994,40 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	step_one_order_buffer.clear();
 	// step Two: join lineitem table and calculate group by aggregate-sum()
 	// partition lineitem tuples
-	partitioner.init();
-	for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
-		li_worker_input_buffer[task].push_back(*it);
+		partitioner.init();
+		if (part_run == 0)
+		{
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
+			{
+				uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
+				li_worker_input_buffer[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_li_durations.push_back(std::chrono::duration<double, std::milli>(part_end - part_start).count());
+		}
+		else
+		{
+			std::vector<std::vector<Experiment::Tpch::lineitem>> li_worker_input_buffer_copy(tasks.size(), std::vector<Experiment::Tpch::lineitem>());
+			std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+			for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
+			{
+				uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
+				li_worker_input_buffer_copy[task].push_back(*it);
+			}
+			std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+			part_li_durations.push_back(std::chrono::duration<double, std::milli>(part_end - part_start).count());
+		}
 	}
 	li_worker_input_buffer.shrink_to_fit();
+
+	ImbalanceScoreAggr<Experiment::Tpch::lineitem, uint32_t> li_imbalance_aggregator;
+	TpchQueryThreeLineitemKeyExtractor li_key_extractor;
+	li_imbalance_aggregator.measure_score(li_worker_input_buffer, li_key_extractor);
+	li_imbalance = li_imbalance_aggregator.imbalance();
+	li_key_imbalance = li_imbalance_aggregator.cardinality_imbalance();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -970,11 +1099,30 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	double avg_step_two_exec_time = std::accumulate(step_two_exec_durations.begin(), step_two_exec_durations.end(), 0.0) / step_two_exec_durations.size();
 
 	double sum_step_two_aggr_time = std::accumulate(step_two_aggr_durations.begin(), step_two_aggr_durations.end(), 0.0);
+
+	std::vector<double>::iterator part_max_it = std::max_element(part_customer_durations.begin(), part_customer_durations.end());
+	part_customer_durations.erase(part_max_it);
+	std::vector<double>::iterator part_min_it = std::min_element(part_customer_durations.begin(), part_customer_durations.end());
+	part_customer_durations.erase(part_min_it);
+	double mean_part_customer_time = std::accumulate(part_customer_durations.begin(), part_customer_durations.end(), 0.0) / part_customer_durations.size();
+	part_max_it = std::max_element(part_order_durations.begin(), part_order_durations.end());
+	part_order_durations.erase(part_max_it);
+	part_min_it = std::min_element(part_order_durations.begin(), part_order_durations.end());
+	part_order_durations.erase(part_min_it);
+	double mean_part_order_time = std::accumulate(part_order_durations.begin(), part_order_durations.end(), 0.0) / part_order_durations.size();
+	part_max_it = std::max_element(part_li_durations.begin(), part_li_durations.end());
+	part_li_durations.erase(part_max_it);
+	part_min_it = std::min_element(part_li_durations.begin(), part_li_durations.end());
+	part_li_durations.erase(part_min_it);
+	double mean_part_li_time = std::accumulate(part_li_durations.begin(), part_li_durations.end(), 0.0) / part_li_durations.size();
 	
 	std::cout << "TPC-H Q3 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << 
 		", (msec) Max (S1) exec. time: " << *max_step_one_it << ", MIN (S1) exec. time: " << *min_step_one_it << ", AVG (S1) exec. time: " << avg_step_one_exec_time <<
 		"Max (S2) exec.time: " << *max_step_two_it << ", MIN (S2) exec.time: " << *min_step_two_it << ", AVG (S2) exec.time : " << avg_step_two_exec_time <<
-		", SUM aggr. time: " << sum_step_two_aggr_time << ", write output time: " << write_to_output_time.count() << ".\n";
+		", SUM aggr. time: " << sum_step_two_aggr_time << ", write output time: " << write_to_output_time.count() << ", Mean Part_C time: " << mean_part_customer_time << 
+		" (msec), Mean Part_O time: " << mean_part_order_time << " (msec), Mean Part_Li time: " << mean_part_li_time << ", (Customer) imb: " << c_imbalance << 
+		", key-imb: " << c_key_imbalance << ", (Order) imb: " << o_imbalance << ", key-imb: " << o_key_imbalance << ", (Lineitem) imb: " << li_imbalance << 
+		", key-imb: " << li_key_imbalance << ".\n";
 
 	result_buffer.clear();
 	step_one_result_buffer.clear();

@@ -84,6 +84,9 @@
     <ClInclude Include="include\tpch_query_lib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\imbalance_score_aggr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

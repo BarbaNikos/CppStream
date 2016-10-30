@@ -482,7 +482,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 			worker.partial_finalize(intermediate_buffer_copy);
 			std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 			// TIME CRITICAL - END
-			std::chrono::duration<double, std::milli> execution_time = end - start;
+			std::chrono::duration<double, std::micro> execution_time = end - start;
 			durations.push_back(execution_time.count());
 			if (run >= 0)
 			{
@@ -515,7 +515,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		}
 		std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
 		// TIME CRITICAL - END
-		std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
+		std::chrono::duration<double, std::micro> aggregation_time = aggregate_end - aggregate_start;
 		aggr_durations.push_back(aggregation_time.count());
 		if (aggr_run >= 6)
 		{
@@ -534,7 +534,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	intermediate_buffer.clear();
 	exec_durations.clear();
 
-	std::cout << "GOOGLE Q2 *** partitioner: " << partitioner_name << " (msec):: MIN exec. time: " <<
+	std::cout << "GOOGLE Q2 *** partitioner: " << partitioner_name << " (micro-sec):: MIN exec. time: " <<
 		*std::min_element(exec_durations.begin(), exec_durations.end()) <<
 		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) <<
 		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<

@@ -58,7 +58,7 @@ inline unsigned int HashFieldPartitioner::partition_next(const void* key, const 
 	unsigned int selected_task;
 	MurmurHash3_x64_128(key, key_len, 13, &long_hash_code);
 	hash_code = long_hash_code[0] ^ long_hash_code[1];
-	selected_task = hash_code % tasks.size();
+	selected_task = (unsigned int) hash_code % tasks.size();
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_task]);
 	min_task_count = *std::min_element(task_count.begin(), task_count.end());
 	return tasks[selected_task];

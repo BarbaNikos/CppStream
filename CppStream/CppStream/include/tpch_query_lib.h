@@ -37,6 +37,9 @@
 #include "tpch_util.h"
 #endif // !TPCH_UTIL_H_
 
+#ifndef IMBALANCE_SCORE_AGGR_H_
+#include "imbalance_score_aggr.h"
+#endif // !IMBALANCE_SCORE_AGGR_H_
 
 #ifndef TPCH_QUERY_LIB_H_
 #define TPCH_QUERY_LIB_H_

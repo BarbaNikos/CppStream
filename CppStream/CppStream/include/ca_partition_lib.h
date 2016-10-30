@@ -159,13 +159,13 @@ inline unsigned int CaPartitionLib::CA_Exact_Partitioner::partition_next(const v
 	hash_one = long_hash_one[0] ^ long_hash_one[1];
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_two = long_hash_two[0] ^ long_hash_two[1];
-	first_choice = hash_one % tasks.size();
-	second_choice = hash_two % tasks.size();
+	first_choice = (unsigned int)hash_one % tasks.size();
+	second_choice = (unsigned int)hash_two % tasks.size();
 	unsigned long long first_cardinality = uint64_t(task_cardinality[first_choice].size());
 	unsigned long long second_cardinality = uint64_t(task_cardinality[second_choice].size());
 	unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_cardinality,
 		second_choice, task_count[second_choice], second_cardinality, min_task_count, max_task_count,
-		min_task_cardinality, max_task_cardinality);
+		(uint32_t)min_task_cardinality, (uint32_t)max_task_cardinality);
 	task_cardinality[selected_choice].insert(hash_one);
 	unsigned long long selected_cardinality = task_cardinality[selected_choice].size();
 	task_count[selected_choice] += 1;
@@ -258,14 +258,14 @@ inline unsigned int CaPartitionLib::CA_PC_Partitioner::vanilla_partition_next(co
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_one = long_hash_one[0] ^ long_hash_one[1];
 	hash_two = long_hash_two[0] ^ long_hash_two[1];
-	first_choice = hash_one % tasks.size();
-	second_choice = hash_two % tasks.size();
+	first_choice = (unsigned int)hash_one % tasks.size();
+	second_choice = (unsigned int)hash_two % tasks.size();
 	unsigned long long first_cardinality = _task_cardinality[first_choice]->cardinality_estimation_64();
 	unsigned long long second_cardinality = _task_cardinality[second_choice]->cardinality_estimation_64();
 	// decision
 	unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_cardinality,
 		second_choice, task_count[second_choice], second_cardinality, min_task_count, max_task_count,
-		min_task_cardinality, max_task_cardinality);
+		(uint32_t)min_task_cardinality, (uint32_t)max_task_cardinality);
 	//update metrics
 	_task_cardinality[selected_choice]->update_bitmap_with_hashed_value_64(hash_one);
 	unsigned long long selected_cardinality = _task_cardinality[selected_choice]->cardinality_estimation_64();
@@ -291,15 +291,15 @@ inline unsigned int CaPartitionLib::CA_PC_Partitioner::partition_next(const void
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_one = long_hash_one[0] ^ long_hash_one[1];
 	hash_two = long_hash_two[0] ^ long_hash_two[1];
-	first_choice = hash_one % tasks.size();
-	second_choice = hash_two % tasks.size();
+	first_choice = (unsigned int)hash_one % tasks.size();
+	second_choice = (unsigned int)hash_two % tasks.size();
 	unsigned long long first_cardinality = _task_cardinality[first_choice]->cardinality_estimation_64();
 	unsigned long long second_cardinality = _task_cardinality[second_choice]->cardinality_estimation_64();
 	unsigned long long choice_cardinality = BitWizard::min_uint64(first_cardinality, second_cardinality);
 	// decision
 	unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_cardinality,
 		second_choice, task_count[second_choice], second_cardinality, min_task_count, max_task_count,
-		min_task_cardinality, max_task_cardinality);
+		(uint32_t)min_task_cardinality, (uint32_t)max_task_cardinality);
 	//update metrics
 	_task_cardinality[selected_choice]->update_bitmap_with_hashed_value_64(hash_one);
 	unsigned long long selected_cardinality = _task_cardinality[selected_choice]->cardinality_estimation_64();
@@ -411,17 +411,17 @@ inline unsigned int CaPartitionLib::CA_HLL_Partitioner::partition_next(const voi
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_one = long_hash_one[0] & long_hash_one[1];
 	hash_two = long_hash_two[0] & long_hash_two[1];
-	first_choice = hash_one % tasks.size();
-	second_choice = hash_two % tasks.size();
-	unsigned long first_card = opt_cardinality_estimation_8(this->task_cardinality[first_choice]);
-	unsigned long second_card = opt_cardinality_estimation_8(this->task_cardinality[second_choice]);
+	first_choice = (unsigned int)hash_one % tasks.size();
+	second_choice = (unsigned int)hash_two % tasks.size();
+	unsigned long first_card = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[first_choice]);
+	unsigned long second_card = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[second_choice]);
 	// decision
 	unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_card,
 		second_choice, task_count[second_choice], second_card, min_task_count, max_task_count,
-		min_task_cardinality, max_task_cardinality);
+		(uint32_t)min_task_cardinality, (uint32_t)max_task_cardinality);
 	// update metrics
 	opt_update_8(this->task_cardinality[selected_choice], hash_one);
-	unsigned long selected_cardinality = opt_cardinality_estimation_8(this->task_cardinality[selected_choice]);
+	unsigned long selected_cardinality = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[selected_choice]);
 	task_count[selected_choice] += 1;
 	max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
 	max_task_cardinality = BitWizard::max_uint64(max_task_cardinality, selected_cardinality);
@@ -505,13 +505,13 @@ inline unsigned int CaPartitionLib::CA_HLL_Aff_Partitioner::partition_next(const
 	hash_one = long_hash_one[0] ^ long_hash_one[1];
 	MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 	hash_two = long_hash_two[0] ^ long_hash_two[1];
-	first_choice = hash_one % tasks.size();
-	second_choice = hash_two % tasks.size();
-	unsigned long first_card = opt_cardinality_estimation_8(this->_task_cardinality[first_choice]);
-	unsigned long second_card = opt_cardinality_estimation_8(this->_task_cardinality[second_choice]);
+	first_choice = (unsigned int)hash_one % tasks.size();
+	second_choice = (unsigned int)hash_two % tasks.size();
+	unsigned long first_card = (unsigned long)opt_cardinality_estimation_8(this->_task_cardinality[first_choice]);
+	unsigned long second_card = (unsigned long)opt_cardinality_estimation_8(this->_task_cardinality[second_choice]);
 	// calculate new cardinality estimates (EXTRA COST)
-	unsigned long first_card_est = opt_new_cardinality_estimate_8(this->_task_cardinality[first_choice], hash_one);
-	unsigned long second_card_est = opt_new_cardinality_estimate_8(this->_task_cardinality[second_choice], hash_one);
+	unsigned long first_card_est = (unsigned long)opt_new_cardinality_estimate_8(this->_task_cardinality[first_choice], hash_one);
+	unsigned long second_card_est = (unsigned long)opt_new_cardinality_estimate_8(this->_task_cardinality[second_choice], hash_one);
 	// decision
 	if (first_card_est - first_card == 0)
 	{
@@ -544,7 +544,7 @@ inline unsigned int CaPartitionLib::CA_HLL_Aff_Partitioner::partition_next(const
 		unsigned int selected_choice = first_card < second_card ? first_choice : second_choice;
 		// update metrics
 		opt_update_8(this->_task_cardinality[selected_choice], hash_one);
-		unsigned long selected_cardinality = opt_cardinality_estimation_8(this->_task_cardinality[selected_choice]);
+		unsigned long selected_cardinality = (unsigned long)opt_cardinality_estimation_8(this->_task_cardinality[selected_choice]);
 		task_count[selected_choice] += 1;
 		// really slow
 		std::vector<unsigned long long> v;

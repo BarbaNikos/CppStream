@@ -129,6 +129,7 @@
     <ClInclude Include="include\google_cluster_monitor_query.h" />
     <ClInclude Include="include\google_cluster_monitor_util.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
+    <ClInclude Include="include\imbalance_score_aggr.h" />
     <ClInclude Include="include\lognormal_experiment.h" />
     <ClInclude Include="include\murmurhash_3.h" />
     <ClInclude Include="include\partitioner.h" />
