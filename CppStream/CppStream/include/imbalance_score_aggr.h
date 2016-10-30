@@ -168,10 +168,10 @@ inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::measure_score(const std::vecto
 {
 	this->key_count.clear();
 	this->tuple_count.clear();
-	for (std::vector<std::vector<Tuple>>::const_iterator sub_stream_it = partitioned_stream.cbegin(); sub_stream_it != partitioned_stream.cend(); ++sub_stream_it)
+	for (typename std::vector<std::vector<Tuple>>::const_iterator sub_stream_it = partitioned_stream.cbegin(); sub_stream_it != partitioned_stream.cend(); ++sub_stream_it)
 	{
 		std::unordered_set<Tuple_Key> substream_key_set;
-		for (std::vector<Tuple>::const_iterator sub_stream_tuple_it = sub_stream_it->cbegin(); sub_stream_tuple_it != sub_stream_it->cend(); ++sub_stream_tuple_it)
+		for (typename std::vector<Tuple>::const_iterator sub_stream_tuple_it = sub_stream_it->cbegin(); sub_stream_tuple_it != sub_stream_it->cend(); ++sub_stream_tuple_it)
 		{
 			Tuple_Key key = extractor.extract_key(*sub_stream_tuple_it);
 			substream_key_set.insert(key);
@@ -193,7 +193,7 @@ template<class Tuple, class Tuple_Key>
 inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::cardinality_imbalance()
 {
 	std::vector<size_t> key_count_size;
-	for (std::vector<std::unordered_set<Tuple_Key>>::const_iterator it = this->key_count.cbegin(); it != this->key_count.cend(); ++it)
+	for (typename std::vector<std::unordered_set<Tuple_Key>>::const_iterator it = this->key_count.cbegin(); it != this->key_count.cend(); ++it)
 	{
 		key_count_size.push_back(it->size());
 	}

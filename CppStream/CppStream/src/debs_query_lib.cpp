@@ -1194,7 +1194,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 				dropoff_cell_sub_table[task].push_back(std::make_pair(it->first, it->second));
 			}
 			std::chrono::system_clock::time_point part_two_end = std::chrono::system_clock::now();
-			part_cell_durations.push_back((std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_one_start))).count());
+			part_cell_durations.push_back((std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_two_start))).count());
 		}
 		else
 		{
@@ -1219,7 +1219,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 				dropoff_cell_sub_table_copy[task].push_back(std::make_pair(it->first, it->second));
 			}
 			std::chrono::system_clock::time_point part_two_end = std::chrono::system_clock::now();
-			part_cell_durations.push_back((std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_one_start))).count());
+			part_cell_durations.push_back((std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_two_start))).count());
 		}
 	}
 	complete_fare_sub_table.shrink_to_fit();
