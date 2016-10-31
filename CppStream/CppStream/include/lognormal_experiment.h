@@ -132,12 +132,6 @@ namespace Experiment
 		// LAG-naive
 		CaPartitionLib::CA_Exact_Partitioner lag_naive(tasks, lag);
 		measure_imbalance(stream, tasks, lag_naive, "LAG-naive");
-		// CAG-pc
-		CaPartitionLib::CA_PC_Partitioner cag_pc(tasks, cag);
-		measure_imbalance(stream, tasks, cag_pc, "CAG-pc");
-		// LAG-pc
-		CaPartitionLib::CA_PC_Partitioner lag_pc(tasks, lag);
-		measure_imbalance(stream, tasks, lag_pc, "LAG-pc");
 		// CAG-hll
 		CaPartitionLib::CA_HLL_Partitioner cag_hll(tasks, cag, 16);
 		measure_imbalance(stream, tasks, cag_hll, "CAG-hll");

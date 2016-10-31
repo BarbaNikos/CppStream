@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 	 std::vector<Experiment::Tpch::q3_customer> customer_table;
 	 std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	 std::vector<Experiment::Tpch::order> order_table;
-	
+
 	 Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
 	 Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
 	 Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
