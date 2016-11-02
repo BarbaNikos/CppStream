@@ -634,3 +634,82 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 			task_event_buffer.push_back(*it);
 		}
 	}
+
+	Experiment::GoogleClusterMonitor::SimpleScanOfflineAggregator::SimpleScanOfflineAggregator()
+	{
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleScanOfflineAggregator::~SimpleScanOfflineAggregator()
+	{
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleScanOfflineAggregator::write_output_to_file(const std::vector<GoogleClusterMonitor::task_event>& final_result, 
+		const std::string & outfile_name)
+	{
+		FILE* fd;
+		fd = fopen(outfile_name.c_str(), "w");
+		for (auto it = final_result.cbegin(); it != final_result.cend(); ++it)
+		{
+			std::string buffer = it->serialize() + "\n";
+			fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+		}
+		fflush(fd);
+		fclose(fd);
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleAggregateWorker::SimpleAggregateWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
+	{
+		this->input_queue = input_queue;
+		this->mu = mu;
+		this->cond = cond;
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleAggregateWorker::SimpleAggregateWorker()
+	{
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleAggregateWorker::~SimpleAggregateWorker()
+	{
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleAggregateWorker::operate()
+	{
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleAggregateWorker::update(Experiment::GoogleClusterMonitor::task_event & task_event)
+	{
+		// figure out a predicate and an aggregates
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleAggregateWorker::finalize(std::vector<float>& aggregate_result)
+	{
+		aggregate_result.push_back(this->aggregate_result);
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleAggregateOfflineAggregator::SimpleAggregateOfflineAggregator()
+	{
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleAggregateOfflineAggregator::~SimpleAggregateOfflineAggregator()
+	{
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleAggregateOfflineAggregator::aggregate(const std::vector<float>& partial_aggregate_buffer, float * aggregate_result)
+	{
+		float aggregate = 0.0f;
+		for (std::vector<float>::const_iterator it = partial_aggregate_buffer.cbegin(); it != partial_aggregate_buffer.cend(); ++it)
+		{
+			// update aggregate
+			aggregate += *it;
+		}
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleAggregateOfflineAggregator::write_output_to_file(const float aggregate_result, const std::string & outfile_name)
+	{
+		FILE* fd;
+		fd = fopen(outfile_name.c_str(), "w");
+		std::string buffer = std::to_string(aggregate_result) + "\n";
+		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
+		fflush(fd);
+		fclose(fd);
+	}

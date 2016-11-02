@@ -274,10 +274,8 @@ inline unsigned int CaPartitionLib::CA_Exact_Aff_Partitioner::partition_next(con
 	}
 	else
 	{
-		unsigned long long first_cardinality = (unsigned long long) task_cardinality[first_choice].size();
-		unsigned long long second_cardinality = (unsigned long long) task_cardinality[second_choice].size();
-		unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_cardinality,
-			second_choice, task_count[second_choice], second_cardinality, min_task_count, max_task_count,
+		unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_card,
+			second_choice, task_count[second_choice], second_card, min_task_count, max_task_count,
 			min_task_cardinality, max_task_cardinality);
 		task_cardinality[selected_choice].insert(hash_one);
 		unsigned long long selected_cardinality = task_cardinality[selected_choice].size();

@@ -125,7 +125,14 @@ namespace Experiment
 					iter_count++;
 				}
 			}
-
+			std::string serialize() const
+			{
+				std::string s = std::to_string(timestamp) + "," + std::to_string(missing_info) + "," + std::to_string(job_id) + "," +
+					std::to_string(task_index) + "," + std::to_string(machine_id) + "," + std::to_string(event_type) + "," +
+					user_name + "," + std::to_string(scheduling_class) + "," + std::to_string(priority) + "," + std::to_string(cpu_request) + "," +
+					std::to_string(ram_request) + "," + std::to_string(disk_request) + "," + std::to_string(constraints);
+				return s;
+			}
 			long timestamp; // required 0
 			short missing_info; // not-required 1
 			long job_id; // required 2
