@@ -601,3 +601,36 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
 		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << "\n";
 }
+
+	Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
+	{
+		this->input_queue = input_queue;
+		this->mu = mu;
+		this->cond = cond;
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker()
+	{
+	}
+
+	Experiment::GoogleClusterMonitor::SimpleScanWorker::~SimpleScanWorker()
+	{
+		result.clear();
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleScanWorker::operate()
+	{
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleScanWorker::update(Experiment::GoogleClusterMonitor::task_event & task_event)
+	{
+		// need to think of a predicate
+	}
+
+	void Experiment::GoogleClusterMonitor::SimpleScanWorker::finalize(std::vector<Experiment::GoogleClusterMonitor::task_event>& task_event_buffer)
+	{
+		for (auto it = result.cbegin(); it != result.cend(); ++it)
+		{
+			task_event_buffer.push_back(*it);
+		}
+	}

@@ -113,6 +113,55 @@ namespace Experiment
 			long count;
 		}cm_two_result;
 
+		class SimpleScanWorker
+		{
+		public:
+			SimpleScanWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			SimpleScanWorker();
+			~SimpleScanWorker();
+			void operate();
+			void update(Experiment::GoogleClusterMonitor::task_event& task_event);
+			void finalize(std::vector<Experiment::GoogleClusterMonitor::task_event>& task_event_buffer);
+		private:
+			std::mutex* mu;
+			std::condition_variable* cond;
+			std::vector<Experiment::GoogleClusterMonitor::task_event> result;
+			std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue;
+		};
+
+		class SimpleScanOfflineAggregator
+		{
+		public:
+			SimpleScanOfflineAggregator();
+			~SimpleScanOfflineAggregator();
+			void write_output_to_file(const std::vector<GoogleClusterMonitor::task_event>& final_result, const std::string& outfile_name);
+		};
+
+		class SimpleAggregateWorker
+		{
+		public:
+			SimpleAggregateWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex* mu, std::condition_variable* cond);
+			SimpleAggregateWorker();
+			~SimpleAggregateWorker();
+			void operate();
+			void update(Experiment::GoogleClusterMonitor::task_event& task_event);
+			void finalize(std::vector<float>& aggregate_result);
+		private:
+			std::mutex* mu;
+			std::condition_variable* cond;
+			float aggregate_result;
+			std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue;
+		};
+
+		class SimpleAggregateOfflineAggregator
+		{
+		public:
+			SimpleAggregateOfflineAggregator();
+			~SimpleAggregateOfflineAggregator();
+			void aggregate(const std::vector<float>& partial_aggregate_buffer, float* aggregate_result);
+			void write_output_to_file(const float aggregate_result, const std::string& outfile_name);
+		};
+
 		class TotalCpuPerCategoryWorker
 		{
 		public:
