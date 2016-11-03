@@ -135,10 +135,10 @@ namespace Experiment
 		public:
 			static void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num);
 			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
-				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
+				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
 
-		class LineitemOrderWorker
+		/*class LineitemOrderWorker
 		{
 		public:
 			LineitemOrderWorker(std::queue<Experiment::Tpch::lineitem>* li_queue, std::mutex* li_mu, std::condition_variable* li_cond, 
@@ -178,8 +178,8 @@ namespace Experiment
 			static void lineitem_order_join_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
 				const size_t task_num);
 			static void lineitem_order_join_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
-				const std::vector<uint16_t> tasks, Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
-		};
+				const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+		};*/
 
 		class QueryThreeJoinWorker
 		{
@@ -215,7 +215,7 @@ namespace Experiment
 			static void query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table, 
 				const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num);
 			static void query_three_partitioner_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table,
-				const std::vector<Experiment::Tpch::order>& o_table, const std::vector<uint16_t> tasks, Partitioner& partitioner, const std::string partitioner_name, 
+				const std::vector<Experiment::Tpch::order>& o_table, const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, 
 				const std::string worker_output_file_name);
 		};
 

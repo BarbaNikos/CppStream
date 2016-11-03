@@ -60,9 +60,6 @@
     <ClInclude Include="include\murmurhash_3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\cardinality_estimation_utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\round_robin_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -87,6 +84,9 @@
     <ClInclude Include="include\imbalance_score_aggr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\partitioner_factory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -96,9 +96,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\murmurhash_3.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\cardinality_estimation_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\debs_query_lib.cpp">

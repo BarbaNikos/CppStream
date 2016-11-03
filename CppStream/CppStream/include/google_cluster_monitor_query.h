@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <numeric>
+#include <cstdio>
 
 #ifndef _PARTITIONER_H_
 #include "partitioner.h"
@@ -51,6 +52,10 @@
 #include "imbalance_score_aggr.h"
 #endif // !IMBALANCE_SCORE_AGGR_H_
 
+#ifndef PARTITIONER_FACTORY_H_
+#include "partitioner_factory.h"
+#endif // !PARTITIONER_FACTORY_H_
+
 #ifndef GOOGLE_CLUSTER_MONITOR_QUERY_H_
 #define GOOGLE_CLUSTER_MONITOR_QUERY_H_
 namespace Experiment
@@ -87,7 +92,8 @@ namespace Experiment
 		typedef struct cm_two_result_str
 		{
 			cm_two_result_str() {}
-			cm_two_result_str(long long timestamp, long job_id, float sum_cpu, long count) : timestamp(timestamp), job_id(job_id), sum_cpu(sum_cpu), count(count) {}
+			cm_two_result_str(long long timestamp, long job_id, float sum_cpu, long count) : timestamp(timestamp), job_id(job_id), 
+				sum_cpu(sum_cpu), count(count) {}
 			cm_two_result_str(const cm_two_result_str& o)
 			{
 				timestamp = o.timestamp;
@@ -137,6 +143,14 @@ namespace Experiment
 			void write_output_to_file(const std::vector<GoogleClusterMonitor::task_event>& final_result, const std::string& outfile_name);
 		};
 
+		class SimpleScanPartition
+		{
+		public:
+			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
+			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
+				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+		};
+
 		class SimpleAggregateWorker
 		{
 		public:
@@ -162,6 +176,14 @@ namespace Experiment
 			void write_output_to_file(const float aggregate_result, const std::string& outfile_name);
 		};
 
+		class SimpleAggregatePartition
+		{
+		public:
+			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
+			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
+				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+		};
+
 		class TotalCpuPerCategoryWorker
 		{
 		public:
@@ -169,7 +191,6 @@ namespace Experiment
 			~TotalCpuPerCategoryWorker();
 			void operate();
 			void update(Experiment::GoogleClusterMonitor::task_event& task_event);
-			//void finalize();
 			void partial_finalize(std::vector<Experiment::GoogleClusterMonitor::cm_one_result>&);
 		private:
 			std::mutex* mu;
@@ -195,7 +216,10 @@ namespace Experiment
 			static void parse_task_events_from_directory(const std::string input_dir_name, std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer);
 			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
 			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
-				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+				Partitioner* partitioners, const std::string partitioner_name, const std::string worker_output_file_name);
+			static void partition_thread_operate(bool writer, const std::string& partitioner_name, const Partitioner* partitioner,
+				const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, std::vector<std::vector<Experiment::GoogleClusterMonitor::task_event>>& worker_input_buffer,
+				float* imbalance, float* key_imbalance, double* total_duration);
 		private:
 		};
 
@@ -231,7 +255,7 @@ namespace Experiment
 		public:
 			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
 			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
-				Partitioner& partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		};
 	}
 }

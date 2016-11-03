@@ -87,12 +87,16 @@ template <class Tuple, class Tuple_Key>
 class ImbalanceScoreAggr
 {
 public:
-	ImbalanceScoreAggr();
+	ImbalanceScoreAggr(unsigned long tasks, KeyExtractor<Tuple, Tuple_Key>& extractor);
 	~ImbalanceScoreAggr();
 	void measure_score(const std::vector<std::vector<Tuple>>& partitioned_stream, const KeyExtractor<Tuple, Tuple_Key>& extractor);
+	void incremental_measure_score(size_t index, const Tuple& t);
+	void incremental_measure_score_tuple_count(size_t index, const Tuple& t);
 	float imbalance();
 	float cardinality_imbalance();
 private:
+	KeyExtractor<Tuple, Tuple_Key>& key_extractor;
+	unsigned long tasks;
 	std::vector<unsigned long long> tuple_count;
 	std::vector<std::unordered_set<Tuple_Key>> key_count;
 };
@@ -150,7 +154,10 @@ inline std::string DebsProfCellDropoffCellKeyExtractor::extract_key(const std::p
 }
 
 template<class Tuple, class Tuple_Key>
-inline ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr() {}
+inline ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(unsigned long tasks, KeyExtractor<Tuple, Tuple_Key>& extractor) : key_extractor(extractor), 
+tasks(tasks), tuple_count(tasks, 0), key_count(tasks, std::unordered_set<Tuple_Key>()) 
+{
+}
 
 template<class Tuple, class Tuple_Key>
 inline ImbalanceScoreAggr<Tuple, Tuple_Key>::~ImbalanceScoreAggr()
@@ -179,6 +186,21 @@ inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::measure_score(const std::vecto
 		this->key_count.push_back(substream_key_set);
 		this->tuple_count.push_back(sub_stream_it->size());
 	}
+}
+
+template<class Tuple, class Tuple_Key>
+inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score(size_t index, const Tuple & t)
+{
+	Tuple_Key key = key_extractor.extract_key(t);
+	tuple_count[index]++;
+	key_count[index].insert(key);
+}
+
+template<class Tuple, class Tuple_Key>
+inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score_tuple_count(size_t index, const Tuple & t)
+{
+	Tuple_Key key = key_extractor.extract_key(t);
+	tuple_count[index]++;
 }
 
 template<class Tuple, class Tuple_Key>

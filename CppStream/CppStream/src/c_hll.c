@@ -46,6 +46,30 @@ void init_8(hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 	}
 }
 
+void copy_8(hll_8 * _new_hll, const hll_8* _src_hll)
+{
+	_new_hll->current_sum = _src_hll->current_sum;
+	_new_hll->p = _src_hll->p;
+	_new_hll->m = _src_hll->m;
+	_new_hll->bitmap_size = _src_hll->bitmap_size;
+	_new_hll->bitmap_offset = _src_hll->bitmap_offset;
+	_new_hll->mem_size_in_bits = _src_hll->mem_size_in_bits;
+	_new_hll->_multiplier = _src_hll->_multiplier;
+	free(_new_hll->bucket);
+	_new_hll->bucket = (char*)calloc(_new_hll->m, sizeof(char));
+	memcpy(_new_hll->bucket, _src_hll->bucket, _new_hll->m * sizeof(char));
+	_new_hll->condition_value_test_1 = _src_hll->condition_value_test_1;
+	_new_hll->condition_value_test_2 = _src_hll->condition_value_test_2;
+	_new_hll->pow_2_to_32 = _src_hll->pow_2_to_32;
+	_new_hll->m_times_log_m = _src_hll->m_times_log_m;
+	_new_hll->v_size = _src_hll->v_size;
+	free(_new_hll->v_bitmap);
+	_new_hll->v_bitmap = (uint64_t*)calloc(_new_hll->v_size, sizeof(uint64_t));
+	memcpy(_new_hll->v_bitmap, _src_hll->v_bitmap, _new_hll->v_size * sizeof(uint64_t));
+	_new_hll->v = _src_hll->v;
+	_new_hll->hash_code_len_in_bits = _src_hll->hash_code_len_in_bits;
+}
+
 void init_32(hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
 	size_t i;
@@ -89,6 +113,30 @@ void init_32(hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 		printf("empty hll structure provided.\n");
 		exit(1);
 	}
+}
+
+void copy_32(hll_32 * _new_hll, const hll_32* _src_hll)
+{
+	_new_hll->current_sum = _src_hll->current_sum;
+	_new_hll->p = _src_hll->p;
+	_new_hll->m = _src_hll->m;
+	_new_hll->bitmap_size = _src_hll->bitmap_size;
+	_new_hll->bitmap_offset = _src_hll->bitmap_offset;
+	_new_hll->mem_size_in_bits = _src_hll->mem_size_in_bits;
+	_new_hll->_multiplier = _src_hll->_multiplier;
+	free(_new_hll->bucket);
+	_new_hll->bucket = (unsigned int*)calloc(_new_hll->m, sizeof(unsigned int));
+	memcpy(_new_hll->bucket, _src_hll->bucket, _new_hll->m * sizeof(unsigned int));
+	_new_hll->condition_value_test_1 = _src_hll->condition_value_test_1;
+	_new_hll->condition_value_test_2 = _src_hll->condition_value_test_2;
+	_new_hll->pow_2_to_32 = _src_hll->pow_2_to_32;
+	_new_hll->m_times_log_m = _src_hll->m_times_log_m;
+	_new_hll->v_size = _src_hll->v_size;
+	free(_new_hll->v_bitmap);
+	_new_hll->v_bitmap = (uint64_t*)calloc(_new_hll->v_size, sizeof(uint64_t));
+	memcpy(_new_hll->v_bitmap, _src_hll->v_bitmap, _new_hll->v_size * sizeof(uint64_t));
+	_new_hll->v = _src_hll->v;
+	_new_hll->hash_code_len_in_bits = _src_hll->hash_code_len_in_bits;
 }
 
 void update_8(hll_8* _hll, uint32_t hash_value)

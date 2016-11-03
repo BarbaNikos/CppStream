@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	 std::vector<Experiment::Tpch::q3_customer> customer_table;
+	 /*std::vector<Experiment::Tpch::q3_customer> customer_table;
 	 std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	 std::vector<Experiment::Tpch::order> order_table;
 
@@ -73,11 +73,11 @@ int main(int argc, char** argv)
 	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
 	 customer_table.clear();
 	 lineitem_table.clear();
-	 order_table.clear();
+	 order_table.clear();*/
 	/*
 	 * DEBS queries
 	 */
-	 std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	 /*std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	 std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
 	 Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 	 debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 8);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 16);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 32);
-	 profitable_cell_table.clear();
+	 profitable_cell_table.clear();*/
 
 	//const unsigned int p = 16;
 	//plot_cardinality_estimation_correctness(p, 10, (uint64_t)1e+5, (size_t)1e+6);
@@ -103,12 +103,12 @@ int main(int argc, char** argv)
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
 	std::cout << "parsed all task events: total size: " << task_event_table.size() << ".\n";
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 8);
-	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 16);
+	/*Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 16);
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 32);
 
 	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 8);
 	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 16);
-	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);*/
 	task_event_table.clear();
 
 	return 0;
@@ -173,7 +173,6 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 	uint64_t* stream;
 	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
 	hll_32** opt_32_cardinality_estimator = (hll_32**)malloc(sizeof(hll_32*) * task_number);
-	Cardinality_Estimation_Utils::ProbCount** pc = new Cardinality_Estimation_Utils::ProbCount*[task_number];
 
 	srand(time(NULL));
 
@@ -197,7 +196,6 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		init_8(opt_cardinality_estimator[i], p, sizeof(uint64_t));
 		opt_32_cardinality_estimator[i] = (hll_32*)malloc(sizeof(hll_32));
 		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
-		pc[i] = new Cardinality_Estimation_Utils::ProbCount(64);
 	}
 	CardinalityAwarePolicy ca;
 	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, ca);
@@ -217,7 +215,6 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
 		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
 		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
-		pc[naive_choice]->update_bitmap_with_hashed_value_64(xor_long_code);
 		std::vector<unsigned long long> cag_naive_cardinality_vector;
 		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
 		imbalance_plot << std::to_string(i) << ",";
@@ -272,8 +269,6 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 	{
 		destroy_8(opt_cardinality_estimator[i]);
 		free(opt_cardinality_estimator[i]);
-		delete pc[i];
 	}
-	delete[] pc;
 	free(opt_cardinality_estimator);
 }

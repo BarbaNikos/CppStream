@@ -3,7 +3,7 @@ CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
 FLAGS = -std=c++11 -g -O3 -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
 LIBS = -lpthread -lm							# additional libraries
-OBJS = bit_trick_utils.o cardinality_estimation_utils.o murmurhash_3.o \
+OBJS = bit_trick_utils.o murmurhash_3.o \
 debs_cell_coordinate_util.o c_hll.o debs_query_lib.o google_cluster_monitor_query.o \
 tpch_query_lib.o main.o
 
@@ -27,9 +27,6 @@ c_hll.o: ./CppStream/src/c_hll.c
 
 debs_cell_coordinate_util.o: ./CppStream/src/debs_cell_coordinate_util.cpp
 	${CC} ${FLAGS} -c ./CppStream/src/debs_cell_coordinate_util.cpp ${INCLUDE_FLAGS}
-
-cardinality_estimation_utils.o: ./CppStream/src/cardinality_estimation_utils.cpp ./CppStream/include/cardinality_estimation_utils.h
-	${CC} ${FLAGS} -c ./CppStream/src/cardinality_estimation_utils.cpp ${INCLUDE_FLAGS}
 
 murmurhash_3.o: ./CppStream/src/murmurhash_3.cpp ./CppStream/include/murmurhash_3.h
 	$(CC) $(FLAGS) -c ./CppStream/src/murmurhash_3.cpp ${INCLUDE_FLAGS}
