@@ -249,6 +249,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_t
 	*total_duration = duration.count();
 	*imbalance = sch_class_imb_aggregator.imbalance(); 
 	*key_imbalance = sch_class_imb_aggregator.cardinality_imbalance();
+	delete p_copy;
 }
 
 void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_partitioner_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, 
@@ -295,6 +296,10 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	for (size_t part_run_thread = 1; part_run_thread < 7; ++part_run_thread)
 	{
 		threads[part_run_thread]->join();
+	}
+	for (size_t part_run = 1; part_run < 7; part_run++)
+	{
+		delete threads[part_run];
 	}
 	delete[] threads;
 	for (size_t i = 0; i < 7; i++)
