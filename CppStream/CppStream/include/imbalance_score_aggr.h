@@ -199,7 +199,7 @@ inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score(size
 template<class Tuple, class Tuple_Key>
 inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score_tuple_count(size_t index, const Tuple & t)
 {
-	Tuple_Key key = key_extractor.extract_key(t);
+	//Tuple_Key key = key_extractor.extract_key(t);
 	tuple_count[index]++;
 }
 

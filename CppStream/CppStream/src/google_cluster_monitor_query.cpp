@@ -159,7 +159,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_
 	std::cout << "parse_task_events_from_directory():: total files scanned: " << number_of_files_scanned << ".\n";
 }
 
-void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number)
+void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, const size_t task_number)
 {
 	std::vector<uint16_t> tasks;
 	LoadAwarePolicy la_policy;
@@ -230,81 +230,69 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simul
 	std::remove(la_hll_file_name.c_str());
 }
 
-void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate(bool writer, const std::string& partitioner_name, 
-	const Partitioner* partitioner, const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, 
-	std::vector<std::vector<Experiment::GoogleClusterMonitor::task_event>>& worker_input_buffer,
-	float* imbalance, float* key_imbalance, double* total_duration)
+void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate(std::string partitioner_name, Partitioner* partitioner, 
+	std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration)
 {
 	std::chrono::duration<double, std::milli> duration;
 	GCMTaskEventKeyExtractor key_extractor;
-	ImbalanceScoreAggr<Experiment::GoogleClusterMonitor::task_event, int> sch_class_imb_aggregator(worker_input_buffer.size(), key_extractor);
+	ImbalanceScoreAggr<Experiment::GoogleClusterMonitor::task_event, int> sch_class_imb_aggregator(task_number, key_extractor);
 	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
-	if (writer)
+	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+	for (std::vector<Experiment::GoogleClusterMonitor::task_event>::const_iterator it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
-		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-		for (std::vector<Experiment::GoogleClusterMonitor::task_event>::const_iterator it = buffer.cbegin(); it != buffer.cend(); ++it)
-		{
-			int key = it->scheduling_class;
-			uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
-			worker_input_buffer[task].push_back(*it);
-			sch_class_imb_aggregator.incremental_measure_score(task, *it);
-		}
-		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-		duration = (part_end - part_start);
-		*imbalance = sch_class_imb_aggregator.imbalance();
-		*key_imbalance = sch_class_imb_aggregator.cardinality_imbalance();
-		*total_duration = duration.count();
+		int key = it->scheduling_class;
+		uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
+		sch_class_imb_aggregator.incremental_measure_score_tuple_count(task, *it);
 	}
-	else
-	{
-		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-		for (auto it = buffer.cbegin(); it != buffer.cend(); ++it)
-		{
-			int key = it->scheduling_class;
-			uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
-			sch_class_imb_aggregator.incremental_measure_score_tuple_count(task, *it);
-		}
-		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-		duration = (part_end - part_start);
-		*total_duration = duration.count();
-		*imbalance = sch_class_imb_aggregator.imbalance(); 
-		*key_imbalance = sch_class_imb_aggregator.cardinality_imbalance();
-	}
+	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+	duration = (part_end - part_start);
+	*total_duration = duration.count();
+	*imbalance = sch_class_imb_aggregator.imbalance(); 
+	*key_imbalance = sch_class_imb_aggregator.cardinality_imbalance();
 }
 
-void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, 
+void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_partitioner_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, 
 	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
 	std::vector<double> sched_class_part_durations;
 	float class_imbalance[7], class_key_imbalance[7];
+	std::thread** threads;
+	double part_durations[7];
 	std::queue<Experiment::GoogleClusterMonitor::task_event> queue;
 	std::mutex mu;
 	std::condition_variable cond;
 	// get maximum and minimum running times
-	std::vector<double> exec_durations(tasks.size(), double(0));
+	std::vector<double> exec_durations(tasks.size(), 0.0);
 	double aggr_duration, write_output_duration;
 	std::vector<Experiment::GoogleClusterMonitor::cm_one_result> intermediate_buffer;
 	std::vector<std::vector<GoogleClusterMonitor::task_event>> worker_input_buffer(tasks.size(), std::vector<GoogleClusterMonitor::task_event>());
-	// partition tuples
-	std::thread** threads;
+	// partition tuples - use 6 auxiliary threads and this main thread to scan buffer
 	threads = new std::thread*[7];
-	double part_durations[7];
-	for (size_t part_run = 0; part_run < 7; ++part_run)
+	for (size_t part_run = 1; part_run < 7; ++part_run)
 	{
-		if (part_run == 0)
-		{
-			threads[part_run] = new std::thread(Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate, 
-				true, partitioner_name, partitioner, buffer, 
-				worker_input_buffer, &class_imbalance[part_run], &class_key_imbalance[part_run], &part_durations[part_run]);
-		}
-		else
-		{
-			threads[part_run] = new std::thread(Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate, 
-				false, partitioner_name, partitioner, buffer, worker_input_buffer, &class_imbalance[part_run], &class_key_imbalance[part_run], 
-				&part_durations[part_run]);
-		}
+		threads[part_run] = new std::thread(Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate, 
+			std::string(partitioner_name), partitioner, buffer, tasks.size(), &class_imbalance[part_run], &class_key_imbalance[part_run], 
+			&part_durations[part_run]);
 	}
-	for (size_t part_run_thread = 0; part_run_thread < 7; ++part_run_thread)
+	std::chrono::duration<double, std::milli> duration;
+	GCMTaskEventKeyExtractor key_extractor;
+	ImbalanceScoreAggr<Experiment::GoogleClusterMonitor::task_event, int> sch_class_imb_aggregator(tasks.size(), key_extractor);
+	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
+	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+	for (std::vector<Experiment::GoogleClusterMonitor::task_event>::const_iterator it = buffer->cbegin(); it != buffer->cend(); ++it)
+	{
+		int key = it->scheduling_class;
+		uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
+		sch_class_imb_aggregator.incremental_measure_score(task, *it);
+		worker_input_buffer[task].push_back(*it);
+	}
+	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+	duration = (part_end - part_start);
+	// start gathering results
+	part_durations[0] = duration.count();
+	class_imbalance[0] = sch_class_imb_aggregator.imbalance();
+	class_key_imbalance[0] = sch_class_imb_aggregator.cardinality_imbalance();
+	for (size_t part_run_thread = 1; part_run_thread < 7; ++part_run_thread)
 	{
 		threads[part_run_thread]->join();
 	}
@@ -599,8 +587,8 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	{
 		int key = it->scheduling_class;
 		//TODO: Fix the following
-		//uint16_t task = partitioner->partition_next(&key, sizeof(it->scheduling_class));
-		//worker_input_buffer[task].push_back(*it);
+		uint16_t task = partitioner->partition_next(&key, sizeof(it->scheduling_class));
+		worker_input_buffer[task].push_back(*it);
 	}
 	for	(size_t i = 0; i < tasks.size(); ++i)
 	{

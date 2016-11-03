@@ -54,6 +54,10 @@ public:
 		{
 			return new CaPartitionLib::CA_HLL_Aff_Partitioner(*(CaPartitionLib::CA_HLL_Aff_Partitioner*)prototype);
 		}
+		else
+		{
+			return nullptr;
+		}
 	}
 };
 #endif // !PARTITIONER_FACTORY_H_

@@ -214,12 +214,11 @@ namespace Experiment
 		public:
 			static void parse_task_events(const std::string input_file_name, std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer);
 			static void parse_task_events_from_directory(const std::string input_dir_name, std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer);
-			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
-			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
+			static void query_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, const size_t task_number);
+			static void query_partitioner_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, const std::vector<uint16_t> tasks,
 				Partitioner* partitioners, const std::string partitioner_name, const std::string worker_output_file_name);
-			static void partition_thread_operate(bool writer, const std::string& partitioner_name, const Partitioner* partitioner,
-				const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, std::vector<std::vector<Experiment::GoogleClusterMonitor::task_event>>& worker_input_buffer,
-				float* imbalance, float* key_imbalance, double* total_duration);
+			static void partition_thread_operate(std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, 
+				size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
 		private:
 		};
 
