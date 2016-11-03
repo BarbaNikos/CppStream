@@ -252,8 +252,8 @@ namespace Experiment
 		class MeanCpuPerJobIdPartition
 		{
 		public:
-			static void query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number);
-			static void query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const std::vector<uint16_t> tasks,
+			static void query_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, const size_t task_number);
+			static void query_partitioner_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		};
 	}

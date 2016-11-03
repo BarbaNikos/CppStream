@@ -503,7 +503,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdOfflineAggregator::write_o
 	fclose(fd);
 }
 
-void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, const size_t task_number)
+void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, const size_t task_number)
 {
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
@@ -576,7 +576,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulatio
 	std::remove(la_hll_file_name.c_str());
 }
 
-void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partitioner_simulation(const std::vector<Experiment::GoogleClusterMonitor::task_event>& buffer, 
+void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partitioner_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, 
 	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
 	std::queue<Experiment::GoogleClusterMonitor::task_event> queue;
@@ -589,7 +589,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	std::vector<std::vector<GoogleClusterMonitor::task_event>> worker_input_buffer(tasks.size(), std::vector<GoogleClusterMonitor::task_event>());
 
 	// partition tuples
-	for (auto it = buffer.cbegin(); it != buffer.cend(); ++it)
+	for (auto it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
 		int key = it->scheduling_class;
 		//TODO: Fix the following
@@ -679,12 +679,12 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << "\n";
 }
 
-	Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
-	{
-		this->input_queue = input_queue;
-		this->mu = mu;
-		this->cond = cond;
-	}
+Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
+{
+	this->input_queue = input_queue;
+	this->mu = mu;
+	this->cond = cond;
+}
 
 	Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker()
 	{
