@@ -289,6 +289,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	}
 	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
 	duration = (part_end - part_start);
+	delete p_copy;
 	// start gathering results
 	part_durations[0] = duration.count();
 	class_imbalance[0] = sch_class_imb_aggregator.imbalance();

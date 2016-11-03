@@ -34,12 +34,14 @@ namespace CaPartitionLib
 		CA_Exact_Partitioner() {}
 		CA_Exact_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy* policy) :
 			tasks(tasks), task_count(tasks.size(), 0), task_cardinality(tasks.size(), std::unordered_set<uint64_t>()),
-			max_task_count(0), min_task_count(0), max_task_cardinality(0), min_task_cardinality(0) {
+			max_task_count(0), min_task_count(0), max_task_cardinality(0), min_task_cardinality(0) 
+		{
 			this->policy = policy->make_copy();
 		}
 		CA_Exact_Partitioner(const CA_Exact_Partitioner& p) : tasks(p.tasks), task_count(p.task_count),
 			task_cardinality(p.task_cardinality), max_task_count(p.max_task_count), min_task_count(p.min_task_count),
-			max_task_cardinality(p.max_task_cardinality), min_task_cardinality(p.min_task_cardinality) {
+			max_task_cardinality(p.max_task_cardinality), min_task_cardinality(p.min_task_cardinality) 
+		{
 			this->policy = p.policy->make_copy();
 		}
 		~CA_Exact_Partitioner()
