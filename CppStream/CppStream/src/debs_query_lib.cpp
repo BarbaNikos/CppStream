@@ -469,12 +469,12 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
 	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
 	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
 
 	std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
@@ -1073,12 +1073,12 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
 	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12); 
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
 
 	std::string sh_file_name = "sh_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";

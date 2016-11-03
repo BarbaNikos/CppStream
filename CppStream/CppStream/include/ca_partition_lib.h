@@ -31,13 +31,17 @@ namespace CaPartitionLib
 	class CA_Exact_Partitioner : public Partitioner
 	{
 	public:
-		CA_Exact_Partitioner() : policy(CardinalityAwarePolicy()) {}
-		CA_Exact_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy) :
+		CA_Exact_Partitioner() {}
+		CA_Exact_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy* policy) :
 			tasks(tasks), task_count(tasks.size(), 0), task_cardinality(tasks.size(), std::unordered_set<uint64_t>()),
-			policy(policy), max_task_count(0), min_task_count(0), max_task_cardinality(0), min_task_cardinality(0) {}
+			max_task_count(0), min_task_count(0), max_task_cardinality(0), min_task_cardinality(0) {
+			this->policy = policy->make_copy();
+		}
 		CA_Exact_Partitioner(const CA_Exact_Partitioner& p) : tasks(p.tasks), task_count(p.task_count),
-			task_cardinality(p.task_cardinality), policy(p.policy), max_task_count(p.max_task_count), min_task_count(p.min_task_count),
-			max_task_cardinality(p.max_task_cardinality), min_task_cardinality(p.min_task_cardinality) {}
+			task_cardinality(p.task_cardinality), max_task_count(p.max_task_count), min_task_count(p.min_task_count),
+			max_task_cardinality(p.max_task_cardinality), min_task_cardinality(p.min_task_cardinality) {
+			this->policy = p.policy->make_copy();
+		}
 		~CA_Exact_Partitioner()
 		{
 			for (std::vector<std::unordered_set<uint64_t>>::iterator i = task_cardinality.begin(); i != task_cardinality.end(); ++i)
@@ -46,6 +50,7 @@ namespace CaPartitionLib
 			}
 			task_count.clear();
 			task_cardinality.clear();
+			delete policy;
 		}
 		void init()
 		{
@@ -72,7 +77,7 @@ namespace CaPartitionLib
 			second_choice = (unsigned int)hash_two % tasks.size();
 			unsigned long long first_cardinality = uint64_t(task_cardinality[first_choice].size());
 			unsigned long long second_cardinality = uint64_t(task_cardinality[second_choice].size());
-			unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_cardinality,
+			unsigned int selected_choice = policy->get_score(first_choice, task_count[first_choice], first_cardinality,
 				second_choice, task_count[second_choice], second_cardinality, min_task_count, max_task_count,
 				(uint32_t)min_task_cardinality, (uint32_t)max_task_cardinality);
 			task_cardinality[selected_choice].insert(hash_one);
@@ -102,7 +107,7 @@ namespace CaPartitionLib
 		std::vector<uint16_t> tasks;
 		std::vector<unsigned long long> task_count;
 		std::vector<std::unordered_set<uint64_t>> task_cardinality;
-		PartitionPolicy& policy;
+		PartitionPolicy* policy;
 		uint64_t max_task_count;
 		uint64_t min_task_count;
 		uint64_t max_task_cardinality;
@@ -209,11 +214,12 @@ namespace CaPartitionLib
 	class CA_HLL_Partitioner : public Partitioner
 	{
 	public:
-		CA_HLL_Partitioner() :policy(CardinalityAwarePolicy()) {}
-		CA_HLL_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy& policy, uint8_t k) : tasks(tasks),
-			task_count(tasks.size(), uint64_t(0)), policy(policy), max_task_count(0), min_task_count(0), 
+		CA_HLL_Partitioner() {}
+		CA_HLL_Partitioner(const std::vector<uint16_t>& tasks, PartitionPolicy* policy, uint8_t k) : tasks(tasks),
+			task_count(tasks.size(), uint64_t(0)), max_task_count(0), min_task_count(0), 
 			max_task_cardinality(0), min_task_cardinality(0), k(k)
 		{
+			this->policy = policy->make_copy();
 			this->task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
@@ -225,6 +231,7 @@ namespace CaPartitionLib
 			max_task_count(p.max_task_count), min_task_count(p.min_task_count), max_task_cardinality(p.max_task_cardinality), 
 			min_task_cardinality(p.min_task_cardinality), k(p.k)
 		{
+			this->policy = p.policy->make_copy();
 			// first initialize HLLs
 			this->task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
 			for (size_t i = 0; i < tasks.size(); ++i)
@@ -246,6 +253,7 @@ namespace CaPartitionLib
 				free(this->task_cardinality[i]);
 			}
 			free(this->task_cardinality);
+			delete policy;
 		}
 		void init()
 		{
@@ -273,7 +281,7 @@ namespace CaPartitionLib
 			unsigned long first_card = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[first_choice]);
 			unsigned long second_card = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[second_choice]);
 			// decision
-			unsigned int selected_choice = policy.get_score(first_choice, task_count[first_choice], first_card,
+			unsigned int selected_choice = policy->get_score(first_choice, task_count[first_choice], first_card,
 				second_choice, task_count[second_choice], second_card, min_task_count, max_task_count,
 				min_task_cardinality, max_task_cardinality);
 			// update metrics
@@ -304,7 +312,7 @@ namespace CaPartitionLib
 		hll_8** task_cardinality;
 		std::vector<uint16_t> tasks;
 		std::vector<unsigned long long> task_count;
-		PartitionPolicy& policy;
+		PartitionPolicy* policy;
 		uint64_t max_task_count;
 		uint64_t min_task_count;
 		uint64_t max_task_cardinality;

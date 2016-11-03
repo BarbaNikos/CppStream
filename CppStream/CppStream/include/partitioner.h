@@ -11,6 +11,7 @@
 class Partitioner
 {
 public:
+	virtual ~Partitioner() {}
 	virtual void init() = 0;
 	virtual unsigned int partition_next(const void* key, const size_t key_len) = 0;
 	virtual unsigned long long get_min_task_count() = 0;

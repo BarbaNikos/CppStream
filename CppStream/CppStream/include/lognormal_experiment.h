@@ -127,19 +127,19 @@ namespace Experiment
 		PkgPartitioner pkg_partitioner(tasks);
 		measure_imbalance(stream, tasks, pkg_partitioner, "PKG");
 		// CAG-naive
-		CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, cag);
+		CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, &cag);
 		measure_imbalance(stream, tasks, cag_naive, "CAG-naive");
 		// LAG-naive
-		CaPartitionLib::CA_Exact_Partitioner lag_naive(tasks, lag);
+		CaPartitionLib::CA_Exact_Partitioner lag_naive(tasks, &lag);
 		measure_imbalance(stream, tasks, lag_naive, "LAG-naive");
 		// CAG-hll
-		CaPartitionLib::CA_HLL_Partitioner cag_hll(tasks, cag, 16);
+		CaPartitionLib::CA_HLL_Partitioner cag_hll(tasks, &cag, 16);
 		measure_imbalance(stream, tasks, cag_hll, "CAG-hll");
 		// CAG-hll-est
 		CaPartitionLib::CA_HLL_Aff_Partitioner cag_est_hll(tasks, 16);
 		measure_imbalance(stream, tasks, cag_est_hll, "CAG-est-hll");
 		// LAG-hll
-		CaPartitionLib::CA_HLL_Partitioner lag_hll(tasks, lag, 16);
+		CaPartitionLib::CA_HLL_Partitioner lag_hll(tasks, &lag, 16);
 		measure_imbalance(stream, tasks, lag_hll, "LAG-hll");
 	}
 

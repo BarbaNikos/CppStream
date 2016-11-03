@@ -181,12 +181,12 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simul
 	sh = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pk = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
 	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
 	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
 
 	std::string sh_file_name = "shg_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
@@ -266,7 +266,9 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_t
 		}
 		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
 		duration = (part_end - part_start);
-		double tmp = sch_class_imb_aggregator.imbalance() + sch_class_imb_aggregator.cardinality_imbalance();
+		*total_duration = duration.count();
+		*imbalance = sch_class_imb_aggregator.imbalance(); 
+		*key_imbalance = sch_class_imb_aggregator.cardinality_imbalance();
 	}
 }
 
@@ -274,7 +276,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
 	std::vector<double> sched_class_part_durations;
-	float class_imbalance, class_key_imbalance;
+	float class_imbalance[7], class_key_imbalance[7];
 	std::queue<Experiment::GoogleClusterMonitor::task_event> queue;
 	std::mutex mu;
 	std::condition_variable cond;
@@ -293,12 +295,12 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		{
 			threads[part_run] = new std::thread(Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate, 
 				true, partitioner_name, partitioner, buffer, 
-				worker_input_buffer, &class_imbalance, &class_key_imbalance, &part_durations[part_run]);
+				worker_input_buffer, &class_imbalance[part_run], &class_key_imbalance[part_run], &part_durations[part_run]);
 		}
 		else
 		{
 			threads[part_run] = new std::thread(Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_thread_operate, 
-				false, partitioner_name, partitioner, buffer, worker_input_buffer, &class_imbalance, &class_key_imbalance, 
+				false, partitioner_name, partitioner, buffer, worker_input_buffer, &class_imbalance[part_run], &class_key_imbalance[part_run], 
 				&part_durations[part_run]);
 		}
 	}
@@ -395,7 +397,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) <<
 		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
 		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << ", Mean part-time: " << mean_part_time << 
-		" (msec), imbalance: " << class_imbalance << ", key-imbalance: " << class_key_imbalance << ".\n";
+		" (msec), imbalance: " << class_imbalance[0] << ", key-imbalance: " << class_key_imbalance[0] << ".\n";
 }
 
 Experiment::GoogleClusterMonitor::MeanCpuPerJobIdWorker::MeanCpuPerJobIdWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
@@ -531,12 +533,12 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulatio
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
 	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
 	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
+	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
+	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
 
 	std::string sh_file_name = "shg_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
@@ -819,12 +821,12 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		rrg = new RoundRobinPartitioner(tasks);
 		fld = new HashFieldPartitioner(tasks);
 		pkg = new PkgPartitioner(tasks);
-		ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, ca_policy);
+		ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
 		ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-		ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, ca_policy, 12);
+		ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
 		ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-		la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, la_policy);
-		la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, la_policy, 12);
+		la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
+		la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
 
 		std::string sh_file_name = "shg_google_q3_" + std::to_string(tasks.size()) + "_result.csv";
 		std::string fld_file_name = "fld_google_q3_" + std::to_string(tasks.size()) + "_result.csv";

@@ -198,7 +198,7 @@ void plot_cardinality_estimation_correctness(const unsigned int p, const size_t 
 		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
 	}
 	CardinalityAwarePolicy ca;
-	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, ca);
+	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, &ca);
 	stream = new uint64_t[stream_length];
 	for (size_t i = 0; i < stream_length; ++i)
 	{

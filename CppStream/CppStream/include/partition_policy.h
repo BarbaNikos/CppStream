@@ -8,9 +8,10 @@ class PartitionPolicy
 {
 public:
 	virtual ~PartitionPolicy() {}
-	virtual uint16_t get_score(uint16_t first_choice, unsigned long long first_count, unsigned long first_cardinality, 
+	virtual uint16_t get_score(uint16_t first_choice, unsigned long long first_count, unsigned long first_cardinality,
 		uint16_t second_choice, unsigned long long second_count, unsigned long second_cardinality,
-		unsigned long long min_count, unsigned long long max_count, unsigned long min_cardinality, unsigned long max_cardinality) const = 0;
+		unsigned long long min_count, unsigned long long max_count, unsigned long min_cardinality, unsigned long max_cardinality) const { return 0; }
+	virtual PartitionPolicy* make_copy() { return new PartitionPolicy(); }
 };
 
 class CountAwarePolicy : public PartitionPolicy
@@ -19,6 +20,7 @@ public:
 	uint16_t get_score(uint16_t first_choice, unsigned long long first_count, unsigned long first_cardinality,
 		uint16_t second_choice, unsigned long long second_count, unsigned long second_cardinality,
 		unsigned long long min_count, unsigned long long max_count, unsigned long min_cardinality, unsigned long max_cardinality) const;
+	CountAwarePolicy* make_copy() { return new CountAwarePolicy(); }
 };
 
 class CardinalityAwarePolicy : public PartitionPolicy
@@ -27,6 +29,7 @@ public:
 	uint16_t get_score(uint16_t first_choice, unsigned long long first_count, unsigned long first_cardinality,
 		uint16_t second_choice, unsigned long long second_count, unsigned long second_cardinality,
 		unsigned long long min_count, unsigned long long max_count, unsigned long min_cardinality, unsigned long max_cardinality) const;
+	CardinalityAwarePolicy* make_copy() { return new CardinalityAwarePolicy(); }
 };
 
 class LoadAwarePolicy : public PartitionPolicy
@@ -35,6 +38,7 @@ public:
 	uint16_t get_score(uint16_t first_choice, unsigned long long first_count, unsigned long first_cardinality,
 		uint16_t second_choice, unsigned long long second_count, unsigned long second_cardinality,
 		unsigned long long min_count, unsigned long long max_count, unsigned long min_cardinality, unsigned long max_cardinality) const;
+	LoadAwarePolicy* make_copy() { return new LoadAwarePolicy(); }
 };
 #endif // !PARTITION_POLICY_H_
 
