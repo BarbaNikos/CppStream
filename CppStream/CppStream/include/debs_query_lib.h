@@ -50,6 +50,10 @@
 #include "imbalance_score_aggr.h"
 #endif // !IMBALANCE_SCORE_AGGR_H_
 
+#ifndef PARTITIONER_FACTORY_H_
+#include "partitioner_factory.h"
+#endif // !PARTITIONER_FACTORY_H_
+
 #ifndef DEBS_QUERY_LIB_H_
 #define DEBS_QUERY_LIB_H_
 namespace Experiment
@@ -101,8 +105,10 @@ namespace Experiment
 			void parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer);
 			/*double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner, 
 				const std::string partitioner_name, const size_t max_queue_size);*/
-			void frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number);
-			void frequent_route_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+			static void partition_thread_operate(std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
+				size_t task_number, float* imbalance, float* key_imbalance, double* duration);
+			void frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
+			void frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		private:
 			static void debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route);
@@ -157,8 +163,10 @@ namespace Experiment
 			~ProfitableAreaPartition();
 			/*double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner,
 				const std::string partitioner_name, const size_t max_queue_size);*/
-			void most_profitable_cell_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number);
-			void most_profitable_partitioner_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::vector<uint16_t> tasks,
+			void most_profitable_cell_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
+			static void partition_thread_operate_step_one(std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
+				size_t task_number, float* imbalance, float* key_imbalance, double* duration);
+			void most_profitable_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		private:
 			static void debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area);
