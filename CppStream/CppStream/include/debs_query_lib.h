@@ -123,12 +123,15 @@ namespace Experiment
 		class ProfitableArea
 		{
 		public:
+			ProfitableArea();
 			ProfitableArea(std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
 			~ProfitableArea();
 			void operate();
-			void update(DebsChallenge::CompactRide& ride);
-			void first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map, 
-				std::unordered_map<std::string, std::pair<std::string, std::time_t>>& dropoff_table, const bool two_choice_partition_used);
+			void update(const DebsChallenge::CompactRide& ride);
+			void first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map,
+				std::unordered_map<std::string, std::vector<float>>& complete_fare_map_out,
+				std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table,
+				std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table_out, const bool two_choice_partition_used, const bool write);
 			void second_round_init();
 			void second_round_update(const std::string& pickup_cell, const std::vector<float>& fare_list);
 			void second_round_update(const std::string& medallion, const std::string& dropoff_cell, const time_t& timestamp);
@@ -164,8 +167,16 @@ namespace Experiment
 			/*double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner,
 				const std::string partitioner_name, const size_t max_queue_size);*/
 			void most_profitable_cell_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
-			static void partition_thread_operate_step_one(std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
-				size_t task_number, float* imbalance, float* key_imbalance, double* duration);
+			static void partition_thread_operate_step_one(bool writer, std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
+				size_t task_number, float* imbalance, float* key_imbalance, double* duration, std::vector<std::vector<CompactRide>>* worker_buffer);
+			static void partition_thread_operate_step_two(bool writer, std::string partitioner_name, Partitioner* partitioner, std::unordered_map<std::string, std::vector<float>>* fares,
+				std::unordered_map<std::string, std::pair<std::string, std::time_t>>* dropoffs, size_t task_number, float* fare_imbalance, float* fare_key_imbalance,
+				float* dropoff_imbalance, float* dropoff_key_imbalance, double* duration, std::vector<std::vector<std::pair<std::string, std::vector<float>>>>* fare_sub_table, 
+				std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>>* dropoffs_sub_table);
+			static void thread_execution_step_one(bool writer, const std::string partitioner_name, const std::vector<Experiment::DebsChallenge::CompactRide>* input_buffer,
+				std::unordered_map<std::string, std::vector<float>>* fare_table, std::unordered_map<std::string, std::vector<float>>* fare_table_out,
+				std::unordered_map<std::string, std::pair<std::string, time_t>>* dropoff_table, std::unordered_map<std::string, std::pair<std::string, time_t>>* dropoff_table_out,
+				double* total_duration);
 			void most_profitable_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
 		private:
