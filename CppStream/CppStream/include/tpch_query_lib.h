@@ -8,6 +8,7 @@
 #include <map>
 #include <cstdio>
 #include <numeric>
+#include <iomanip>
 
 #ifndef PARTITIONER_H_
 #include "partitioner.h"

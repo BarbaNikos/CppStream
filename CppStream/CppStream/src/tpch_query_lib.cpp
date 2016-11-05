@@ -860,7 +860,9 @@ void Experiment::Tpch::QueryThreeOfflineAggregator::write_output_to_file(const s
 	fd = fopen(output_file.c_str(), "w");
 	for (std::unordered_map<std::string, query_three_result>::const_iterator i = result.cbegin(); i != result.cend(); ++i)
 	{
-		std::string buffer = i->first + "," + std::to_string(i->second.revenue) + "," +
+		std::stringstream stream;
+		stream << std::fixed << std::setprecision(2) << i->second.revenue;
+		std::string buffer = i->first + "," + stream.str() + "," +
 			i->second.o_orderdate.to_string() + "," + std::to_string(i->second.o_shippriority) + "\n";
 		fwrite(buffer.c_str(), sizeof(char), buffer.length(), fd);
 	}
