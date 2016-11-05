@@ -182,6 +182,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	std::string la_naive_file_name = "la_naive_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_hll_file_name = "la_hll_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
 
+	std::cout << "TPC-H Q1 ***\n";
+	std::cout << "partitioner,task-num,max-exec-msec,min-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-part-msec,imbalance,key-imbalance\n";
 	query_one_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
 	query_one_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
 	query_one_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
@@ -372,11 +374,10 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	partition_duration_vector.erase(part_min_it);
 	double average_part_duration = std::accumulate(partition_duration_vector.begin(), partition_duration_vector.end(), 0.0) / 
 		partition_duration_vector.size();
-
-	std::cout << "TPC-H Q1 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << 
-		", (msec) Max exec. time: " << *max_it << ", MIN exec. time: " << *min_it << ", AVG exec. time: " << avg_exec_time <<
-		", AVG aggr. time: " << average_aggr_duration << ", write output time: " << write_output_duration_in_msec << 
-		", MEAN part time: " << average_part_duration << " (msec), Imbalance: " << imbalance[0] << ", key imbalance: " << cardinality_imbalance[0] << ".\n";
+	std::string result = partitioner_name + "," + std::to_string(tasks.size()) + "," + std::to_string(*max_it) + "," + std::to_string(*min_it) + "," +
+		std::to_string(avg_exec_time) + "," + std::to_string(average_aggr_duration) + "," + std::to_string(write_output_duration_in_msec) + "," +
+		std::to_string(average_part_duration) + "," + std::to_string(imbalance[0]) + "," + std::to_string(cardinality_imbalance[0]) + "\n";
+	std::cout << result;
 	intermediate_buffer.clear();
 }
 
@@ -912,6 +913,12 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	std::string la_naive_file_name = "la_naive_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_hll_file_name = "la_hll_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
 
+	std::cout << "TPC-H Q3 ***\n";
+	std::stringstream info_stream;
+	info_stream << "partitioner,task-num,max-s1-exec-msec,min-s1-exec-msec,avg-s1-exec-msec,max-s2-exec-msec,min-s2-exec-msec,avg-s2-exec-msec,sum-aggr-msec,io-msec," <<
+		"avg-part-c-msec,avg-part-o-msec,avg-part-li-msec,c-imb,c-key-imb,o-imb,o-key-imb,li-imb,li-key-imb\n";
+	std::string info_message = info_stream.str();
+	std::cout << info_message;
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);
@@ -1309,14 +1316,13 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	part_li_durations.erase(part_min_it);
 	double mean_part_li_time = std::accumulate(part_li_durations.begin(), part_li_durations.end(), 0.0) / part_li_durations.size();
 	
-	std::cout << "TPC-H Q3 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << 
-		", (msec) Max (S1) exec. time: " << *max_step_one_it << ", MIN (S1) exec. time: " << *min_step_one_it << ", AVG (S1) exec. time: " << avg_step_one_exec_time <<
-		"Max (S2) exec.time: " << *max_step_two_it << ", MIN (S2) exec.time: " << *min_step_two_it << ", AVG (S2) exec.time : " << avg_step_two_exec_time <<
-		", SUM aggr. time: " << sum_step_two_aggr_time << ", write output time: " << write_to_output_time.count() << ", Mean Part_C time: " << mean_part_customer_time << 
-		" (msec), Mean Part_O time: " << mean_part_order_time << " (msec), Mean Part_Li time: " << mean_part_li_time << ", (Customer) imb: " << c_imbalance[0] << 
-		", key-imb: " << c_key_imbalance[0] << ", (Order) imb: " << o_imbalance[0] << ", key-imb: " << o_key_imbalance[0] << ", (Lineitem) imb: " << li_imbalance[0] << 
-		", key-imb: " << li_key_imbalance[0] << ".\n";
-
+	std::stringstream result_stream;
+	result_stream << partitioner_name << "," << tasks.size() << "," << *max_step_one_it << "," << *min_step_one_it << "," << avg_step_one_exec_time << "," << 
+		*max_step_two_it << "," << *min_step_two_it << "," << avg_step_two_exec_time << "," << sum_step_two_aggr_time << "," << write_to_output_time.count() << "," << 
+		mean_part_customer_time << "," << mean_part_order_time << "," << mean_part_li_time << "," << c_imbalance[0] << "," << c_key_imbalance[0] << "," << o_imbalance[0] << 
+		"," << o_key_imbalance[0] << "," << li_imbalance[0] << "," << li_key_imbalance[0] << "\n";
+	std::string result_string = result_stream.str();
+	std::cout << result_string;
 	result_buffer.clear();
 	step_one_result_buffer.clear();
 }
