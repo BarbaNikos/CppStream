@@ -57,41 +57,41 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	 /*std::vector<Experiment::Tpch::q3_customer> customer_table;
+	 std::vector<Experiment::Tpch::q3_customer> customer_table;
 	 std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	 std::vector<Experiment::Tpch::order> order_table;
 
 	 Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
 	 Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
-	 Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
-	 Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);
+	 /*Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
+	 Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);*/
 
 	 Experiment::Tpch::DataParser::parse_tpch_q3_customer(customer_file, customer_table);
 	 Experiment::Tpch::DataParser::parse_tpch_order(orders_file, order_table);
 	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 8);
-	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 16);
-	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
+	 /*Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 16);
+	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);*/
 	 customer_table.clear();
 	 lineitem_table.clear();
-	 order_table.clear();*/
+	 order_table.clear();
 	/*
 	 * DEBS queries
 	 */
-	 std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	 /*std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	 std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
-	 Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
+	 Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;*/
 	 //debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
 	 //debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 8);
 	 /*debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 16);
 	 debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 32);*/
-	 frequent_ride_table.clear();
+	 /*frequent_ride_table.clear();
 
 	 debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
 	 Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
-	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
+	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);*/
 	 /*debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);*/
-	 profitable_cell_table.clear();
+	 //profitable_cell_table.clear();
 
 	//const unsigned int p = 16;
 	//plot_cardinality_estimation_correctness(p, 10, (uint64_t)1e+5, (size_t)1e+6);

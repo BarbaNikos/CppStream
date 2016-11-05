@@ -237,6 +237,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_t
 	GCMTaskEventKeyExtractor key_extractor;
 	ImbalanceScoreAggr<Experiment::GoogleClusterMonitor::task_event, int> sch_class_imb_aggregator(task_number, key_extractor);
 	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
+	p_copy->init();
 	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::GoogleClusterMonitor::task_event>::const_iterator it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
@@ -297,16 +298,10 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	for (size_t part_run_thread = 1; part_run_thread < 7; ++part_run_thread)
 	{
 		threads[part_run_thread]->join();
-	}
-	for (size_t part_run = 1; part_run < 7; part_run++)
-	{
-		delete threads[part_run];
+		delete threads[part_run_thread];
+		sched_class_part_durations.push_back(part_durations[part_run_thread]);
 	}
 	delete[] threads;
-	for (size_t i = 0; i < 7; i++)
-	{
-		sched_class_part_durations.push_back(part_durations[i]);
-	}
 	for	(size_t i = 0; i < tasks.size(); ++i)
 	{
 		worker_input_buffer[i].shrink_to_fit();

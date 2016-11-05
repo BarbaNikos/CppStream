@@ -41,6 +41,10 @@
 #include "imbalance_score_aggr.h"
 #endif // !IMBALANCE_SCORE_AGGR_H_
 
+#ifndef PARTITIONER_FACTORY_H_
+#include "partitioner_factory.h"
+#endif // !PARTITIONER_FACTORY_H_
+
 #ifndef TPCH_QUERY_LIB_H_
 #define TPCH_QUERY_LIB_H_
 namespace Experiment
@@ -108,6 +112,7 @@ namespace Experiment
 		class QueryOneWorker
 		{
 		public:
+			QueryOneWorker() {}
 			QueryOneWorker(std::queue<Experiment::Tpch::lineitem>* input_queue, std::mutex* mu, std::condition_variable* cond);
 			~QueryOneWorker();
 			void operate();
@@ -134,6 +139,8 @@ namespace Experiment
 		{
 		public:
 			static void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num);
+			static void thread_lineitem_partition(bool write, size_t task_num, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::lineitem>* input_buffer,
+				std::vector<std::vector<Experiment::Tpch::lineitem>>* worker_input_buffer, float *imbalance, float* key_imbalance, double *total_duration);
 			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
@@ -214,6 +221,12 @@ namespace Experiment
 		public:
 			static void query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table, 
 				const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num);
+			static void thread_customer_partition(bool write, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::q3_customer>* c_table,
+				std::vector<std::vector<Experiment::Tpch::q3_customer>>* c_worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
+			static void thread_order_partition(bool write, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::order>* o_table,
+				std::vector<std::vector<Experiment::Tpch::order>>* o_worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
+			static void thread_li_partition(bool write, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::lineitem>* li_table,
+				std::vector<std::vector<Experiment::Tpch::lineitem>>* li_worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
 			static void query_three_partitioner_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table,
 				const std::vector<Experiment::Tpch::order>& o_table, const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, 
 				const std::string worker_output_file_name);
