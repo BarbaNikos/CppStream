@@ -485,7 +485,10 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_naive_file_name = "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_hll_file_name = "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-
+	std::cout << "DEBS Q1***\n";
+	std::stringstream info_stream;
+	info_stream << "partitioner,task-number,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-part-msec,imb,key-imb\n";
+	std::cout << info_stream.str();
 	frequent_route_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
 	frequent_route_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
 	frequent_route_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
@@ -681,12 +684,11 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	partition_duration_vector.erase(part_min_it);
 	float mean_part_time = std::accumulate(partition_duration_vector.begin(), partition_duration_vector.end(), 0.0) / partition_duration_vector.size();
 
-	std::cout << "DEBS Q1 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << ", (msec):: MIN exec. time: " << 
-		*std::min_element(exec_durations.begin(), exec_durations.end()) << 
-		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) << 
-		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
-		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << ", Mean part time: " << mean_part_time << 
-		" (msec), Imbalance: " << imbalance[0] << ", Key Imbalance: " << key_imbalance[0] << ".\n";
+	std::stringstream result_stream;
+	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
+		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," <<
+		aggr_duration << "," << write_output_duration << "," << mean_part_time << "," << imbalance[0] << "," << key_imbalance[0] << "\n";
+	std::cout << result_stream.str();
 	partial_result.clear();
 	exec_durations.clear();
 	aggr_durations.clear();
@@ -1173,7 +1175,11 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_naive_file_name = "la_naive_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_hll_file_name = "la_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-
+	std::cout << "DEBS Q2 ***\n";
+	std::stringstream info_stream;
+	info_stream << "partitioner,task-num,min-s1-msec,max-s1-msec,avg-s1-msec,min-s2-msec,max-s2-msec,avg-s2-msec,avg-aggr-msec,io-msec,avg-part-med-msec,avg-part-cell-msec," <<
+		"med-imb,med-key-imb,dropoff-imb,dropoff-key-imb,fare-imb,fare-key-imb\n";
+	std::cout << info_stream.str();
 	most_profitable_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
 	most_profitable_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
 	most_profitable_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
@@ -1552,17 +1558,17 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 	double mean_part_med_duration = std::accumulate(part_medallion_durations.begin(), part_medallion_durations.end(), 0.0) / part_medallion_durations.size();
 	double mean_part_cell_duration = std::accumulate(part_cell_durations.begin(), part_cell_durations.end(), 0.0) / part_cell_durations.size();
 
-	std::cout << "DEBS Q2 *** partitioner: " << partitioner_name << ", tasks: " << tasks.size() << " (msec):: MIN (S1) exec. time: " <<
-		*std::min_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) <<
-		", MAX (S1) exec. time: " << *std::max_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) <<
-		", AVG (S1) exec. time: " << (std::accumulate(first_round_exec_duration.begin(), first_round_exec_duration.end(), 0.0) / first_round_exec_duration.size()) << 
-		", MIN (S2) exec. time: " << *std::min_element(second_round_exec_duration.begin(), second_round_exec_duration.end()) <<
-		", MAX (S2) exec. time: " << *std::max_element(second_round_exec_duration.begin(), second_round_exec_duration.end()) <<
-		", AVG (S2) exec. time: " << (std::accumulate(second_round_exec_duration.begin(), second_round_exec_duration.end(), 0.0) / second_round_exec_duration.size()) <<
-		", AVG aggr. time: " << final_aggr_duration << ", IO time:" << output_to_file_duration << ", Mean part-med time: " << mean_part_med_duration << 
-		" (msec), Mean part-cell time: " << mean_part_cell_duration << ", Med imb: " << med_imbalance[0] << ", key-imb: " << med_key_imbalance[0] << 
-		", dropoff-cell imb: " << dropoff_cell_imbalance[0] << ", dropoff-cell key-imb: " << dropoff_cell_key_imbalance[0] << 
-		", complete-fare imb: " << complete_fare_imbalance[0] << ", complete-fare key imb: " << complete_fare_key_imbalance[0] << ".\n";
+	std::stringstream result_stream;
+	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) << "," <<
+		*std::max_element(first_round_exec_duration.begin(), first_round_exec_duration.end()) << "," <<
+		(std::accumulate(first_round_exec_duration.begin(), first_round_exec_duration.end(), 0.0) / first_round_exec_duration.size()) << "," <<
+		*std::min_element(second_round_exec_duration.begin(), second_round_exec_duration.end()) << "," <<
+		*std::max_element(second_round_exec_duration.begin(), second_round_exec_duration.end()) << "," <<
+		(std::accumulate(second_round_exec_duration.begin(), second_round_exec_duration.end(), 0.0) / second_round_exec_duration.size()) << "," <<
+		final_aggr_duration << "," << output_to_file_duration << "," << mean_part_med_duration << "," << mean_part_cell_duration << "," << med_imbalance[0] << "," <<
+		med_key_imbalance[0] << "," << dropoff_cell_imbalance[0] << "," << dropoff_cell_key_imbalance[0] << "," <<
+		complete_fare_imbalance[0] << "," << complete_fare_key_imbalance[0] << "\n";
+	std::cout << result_stream.str();
 }
 
 void Experiment::DebsChallenge::ProfitableAreaPartition::debs_profitable_area_worker(Experiment::DebsChallenge::ProfitableArea* profitable_area)
