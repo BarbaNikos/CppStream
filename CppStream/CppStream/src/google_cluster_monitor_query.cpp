@@ -197,7 +197,10 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simul
 	std::string ca_aff_hll_file_name = "ca_aff_hll_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_naive_file_name = "la_naive_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_hll_file_name = "la_hll_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-
+	std::cout << "GCM Q1 ***\n";
+	std::stringstream info_stream;
+	info_stream << "partitioner,task-num,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-part-msec,imb,key-imb\n";
+	std::cout << info_stream.str();
 	query_partitioner_simulation(buffer, tasks, sh, "sh", sh_file_name);
 	query_partitioner_simulation(buffer, tasks, fld, "fld", fld_file_name);
 	query_partitioner_simulation(buffer, tasks, pk, "pk", pkg_file_name);
@@ -381,12 +384,13 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	part_it = std::min_element(sched_class_part_durations.begin(), sched_class_part_durations.end());
 	sched_class_part_durations.erase(part_it);
 	double mean_part_time = std::accumulate(sched_class_part_durations.begin(), sched_class_part_durations.end(), 0.0) / sched_class_part_durations.size();
-	std::cout << "GOOGLE Q1 *** partitioner: " << partitioner_name << " (micro-sec):: MIN exec. time: " <<
-		*std::min_element(exec_durations.begin(), exec_durations.end()) <<
-		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) <<
-		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
-		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << ", Mean part-time: " << mean_part_time << 
-		" (msec), imbalance: " << class_imbalance[0] << ", key-imbalance: " << class_key_imbalance[0] << ".\n";
+
+	std::stringstream result_stream;
+	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
+		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
+		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," <<
+		aggr_duration << "," << write_output_duration << "," << mean_part_time << "," << class_imbalance[0] << "," << class_key_imbalance[0] << "\n";
+	std::cout << result_stream.str();
 }
 
 Experiment::GoogleClusterMonitor::MeanCpuPerJobIdWorker::MeanCpuPerJobIdWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
@@ -528,7 +532,10 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulatio
 	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
 	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
 	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
-
+	std::cout << "GCM Q2 ***\n";
+	std::stringstream info_stream;
+	info_stream << "partitioner,task-num,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec\n";
+	std::cout << info_stream.str();
 	std::string sh_file_name = "shg_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string pkg_file_name = "pkg_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
@@ -666,12 +673,13 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	aggr_durations.clear();
 	intermediate_buffer.clear();
 	exec_durations.clear();
-
-	std::cout << "GOOGLE Q2 *** partitioner: " << partitioner_name << " (micro-sec):: MIN exec. time: " <<
-		*std::min_element(exec_durations.begin(), exec_durations.end()) <<
-		", MAX exec. time: " << *std::max_element(exec_durations.begin(), exec_durations.end()) <<
-		", AVG exec. time: " << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) <<
-		", AVG aggr. time: " << aggr_duration << ", IO time:" << write_output_duration << "\n";
+	
+	std::stringstream result_stream;
+	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
+		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
+		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," <<
+		aggr_duration << "," << write_output_duration << "\n";
+	std::cout << result_stream.str();
 }
 
 Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
