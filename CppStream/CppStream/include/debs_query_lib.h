@@ -63,15 +63,13 @@ namespace Experiment
 		class FrequentRouteWorkerThread
 		{
 		public:
+			FrequentRouteWorkerThread() {}
 			FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
 				std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond);
-			FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, std::mutex* aggr_mu, std::condition_variable* aggr_cond,
-				std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex* mu, std::condition_variable* cond, const std::string result_output_file_name);
 			~FrequentRouteWorkerThread();
 			void operate();
-			void update(DebsChallenge::CompactRide& ride);
-			void finalize();
-			void partial_finalize(std::vector<Experiment::DebsChallenge::frequent_route>&);
+			void update(const DebsChallenge::CompactRide& ride);
+			void finalize(bool write, std::vector<Experiment::DebsChallenge::frequent_route>* partial_result);
 		private:
 			std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue;
 			std::mutex* aggr_mu; 
@@ -103,10 +101,13 @@ namespace Experiment
 			void produce_compact_ride_file(const std::string& input_file_name, const std::string& output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			std::vector<Experiment::DebsChallenge::CompactRide> parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			void parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer);
-			/*double debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table, Partitioner& partitioner, 
-				const std::string partitioner_name, const size_t max_queue_size);*/
-			static void partition_thread_operate(std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
+			static void partition_thread_operate(bool write, std::string partitioner_name, Partitioner* partitioner,
+				std::vector<Experiment::DebsChallenge::CompactRide>* rides, std::vector<std::vector<Experiment::DebsChallenge::CompactRide>>* worker_input_buffer,
 				size_t task_number, float* imbalance, float* key_imbalance, double* duration);
+			static void worker_thread_operate(bool write, std::vector<Experiment::DebsChallenge::CompactRide>* input, std::vector<Experiment::DebsChallenge::frequent_route>* result_buffer,
+				double* total_duration);
+			static void aggregation_thread_operate(bool write, std::string partitioner_name, std::vector<Experiment::DebsChallenge::frequent_route>* input_buffer,
+				std::vector<std::pair<unsigned long, std::string>>* result, double* total_duration, std::string worker_output_file_name, double* io_duration);
 			void frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
 			void frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);

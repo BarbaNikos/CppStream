@@ -24,28 +24,6 @@ Experiment::DebsChallenge::FrequentRouteWorkerThread::FrequentRouteWorkerThread(
 	this->result_output_file_name = "";
 }
 
-Experiment::DebsChallenge::FrequentRouteWorkerThread::FrequentRouteWorkerThread(std::queue<Experiment::DebsChallenge::frequent_route>* aggregator_queue, 
-	std::mutex * aggr_mu, std::condition_variable * aggr_cond, std::queue<Experiment::DebsChallenge::CompactRide>* input_queue, std::mutex * mu, 
-	std::condition_variable * cond, const std::string result_output_file_name)
-{
-	if (aggregator_queue != nullptr)
-	{
-		this->aggregator_queue = aggregator_queue;
-		this->aggr_mu = aggr_mu;
-		this->aggr_cond = aggr_cond;
-	}
-	else
-	{
-		this->aggregator_queue = nullptr;
-		this->aggr_mu = nullptr;
-		this->aggr_cond = nullptr;
-	}
-	this->mu = mu;
-	this->cond = cond;
-	this->input_queue = input_queue;
-	this->result_output_file_name = result_output_file_name;
-}
-
 Experiment::DebsChallenge::FrequentRouteWorkerThread::~FrequentRouteWorkerThread()
 {
 	result.clear();
@@ -53,6 +31,7 @@ Experiment::DebsChallenge::FrequentRouteWorkerThread::~FrequentRouteWorkerThread
 
 void Experiment::DebsChallenge::FrequentRouteWorkerThread::operate()
 {
+	std::vector<Experiment::DebsChallenge::frequent_route> result;
 	while (true)
 	{
 		std::unique_lock<std::mutex> locker(*mu);
@@ -66,7 +45,7 @@ void Experiment::DebsChallenge::FrequentRouteWorkerThread::operate()
 		}
 		else
 		{
-			finalize();
+			finalize(true, &result);
 			locker.unlock();
 			cond->notify_all();
 			break;
@@ -76,11 +55,12 @@ void Experiment::DebsChallenge::FrequentRouteWorkerThread::operate()
 	}
 }
 
-void Experiment::DebsChallenge::FrequentRouteWorkerThread::update(Experiment::DebsChallenge::CompactRide& ride)
+void Experiment::DebsChallenge::FrequentRouteWorkerThread::update(const Experiment::DebsChallenge::CompactRide& ride)
 {
-	std::string key = std::to_string(ride.pickup_cell.first) + "." + std::to_string(ride.pickup_cell.second) + "-" +
-		std::to_string(ride.dropoff_cell.first) + "." + std::to_string(ride.dropoff_cell.second);
-	// update counts
+	std::stringstream str_stream;
+	str_stream << ride.pickup_cell.first << "." << ride.pickup_cell.second << "-" << ride.dropoff_cell.first << "." <<
+		ride.dropoff_cell.second;
+	std::string key = str_stream.str();
 	std::unordered_map<std::string, uint64_t>::iterator it = result.find(key);
 	if (it != result.end())
 	{
@@ -88,78 +68,32 @@ void Experiment::DebsChallenge::FrequentRouteWorkerThread::update(Experiment::De
 	}
 	else
 	{
-		result.insert(std::make_pair(key, uint64_t(1)));
+		result[key] = 1;
 	}
 }
 
-void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize()
+void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize(bool write, std::vector<Experiment::DebsChallenge::frequent_route>* partial_result)
 {
-
-	std::map<uint64_t, std::vector<std::string>> count_to_keys_map;
-	std::vector<uint64_t> top_counts;
-	std::vector<std::string> top_routes;
-	if (aggregator_queue == nullptr)
+	if (write)
 	{
 		for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
 		{
-			auto top_iter = count_to_keys_map.find(it->second);
-			if (top_iter == count_to_keys_map.end())
-			{
-				std::vector<std::string> buffer;
-				buffer.push_back(it->first);
-				count_to_keys_map.insert(std::make_pair(it->second, buffer));
-			}
-			else
-			{
-				count_to_keys_map[it->second].push_back(it->first);
-			}
-		}
-		if (count_to_keys_map.size() > 0)
-		{
-			std::map<uint64_t, std::vector<std::string>>::const_iterator reverse_iter = count_to_keys_map.cend();
-			do
-			{
-				reverse_iter--;
-				for (size_t i = 0; i < reverse_iter->second.size(); ++i)
-				{
-					top_routes.push_back(reverse_iter->second[i]);
-					top_counts.push_back(reverse_iter->first);
-					if (top_routes.size() >= 10)
-					{
-						return;
-					}
-				}
-			} while (reverse_iter != count_to_keys_map.cbegin());
+			Experiment::DebsChallenge::frequent_route fr;
+			fr.route = it->first;
+			fr.count = it->second;
+			partial_result->push_back(fr);
 		}
 	}
 	else
 	{
-		if (result_output_file_name.compare("") != 0)
+		std::vector<Experiment::DebsChallenge::frequent_route> partial_result_aux;
+		for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
 		{
-			std::ofstream output_file(result_output_file_name);
-			if (output_file.is_open() == false)
-			{
-				std::cerr << "FrequentRouteWorkerThread::finalize() failed to open file with name: " << result_output_file_name << ".\n";
-				exit(1);
-			}
-			for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
-			{
-				output_file << it->first << "," << it->second << "\n";
-			}
-			output_file.flush();
-			output_file.close();
+			Experiment::DebsChallenge::frequent_route fr;
+			fr.route = it->first;
+			fr.count = it->second;
+			partial_result_aux.push_back(fr);
 		}
-	}
-}
-
-void Experiment::DebsChallenge::FrequentRouteWorkerThread::partial_finalize(std::vector<Experiment::DebsChallenge::frequent_route>& partial_result)
-{
-	for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
-	{
-		Experiment::DebsChallenge::frequent_route fr;
-		fr.route = it->first;
-		fr.count = it->second;
-		partial_result.push_back(fr);
 	}
 }
 
@@ -202,6 +136,7 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::sort_final_aggre
 void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_aggregates,
 	std::vector<std::pair<unsigned long, std::string>>& result)
 {
+	// START: calculate full aggregates (m-choice partitioners required)
 	for (std::vector<frequent_route>::const_iterator cit = partial_aggregates.cbegin(); cit != partial_aggregates.cend(); ++cit)
 	{
 		auto it = this->result.find(cit->route);
@@ -214,6 +149,8 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_so
 			this->result.insert(std::make_pair(cit->route, cit->count));
 		}
 	}
+	// END: calculate full aggregates (m-choice partitioners required)
+	// START: sort full result (all partitioners required)
 	std::map<unsigned long, std::vector<std::string>> final_result;
 	for (auto cit = this->result.begin(); cit != this->result.end(); ++cit)
 	{
@@ -229,7 +166,8 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_so
 			final_result.insert(std::make_pair(cit->second, tmp));
 		}
 	}
-	// at this point the result is materialized
+	// END: sort full result (all partitioners required)
+	// START: result is materialized
 	for (std::map<unsigned long, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
@@ -237,10 +175,12 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_so
 			result.push_back(std::make_pair(c->first, *i));
 		}
 	}
+	// END: result is materialized
 	final_result.clear();
 }
 
-void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::write_output_to_file(const std::vector<std::pair<unsigned long, std::string>>& result, const std::string & outfile_name)
+void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::write_output_to_file(const std::vector<std::pair<unsigned long, std::string>>& result, 
+	const std::string & outfile_name)
 {
 	FILE* fd;
 	fd = fopen(outfile_name.c_str(), "w");
@@ -287,7 +227,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::produce_compact_ride_fil
 	output_file.close();
 }
 
-std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells)
+std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides(const std::string input_file_name, 
+	uint32_t cell_side_size, uint32_t grid_side_size_in_cells)
 {
 	std::vector<Experiment::DebsChallenge::CompactRide> lines;
 	std::string line;
@@ -316,10 +257,10 @@ std::vector<Experiment::DebsChallenge::CompactRide> Experiment::DebsChallenge::F
 	return lines;
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer)
+void Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides_with_to_string(const std::string input_file_name, 
+	std::vector<Experiment::DebsChallenge::CompactRide>* buffer)
 {
 	std::string line;
-	//std::map<std::string, uint32_t> ride_frequency;
 	std::ifstream file(input_file_name);
 	if (!file.is_open())
 	{
@@ -333,116 +274,6 @@ void Experiment::DebsChallenge::FrequentRoutePartition::parse_debs_rides_with_to
 	buffer->shrink_to_fit();
 	file.close();
 }
-
-//void Experiment::DebsChallenge::FrequentRoutePartition::debs_partition_performance(const std::vector<uint16_t>& tasks, Partitioner& partitioner,
-//	const std::string partioner_name, std::vector<Experiment::DebsChallenge::CompactRide>& rides)
-//{
-//	std::vector<std::unordered_set<std::string>> key_per_task;
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		key_per_task.push_back(std::unordered_set<std::string>());
-//	}
-//	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-//	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides.begin(); it != rides.end(); ++it)
-//	{
-//		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-//		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-//		std::string key = pickup_cell + "-" + dropoff_cell;
-//		short task = partitioner.partition_next(key.c_str(), key.length());
-//		key_per_task[task].insert(key);
-//	}
-//	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-//	std::chrono::duration<double, std::milli> partition_time = part_end - part_start;
-//	size_t min_cardinality = std::numeric_limits<unsigned long>::max();
-//	size_t max_cardinality = std::numeric_limits<unsigned long>::min();
-//	double average_cardinality = 0;
-//	std::cout << "Cardinalities: ";
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		if (min_cardinality > key_per_task[i].size())
-//		{
-//			min_cardinality = key_per_task[i].size();
-//		}
-//		if (max_cardinality < key_per_task[i].size())
-//		{
-//			max_cardinality = key_per_task[i].size();
-//		}
-//		average_cardinality += key_per_task[i].size();
-//		std::cout << key_per_task[i].size() << " ";
-//		key_per_task[i].clear();
-//	}
-//	std::cout << "\n";
-//	average_cardinality = average_cardinality / tasks.size();
-//	key_per_task.clear();
-//	std::cout << "Time partition using " << partioner_name << ": " << partition_time.count() << " (msec). Min: " << min_cardinality <<
-//		", Max: " << max_cardinality << ", AVG: " << average_cardinality << "\n";
-//}
-
-//double Experiment::DebsChallenge::FrequentRoutePartition::debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table,
-//	Partitioner& partitioner, const std::string partitioner_name, const size_t max_queue_size)
-//{
-//	// initialize shared memory
-//	queues = new std::queue<Experiment::DebsChallenge::CompactRide>*[tasks.size()];
-//	mu_xes = new std::mutex[tasks.size()];
-//	cond_vars = new std::condition_variable[tasks.size()];
-//	threads = new std::thread*[tasks.size()];
-//	query_workers = new Experiment::DebsChallenge::FrequentRouteWorkerThread*[tasks.size()];
-//	this->max_queue_size = max_queue_size;
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		queues[i] = new std::queue<Experiment::DebsChallenge::CompactRide>();
-//		query_workers[i] = new Experiment::DebsChallenge::FrequentRouteWorkerThread(nullptr, nullptr, nullptr, queues[i], &mu_xes[i], &cond_vars[i]);
-//		threads[i] = new std::thread(debs_frequent_route_worker, query_workers[i]);
-//	}
-//	//std::cout << partitioner_name << " thread INITIATES partitioning (frequent-route).\n";
-//	// start partitioning
-//	std::chrono::system_clock::time_point partition_start = std::chrono::system_clock::now();
-//	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = route_table.cbegin(); it != route_table.cend(); ++it)
-//	{
-//		std::string key = std::to_string(it->pickup_cell.first) + "." +
-//			std::to_string(it->pickup_cell.second) + "-" +
-//			std::to_string(it->dropoff_cell.first) + "." +
-//			std::to_string(it->dropoff_cell.second);
-//		short task = partitioner.partition_next(key.c_str(), key.length());
-//		std::unique_lock<std::mutex> locker(mu_xes[task]);
-//		cond_vars[task].wait(locker, [this, task, max_queue_size]() { return queues[task]->size() < max_queue_size; });
-//		queues[task]->push(*it);
-//		locker.unlock();
-//		cond_vars[task].notify_all();
-//	}
-//	//std::cout << partitioner_name << " thread SENT all rides (frequent-route).\n";
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		Experiment::DebsChallenge::CompactRide final_ride;
-//		final_ride.trip_distance = -1;
-//		std::unique_lock<std::mutex> locker(mu_xes[i]);
-//		cond_vars[i].wait(locker, [this, i, max_queue_size]() { return queues[i]->size() < max_queue_size; });
-//		queues[i]->push(final_ride);
-//		locker.unlock();
-//		cond_vars[i].notify_all();
-//	}
-//	// wait for workers to join
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		threads[i]->join();
-//	}
-//	std::chrono::system_clock::time_point partition_end = std::chrono::system_clock::now();
-//	std::chrono::duration<double, std::milli> partition_time = partition_end - partition_start;
-//	//std::cout << partitioner_name << " total partition time: " << partition_time.count() << " (msec) (frequent-route).\n";
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		delete threads[i];
-//		delete query_workers[i];
-//		delete queues[i];
-//	}
-//	delete[] threads;
-//	delete[] query_workers;
-//	delete[] queues;
-//	delete[] mu_xes;
-//	delete[] cond_vars;
-//	//std::cout << "------END-----\n";
-//	return partition_time.count();
-//}
 
 void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number)
 {
@@ -521,33 +352,116 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	std::remove(la_hll_file_name.c_str());
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate(std::string partitioner_name, Partitioner* partitioner, 
-	std::vector<Experiment::DebsChallenge::CompactRide>* rides,
+void Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate(bool write, std::string partitioner_name, Partitioner* partitioner, 
+	std::vector<Experiment::DebsChallenge::CompactRide>* rides, std::vector<std::vector<Experiment::DebsChallenge::CompactRide>>* worker_input_buffer, 
 	size_t task_number, float* imbalance, float* key_imbalance, double* duration)
 {
 	std::chrono::duration<double, std::milli> total_duration;
 	DebsFrequentRideKeyExtractor key_extractor;
 	ImbalanceScoreAggr<Experiment::DebsChallenge::CompactRide, std::string> imbalance_aggregator(task_number, key_extractor);
 	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
-	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides->cbegin(); it != rides->cend(); ++it)
+	p_copy->init();
+	if (write)
 	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "-" + dropoff_cell;
-		uint16_t task = p_copy->partition_next(&key, key.length());
-		imbalance_aggregator.incremental_measure_score_tuple_count(task, *it);
+		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+		for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides->cbegin(); it != rides->cend(); ++it)
+		{
+			std::stringstream str_stream;
+			str_stream << it->pickup_cell.first << "." << it->pickup_cell.second << "-" << it->dropoff_cell.first << "." << it->dropoff_cell.second;
+			std::string key = str_stream.str();
+			uint16_t task = p_copy->partition_next(&key, key.length());
+			imbalance_aggregator.incremental_measure_score(task, *it);
+			(*worker_input_buffer)[task].push_back(*it);
+		}
+		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+		total_duration = (part_end - part_start);
+		for (auto it = (*worker_input_buffer).begin(); it != (*worker_input_buffer).end(); ++it)
+		{
+			it->shrink_to_fit();
+		}
+		(*worker_input_buffer).shrink_to_fit();
 	}
-	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-	total_duration = (part_end - part_start);
+	else
+	{
+		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
+		for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides->cbegin(); it != rides->cend(); ++it)
+		{
+			std::stringstream str_stream;
+			str_stream << it->pickup_cell.first << "." << it->pickup_cell.second << "-" << it->dropoff_cell.first << "." << it->dropoff_cell.second;
+			std::string key = str_stream.str();
+			uint16_t task = p_copy->partition_next(&key, key.length());
+			imbalance_aggregator.incremental_measure_score_tuple_count(task, *it);
+		}
+		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+		total_duration = (part_end - part_start);
+	}
 	*duration = total_duration.count();
 	*imbalance = imbalance_aggregator.imbalance();
 	*key_imbalance = imbalance_aggregator.cardinality_imbalance();
 	delete p_copy;
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks, 
-	Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
+void Experiment::DebsChallenge::FrequentRoutePartition::worker_thread_operate(bool write, std::vector<Experiment::DebsChallenge::CompactRide>* input, 
+	std::vector<Experiment::DebsChallenge::frequent_route>* result_buffer, 
+	double* total_duration)
+{
+	Experiment::DebsChallenge::FrequentRouteWorkerThread worker;
+	std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+	for (auto it = input->cbegin(); it != input->cend(); ++it)
+	{
+		worker.update(*it);
+	}
+	worker.finalize(write, result_buffer);
+	std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+	std::chrono::duration<double, std::milli> execution_time = end - start;
+	*total_duration = execution_time.count();
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_operate(bool write, std::string partitioner_name, 
+	std::vector<Experiment::DebsChallenge::frequent_route>* input_buffer, std::vector<std::pair<unsigned long, std::string>>* result, 
+	double* total_duration, std::string worker_output_file_name, double* io_duration)
+{
+	std::chrono::duration<double, std::milli> aggregation_time, io_time;
+	Experiment::DebsChallenge::FrequentRouteOfflineAggregator aggregator;
+	std::vector<std::pair<unsigned long, std::string>> result_aux;
+	if (write)
+	{
+		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+		if (partitioner_name.compare("fld") != 0)
+		{
+			aggregator.calculate_and_sort_final_aggregation(*input_buffer, *result);
+		}
+		else
+		{
+			aggregator.sort_final_aggregation(*input_buffer, *result);
+		}
+		std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+		aggregation_time = aggregate_end - aggregate_start;
+		std::chrono::system_clock::time_point output_write_start = std::chrono::system_clock::now();
+		aggregator.write_output_to_file(*result, worker_output_file_name);
+		std::chrono::system_clock::time_point output_write_end = std::chrono::system_clock::now();
+		io_time = (output_write_end - output_write_start);
+		*io_duration = io_time.count();
+	}
+	else
+	{
+		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
+		if (partitioner_name.compare("fld") != 0)
+		{
+			aggregator.calculate_and_sort_final_aggregation(*input_buffer, result_aux);
+		}
+		else
+		{
+			aggregator.sort_final_aggregation(*input_buffer, result_aux);
+		}
+		std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
+		aggregation_time = aggregate_end - aggregate_start;
+	}
+	*total_duration = aggregation_time.count();
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, 
+	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
 	float imbalance[7], key_imbalance[7];
 	std::thread** threads;
@@ -562,82 +476,52 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	std::queue<Experiment::DebsChallenge::CompactRide> queue;
 	std::mutex mu;
 	std::condition_variable cond;
-	// partition tuples - use 6 auxiliary threads and this main thread to scan buffer
+	// partition tuples - use 7 auxiliary threads and this main thread to scan buffer
 	threads = new std::thread*[7];
-	for (size_t part_run = 1; part_run < 7; ++part_run)
+	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		threads[part_run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate,
-			std::string(partitioner_name), partitioner, rides, tasks.size(), &imbalance[part_run], &key_imbalance[part_run],
-			&part_durations[part_run]);
+		if (part_run == 0)
+		{
+			threads[part_run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate,
+				true, std::string(partitioner_name), partitioner, rides, &worker_input_buffer, tasks.size(), &imbalance[part_run], &key_imbalance[part_run],
+				&part_durations[part_run]);
+		}
+		else
+		{
+			threads[part_run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate,
+				false, std::string(partitioner_name), partitioner, rides, &worker_input_buffer, tasks.size(), &imbalance[part_run], &key_imbalance[part_run],
+				&part_durations[part_run]);
+		}
 	}
-	std::chrono::duration<double, std::milli> duration;
-	DebsFrequentRideKeyExtractor key_extractor;
-	ImbalanceScoreAggr<Experiment::DebsChallenge::CompactRide, std::string> imbalance_aggregator(tasks.size(), key_extractor);
-	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
-	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
-	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides->cbegin(); it != rides->cend(); ++it)
-	{
-		std::string pickup_cell = std::to_string(it->pickup_cell.first) + "." + std::to_string(it->pickup_cell.second);
-		std::string dropoff_cell = std::to_string(it->dropoff_cell.first) + "." + std::to_string(it->dropoff_cell.second);
-		std::string key = pickup_cell + "-" + dropoff_cell;
-		uint16_t task = p_copy->partition_next(&key, key.length());
-		imbalance_aggregator.incremental_measure_score(task, *it);
-		worker_input_buffer[task].push_back(*it);
-	}
-	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-	duration = (part_end - part_start);
-	delete p_copy;
-	part_durations[0] = duration.count();
-	imbalance[0] = imbalance_aggregator.imbalance();
-	key_imbalance[0] = imbalance_aggregator.cardinality_imbalance();
-	for (size_t part_run_thread = 1; part_run_thread < 7; ++part_run_thread)
+	for (size_t part_run_thread = 0; part_run_thread < 7; ++part_run_thread)
 	{
 		threads[part_run_thread]->join();
-	}
-	for (size_t part_run = 1; part_run < 7; part_run++)
-	{
-		delete threads[part_run];
+		delete threads[part_run_thread];
+		partition_duration_vector.push_back(part_durations[part_run_thread]);
 	}
 	delete[] threads;
-	for (size_t i = 0; i < 7; i++)
-	{
-		partition_duration_vector.push_back(part_durations[i]);
-	}
-	for (auto it = worker_input_buffer.begin(); it != worker_input_buffer.end(); ++it)
-	{
-		it->shrink_to_fit();
-	}
-	worker_input_buffer.shrink_to_fit();
-	
 	// for every task - calculate (partial) workload
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> task_durations;
+		std::vector<Experiment::DebsChallenge::frequent_route> p;
+		double exec_durations[7];
+		threads = new std::thread*[7];
 		for (size_t run = 0; run < 7; ++run)
 		{
-			std::vector<Experiment::DebsChallenge::frequent_route> p;
-			// feed the worker
-			Experiment::DebsChallenge::FrequentRouteWorkerThread worker(nullptr, nullptr, nullptr, &queue, &mu, &cond,
-				worker_output_file_name);
-			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-			// TIME CRITICAL CODE - START
-			for (auto it = worker_input_buffer[i].begin(); it != worker_input_buffer[i].end(); ++it)
-			{
-				worker.update(*it);
-			}
-			worker.partial_finalize(p);
-			if (run >= 6)
-			{
-				partial_result.reserve(partial_result.size() + p.size());
-				std::move(p.begin(), p.end(), std::inserter(partial_result, partial_result.end()));
-			}
-			// TIME CRITICAL CODE - END
-			std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
-			std::chrono::duration<double, std::milli> execution_time = end - start;
-			task_durations.push_back(execution_time.count());
-			p.clear();
+			threads[run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::worker_thread_operate, (run == 0), &worker_input_buffer[i],
+				&p, &exec_durations[run]);
 		}
+		for (size_t run = 0; run < 7; ++run)
+		{
+			threads[run]->join();
+			delete threads[run];
+			task_durations.push_back(exec_durations[run]);
+		}
+		delete[] threads;
 		worker_input_buffer[i].clear();
+		// move any results from p to partial result
+		partial_result.insert(partial_result.end(), p.begin(), p.end());
 		auto max_it = std::max_element(task_durations.begin(), task_durations.end());
 		task_durations.erase(max_it);
 		auto min_it = std::min_element(task_durations.begin(), task_durations.end());
@@ -646,32 +530,22 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		exec_durations[i] = average_exec_duration;
 	}
 	worker_input_buffer.clear();
-	for (size_t aggr_run = 0; aggr_run < 7; ++aggr_run)
+	threads = new std::thread*[7];
+	std::vector<std::pair<unsigned long, std::string>> result;
+	double aggregate_durations[7];
+	double io_duration;
+	for (size_t run = 0; run < 7; ++run)
 	{
-		Experiment::DebsChallenge::FrequentRouteOfflineAggregator aggregator;
-		std::vector<std::pair<unsigned long, std::string>> result;
-		// TIME CRITICAL CODE - START
-		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") != 0)
-		{
-			aggregator.calculate_and_sort_final_aggregation(partial_result, result);
-		}
-		else
-		{
-			aggregator.sort_final_aggregation(partial_result, result);
-		}
-		std::chrono::system_clock::time_point aggregate_end = std::chrono::system_clock::now();
-		// TIME CRITICAL CODE - END
-		std::chrono::duration<double, std::milli> aggregation_time = aggregate_end - aggregate_start;
-		aggr_durations.push_back(aggregation_time.count());
-		std::chrono::system_clock::time_point output_write_start = std::chrono::system_clock::now();
-		if (aggr_run >= 6)
-		{
-			aggregator.write_output_to_file(result, worker_output_file_name);
-		}
-		std::chrono::system_clock::time_point output_write_end = std::chrono::system_clock::now();
-		write_output_duration = (output_write_end - output_write_start).count();
+		threads[run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_operate, (run == 0), partitioner_name, 
+			&partial_result, &result, &aggregate_durations[run], worker_output_file_name, &write_output_duration);
 	}
+	for (size_t run = 0; run < 7; ++run)
+	{
+		threads[run]->join();
+		delete threads[run];
+		aggr_durations.push_back(aggregate_durations[run]);
+	}
+	delete[] threads;
 	auto max_it = std::max_element(aggr_durations.begin(), aggr_durations.end());
 	aggr_durations.erase(max_it);
 	auto min_it = std::min_element(aggr_durations.begin(), aggr_durations.end());
@@ -686,8 +560,9 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 
 	std::stringstream result_stream;
 	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," << (std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," <<
-		aggr_duration << "," << write_output_duration << "," << mean_part_time << "," << imbalance[0] << "," << key_imbalance[0] << "\n";
+		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," << 
+		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << 
+		write_output_duration << "," << mean_part_time << "," << imbalance[0] << "," << key_imbalance[0] << "\n";
 	std::cout << result_stream.str();
 	partial_result.clear();
 	exec_durations.clear();

@@ -124,9 +124,9 @@ inline uint32_t TpchQueryThreeLineitemKeyExtractor::extract_key(const Experiment
 
 inline std::string DebsFrequentRideKeyExtractor::extract_key(const Experiment::DebsChallenge::CompactRide& r) const 
 {
-	std::string pickup_cell = std::to_string(r.pickup_cell.first) + "." + std::to_string(r.pickup_cell.second);
-	std::string dropoff_cell = std::to_string(r.dropoff_cell.first) + "." + std::to_string(r.dropoff_cell.second);
-	return pickup_cell + "-" + dropoff_cell;
+	std::stringstream str_stream;
+	str_stream << r.pickup_cell.first << "." << r.pickup_cell.second << "-" << r.dropoff_cell.first << "." << r.dropoff_cell.second;
+	return str_stream.str();
 }
 
 inline std::string DebsProfitCellMedallionKeyExtractor::extract_key(const Experiment::DebsChallenge::CompactRide& r) const 
@@ -199,7 +199,6 @@ inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score(size
 template<class Tuple, class Tuple_Key>
 inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score_tuple_count(size_t index, const Tuple & t)
 {
-	//Tuple_Key key = key_extractor.extract_key(t);
 	tuple_count[index]++;
 }
 
