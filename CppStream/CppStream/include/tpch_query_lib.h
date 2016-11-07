@@ -117,7 +117,7 @@ namespace Experiment
 			QueryOneWorker(std::queue<Experiment::Tpch::lineitem>* input_queue, std::mutex* mu, std::condition_variable* cond);
 			~QueryOneWorker();
 			void operate();
-			void update(Tpch::lineitem& line_item);
+			void update(const Tpch::lineitem& line_item);
 			void finalize(std::vector<query_one_result>& buffer);
 		private:
 			std::mutex* mu;
@@ -142,67 +142,27 @@ namespace Experiment
 			static void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num);
 			static void thread_lineitem_partition(bool write, size_t task_num, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::lineitem>* input_buffer,
 				std::vector<std::vector<Experiment::Tpch::lineitem>>* worker_input_buffer, float *imbalance, float* key_imbalance, double *total_duration);
+			static void thread_worker_operate(const bool write, const std::vector<Experiment::Tpch::lineitem>* input_buffer, 
+				std::vector<Experiment::Tpch::query_one_result>* result_buffer, double* operate_duration);
+			static void thread_aggregate(const bool write, const std::string partitioner_name, const std::vector<Experiment::Tpch::query_one_result>* input_buffer,
+				std::map<std::string, Experiment::Tpch::query_one_result>* result, const std::string worker_output_file_name, double* total_duration, double* io_duration);
 			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
-
-		/*class LineitemOrderWorker
-		{
-		public:
-			LineitemOrderWorker(std::queue<Experiment::Tpch::lineitem>* li_queue, std::mutex* li_mu, std::condition_variable* li_cond, 
-					std::queue<Experiment::Tpch::order>* o_queue, std::mutex* o_mu, std::condition_variable* o_cond);
-			~LineitemOrderWorker();
-			void operate();
-			void update(Tpch::lineitem& line_item, bool partial_flag);
-			void update(Tpch::order& o);
-			void finalize(std::unordered_map<std::string, lineitem_order>& buffer);
-			void partial_finalize(std::unordered_map<std::string, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer, 
-				std::unordered_map<std::string, lineitem_order>& result_buffer);
-		private:
-			std::mutex* li_mu;
-			std::mutex* o_mu;
-			std::condition_variable* li_cond;
-			std::condition_variable* o_cond;
-			std::unordered_map<uint32_t, Tpch::order> order_index;
-			std::unordered_map<std::string, lineitem> li_index;
-			std::unordered_map<std::string, Tpch::lineitem_order> result;
-			std::queue<Experiment::Tpch::lineitem>* li_queue;
-			std::queue<Experiment::Tpch::order>* o_queue;
-		};
-
-		class LineitemOrderOfflineAggregator
-		{
-		public:
-			LineitemOrderOfflineAggregator();
-			~LineitemOrderOfflineAggregator();;
-			void calculate_and_produce_final_result(std::unordered_map<std::string, Tpch::lineitem>& li_buffer, std::unordered_map<uint32_t, Tpch::order>& o_buffer,
-				std::unordered_map<std::string, Tpch::lineitem_order>& result);
-			void write_output_result(const std::unordered_map<std::string, Tpch::lineitem_order>& result, const std::string& output_file);
-		};
-
-		class LineitemOrderPartition
-		{
-		public:
-			static void lineitem_order_join_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
-				const size_t task_num);
-			static void lineitem_order_join_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& li_table, const std::vector<Experiment::Tpch::order>& o_table,
-				const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
-		};*/
 
 		class QueryThreeJoinWorker
 		{
 		public:
 			QueryThreeJoinWorker(const Experiment::Tpch::query_three_predicate& predicate);
 			~QueryThreeJoinWorker();
-			void step_one_update(const Experiment::Tpch::q3_customer& customer);
-			void step_one_update(const Experiment::Tpch::order& order);
+			void step_one_update(const Experiment::Tpch::q3_customer& customer, std::string partitioner_name);
+			void step_one_update(const Experiment::Tpch::order& order, std::string partitioner_name);
 			void step_one_finalize(std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer);
 			void step_one_partial_finalize(std::unordered_set<uint32_t>& c_index, std::unordered_map<uint32_t, Tpch::order>& o_index,
 				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer);
 			void step_two_init(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result);
 			void step_two_update(const Experiment::Tpch::lineitem& line_item);
-			void finalize(std::unordered_map<std::string, Experiment::Tpch::query_three_result>& result_buffer);
-			void partial_finalize(std::unordered_map<std::string, Experiment::Tpch::query_three_result>& result_buffer);
+			void finalize(std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer);
 		private:
 			Experiment::Tpch::query_three_predicate predicate;
 			std::unordered_set<uint32_t> cu_index;
@@ -214,7 +174,15 @@ namespace Experiment
 		class QueryThreeOfflineAggregator
 		{
 		public:
-			void write_output_to_file(const std::unordered_map<std::string, query_three_result>& result, const std::string& output_file);
+			void step_one_sort(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, 
+				std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer);
+			void step_one_materialize_and_sort(const std::unordered_set<uint32_t>& c_index, const std::unordered_map<uint32_t, Tpch::order>& o_index,
+				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer);
+			void step_two_sort(const std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer, 
+				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result);
+			void step_two_calculate_and_sort(const std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer,
+				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result);
+			void write_output_to_file(const std::vector<std::pair<std::string, query_three_result>>& final_result, const std::string& output_file);
 		};
 
 		class QueryThreePartition

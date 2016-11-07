@@ -58,17 +58,16 @@ void Experiment::DebsChallenge::FrequentRouteWorkerThread::operate()
 void Experiment::DebsChallenge::FrequentRouteWorkerThread::update(const Experiment::DebsChallenge::CompactRide& ride)
 {
 	std::stringstream str_stream;
-	str_stream << ride.pickup_cell.first << "." << ride.pickup_cell.second << "-" << ride.dropoff_cell.first << "." <<
-		ride.dropoff_cell.second;
-	std::string key = str_stream.str();
-	std::unordered_map<std::string, uint64_t>::iterator it = result.find(key);
+	str_stream << (unsigned short)ride.pickup_cell.first << "." << (unsigned short)ride.pickup_cell.second << "-" << (unsigned short)ride.dropoff_cell.first << "." <<
+		(unsigned short)ride.dropoff_cell.second;
+	std::unordered_map<std::string, uint64_t>::iterator it = result.find(str_stream.str());
 	if (it != result.end())
 	{
 		it->second += 1;
 	}
 	else
 	{
-		result[key] = 1;
+		result[str_stream.str()] = 1;
 	}
 }
 
@@ -78,9 +77,7 @@ void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize(bool write, 
 	{
 		for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
 		{
-			Experiment::DebsChallenge::frequent_route fr;
-			fr.route = it->first;
-			fr.count = it->second;
+			Experiment::DebsChallenge::frequent_route fr(it->first, it->second);
 			partial_result->push_back(fr);
 		}
 	}
@@ -89,9 +86,7 @@ void Experiment::DebsChallenge::FrequentRouteWorkerThread::finalize(bool write, 
 		std::vector<Experiment::DebsChallenge::frequent_route> partial_result_aux;
 		for (std::unordered_map<std::string, uint64_t>::const_iterator it = result.cbegin(); it != result.cend(); ++it)
 		{
-			Experiment::DebsChallenge::frequent_route fr;
-			fr.route = it->first;
-			fr.count = it->second;
+			Experiment::DebsChallenge::frequent_route fr(it->first, it->second);
 			partial_result_aux.push_back(fr);
 		}
 	}
@@ -123,11 +118,15 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::sort_final_aggre
 			final_result.insert(std::make_pair(cit->count, tmp));
 		}
 	}
-	for (std::map<unsigned long, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
+	for (std::map<unsigned long, std::vector<std::string>>::const_reverse_iterator c = final_result.crbegin(); c != final_result.crend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
 			result.push_back(std::make_pair(c->first, *i));
+		}
+		if (result.size() >= 10)
+		{
+			break;
 		}
 	}
 	final_result.clear();
@@ -136,23 +135,24 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::sort_final_aggre
 void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_aggregates,
 	std::vector<std::pair<unsigned long, std::string>>& result)
 {
+	std::map<std::string, uint64_t> sorted_full_aggregates;
 	// START: calculate full aggregates (m-choice partitioners required)
 	for (std::vector<frequent_route>::const_iterator cit = partial_aggregates.cbegin(); cit != partial_aggregates.cend(); ++cit)
 	{
-		auto it = this->result.find(cit->route);
-		if (it != this->result.end())
+		auto it = sorted_full_aggregates.find(cit->route);
+		if (it != sorted_full_aggregates.end())
 		{
 			it->second += cit->count;
 		}
 		else
 		{
-			this->result.insert(std::make_pair(cit->route, cit->count));
+			sorted_full_aggregates[cit->route] = cit->count;
 		}
 	}
 	// END: calculate full aggregates (m-choice partitioners required)
 	// START: sort full result (all partitioners required)
 	std::map<unsigned long, std::vector<std::string>> final_result;
-	for (auto cit = this->result.begin(); cit != this->result.end(); ++cit)
+	for (auto cit = sorted_full_aggregates.cbegin(); cit != sorted_full_aggregates.cend(); ++cit)
 	{
 		auto it = final_result.find(cit->second);
 		if (it != final_result.end())
@@ -163,16 +163,20 @@ void Experiment::DebsChallenge::FrequentRouteOfflineAggregator::calculate_and_so
 		{
 			std::vector<std::string> tmp;
 			tmp.push_back(cit->first);
-			final_result.insert(std::make_pair(cit->second, tmp));
+			final_result[cit->second] = tmp;
 		}
 	}
 	// END: sort full result (all partitioners required)
 	// START: result is materialized
-	for (std::map<unsigned long, std::vector<std::string>>::const_iterator c = final_result.cbegin(); c != final_result.cend(); ++c)
+	for (std::map<unsigned long, std::vector<std::string>>::const_reverse_iterator c = final_result.crbegin(); c != final_result.crend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
 			result.push_back(std::make_pair(c->first, *i));
+		}
+		if (result.size() >= 10)
+		{
+			break;
 		}
 	}
 	// END: result is materialized
@@ -367,9 +371,13 @@ void Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate
 		for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides->cbegin(); it != rides->cend(); ++it)
 		{
 			std::stringstream str_stream;
-			str_stream << it->pickup_cell.first << "." << it->pickup_cell.second << "-" << it->dropoff_cell.first << "." << it->dropoff_cell.second;
+			str_stream << (unsigned short)it->pickup_cell.first << "." << (unsigned short)it->pickup_cell.second << "-" << 
+				(unsigned short)it->dropoff_cell.first << "." << (unsigned short)it->dropoff_cell.second;
 			std::string key = str_stream.str();
-			uint16_t task = p_copy->partition_next(&key, key.length());
+			char* c_key = (char*)malloc(key.length() + 1 * sizeof(char));
+			strcpy(c_key, key.c_str());
+			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
+			free(c_key);
 			imbalance_aggregator.incremental_measure_score(task, *it);
 			(*worker_input_buffer)[task].push_back(*it);
 		}
@@ -387,9 +395,13 @@ void Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate
 		for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = rides->cbegin(); it != rides->cend(); ++it)
 		{
 			std::stringstream str_stream;
-			str_stream << it->pickup_cell.first << "." << it->pickup_cell.second << "-" << it->dropoff_cell.first << "." << it->dropoff_cell.second;
+			str_stream << (unsigned short)it->pickup_cell.first << "." << (unsigned short)it->pickup_cell.second << "-" << 
+				(unsigned short)it->dropoff_cell.first << "." << (unsigned short)it->dropoff_cell.second;
 			std::string key = str_stream.str();
-			uint16_t task = p_copy->partition_next(&key, key.length());
+			char* c_key = (char*)malloc(key.length() + 1 * sizeof(char));
+			strcpy(c_key, key.c_str());
+			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
+			free(c_key);
 			imbalance_aggregator.incremental_measure_score_tuple_count(task, *it);
 		}
 		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
@@ -467,31 +479,21 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	std::thread** threads;
 	double part_durations[7];
 	std::vector<double> partition_duration_vector;
-	std::vector<double> exec_durations(tasks.size(), double(0));
-	std::vector<double> aggr_durations;
+	std::vector<double> exec_durations(tasks.size(), double(0)), aggr_durations;
 	double aggr_duration, write_output_duration;
 	std::vector<Experiment::DebsChallenge::frequent_route> partial_result;
 	std::vector<std::vector<Experiment::DebsChallenge::CompactRide>> worker_input_buffer(tasks.size(), 
 		std::vector<Experiment::DebsChallenge::CompactRide>());
-	std::queue<Experiment::DebsChallenge::CompactRide> queue;
-	std::mutex mu;
-	std::condition_variable cond;
+	std::vector<std::pair<unsigned long, std::string>> result;
+	double aggregate_durations[7];
+	double io_duration;
 	// partition tuples - use 7 auxiliary threads and this main thread to scan buffer
 	threads = new std::thread*[7];
 	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		if (part_run == 0)
-		{
-			threads[part_run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate,
-				true, std::string(partitioner_name), partitioner, rides, &worker_input_buffer, tasks.size(), &imbalance[part_run], &key_imbalance[part_run],
-				&part_durations[part_run]);
-		}
-		else
-		{
-			threads[part_run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate,
-				false, std::string(partitioner_name), partitioner, rides, &worker_input_buffer, tasks.size(), &imbalance[part_run], &key_imbalance[part_run],
-				&part_durations[part_run]);
-		}
+		threads[part_run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate,
+			(part_run == 0), std::string(partitioner_name), partitioner, rides, &worker_input_buffer, tasks.size(), &imbalance[part_run], &key_imbalance[part_run],
+			&part_durations[part_run]);
 	}
 	for (size_t part_run_thread = 0; part_run_thread < 7; ++part_run_thread)
 	{
@@ -505,18 +507,18 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	{
 		std::vector<double> task_durations;
 		std::vector<Experiment::DebsChallenge::frequent_route> p;
-		double exec_durations[7];
+		double durations[7];
 		threads = new std::thread*[7];
 		for (size_t run = 0; run < 7; ++run)
 		{
-			threads[run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::worker_thread_operate, (run == 0), &worker_input_buffer[i],
-				&p, &exec_durations[run]);
+			threads[run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::worker_thread_operate, 
+				(run == 0), &worker_input_buffer[i], &p, &durations[run]);
 		}
 		for (size_t run = 0; run < 7; ++run)
 		{
 			threads[run]->join();
 			delete threads[run];
-			task_durations.push_back(exec_durations[run]);
+			task_durations.push_back(durations[run]);
 		}
 		delete[] threads;
 		worker_input_buffer[i].clear();
@@ -531,9 +533,6 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 	}
 	worker_input_buffer.clear();
 	threads = new std::thread*[7];
-	std::vector<std::pair<unsigned long, std::string>> result;
-	double aggregate_durations[7];
-	double io_duration;
 	for (size_t run = 0; run < 7; ++run)
 	{
 		threads[run] = new std::thread(Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_operate, (run == 0), partitioner_name, 
@@ -651,107 +650,65 @@ void Experiment::DebsChallenge::ProfitableArea::update(const DebsChallenge::Comp
 	}
 	else
 	{
-		dropoff_table.insert(std::make_pair(medal, std::make_pair(dropoff_cell, ride.dropoff_datetime)));
+		dropoff_table[medal] = std::make_pair(dropoff_cell, ride.dropoff_datetime);
 	}
 }
 
 void Experiment::DebsChallenge::ProfitableArea::first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map, 
 	std::unordered_map<std::string, std::vector<float>>& complete_fare_map_out, 
 	std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table, 
-	std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table_out, const bool two_choice_partition_used, const bool write)
+	std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table_out, 
+	const bool two_choice_partition_used, const bool write)
 {
-	std::unordered_map<std::string, std::vector<float>> complete_fare_map_aux;
-	std::unordered_map<std::string, std::pair<std::string, std::time_t>> complete_dropoff_table_aux;
-	for (auto it = fare_map.cbegin(); it != fare_map.cend(); ++it)
+	/*std::unordered_map<std::string, std::vector<float>> complete_fare_map_aux(fare_map);
+	std::unordered_map<std::string, std::pair<std::string, std::time_t>> complete_dropoff_table_aux(dropoff_table);*/
+	for (auto it = complete_fare_map.begin(); it != complete_fare_map.end(); ++it)
 	{
-		auto c_fm_it = complete_fare_map.find(it->first);
-		auto c_fm_it_aux = complete_fare_map_aux.find(it->first);
-		if ((c_fm_it != complete_fare_map.end() && c_fm_it_aux != complete_fare_map_aux.end()) ||
-			(c_fm_it == complete_fare_map.end() && c_fm_it_aux != complete_fare_map_aux.end()))
+		/*auto c_fm_aux_it = complete_fare_map_aux.find(it->first);*/
+		auto c_fm_aux_it = fare_map.find(it->first);
+		if (c_fm_aux_it != fare_map.end())
 		{
-			// just update the value in the auxiliary table
-			c_fm_it_aux->second.reserve(c_fm_it_aux->second.size() + it->second.size());
-			std::move(it->second.begin(), it->second.end(), std::inserter(c_fm_it_aux->second, c_fm_it_aux->second.end()));
-		}
-		else if (c_fm_it != complete_fare_map.end() && c_fm_it_aux == complete_fare_map_aux.end())
-		{
-			// create a record in the auxiliary table and update the value
-			complete_fare_map_aux[it->first] = c_fm_it->second;
-			c_fm_it_aux = complete_fare_map_aux.find(it->first);
-			c_fm_it_aux->second.reserve(c_fm_it_aux->second.size() + it->second.size());
-			std::move(it->second.begin(), it->second.end(), std::inserter(c_fm_it_aux->second, c_fm_it_aux->second.end()));
+			c_fm_aux_it->second.insert(c_fm_aux_it->second.end(), it->second.begin(), it->second.end());
 		}
 		else
 		{
-			complete_fare_map_aux[it->first] = it->second;
+			fare_map[it->first] = it->second;
 		}
 	}
-	for (auto it = complete_fare_map.cbegin(); it != complete_fare_map.cend(); ++it)
-	{
-		auto aux_it = complete_fare_map_aux.find(it->first);
-		if (aux_it == complete_fare_map_aux.end())
-		{
-			complete_fare_map_aux[it->first] = it->second;
-		}
-	}
+	// everything is in complete_fare_map_aux
 	if (two_choice_partition_used)
 	{
-		for (auto it = dropoff_table.cbegin(); it != dropoff_table.cend(); ++it)
-		{
-			auto med_it = complete_dropoff_table.find(it->first);
-			auto med_it_aux = complete_dropoff_table_aux.find(it->first);
-			if (med_it != complete_dropoff_table.end() && med_it_aux == complete_dropoff_table_aux.end())
-			{
-				if (med_it->second.second < it->second.second && med_it->second.first.compare(it->second.first) != 0)
-				{
-					complete_dropoff_table_aux[it->first] = std::make_pair(it->second.first, it->second.second);
-				}
-				else
-				{
-					complete_dropoff_table_aux[it->first] = std::make_pair(med_it->second.first, med_it->second.second);
-				}
-			}
-			else if (med_it == complete_dropoff_table.end() && med_it_aux == complete_dropoff_table_aux.end())
-			{
-				complete_dropoff_table_aux[it->first] = std::make_pair(it->second.first, it->second.second);
-			}
-			else if ((med_it == complete_dropoff_table.end() && med_it_aux != complete_dropoff_table_aux.end()) ||
-				(med_it != complete_dropoff_table.end() && med_it_aux != complete_dropoff_table_aux.end()))
-			{
-				if (med_it_aux->second.second < it->second.second && med_it_aux->second.first.compare(it->second.first) != 0)
-				{
-					med_it_aux->second.first = it->second.first;
-					med_it_aux->second.second = it->second.second;
-				}
-			}
-		}
 		for (auto it = complete_dropoff_table.cbegin(); it != complete_dropoff_table.cend(); ++it)
 		{
-			auto aux_it = complete_dropoff_table_aux.find(it->first);
-			if (aux_it == complete_dropoff_table_aux.end())
+			//auto aux_it = complete_dropoff_table_aux.find(it->first);
+			auto aux_it = dropoff_table.find(it->first);
+			if (aux_it != dropoff_table.end())
 			{
-				complete_dropoff_table_aux[it->first] = it->second;
+				if (aux_it->second.second < it->second.second)
+				{
+					aux_it->second = it->second;
+				}
+			}
+			else
+			{
+				dropoff_table[it->first] = it->second;
 			}
 		}
 	}
 	else
 	{
-		for (auto it = dropoff_table.cbegin(); it != dropoff_table.cend(); ++it)
-		{
-			complete_dropoff_table_aux.insert(std::make_pair(it->first, it->second));
-		}
-		// i need to add the values in the argument dropoff-table
+		// i need to add the values in the argument dropoff-table - medallions have been sent to one place
 		for (auto it = complete_dropoff_table.cbegin(); it != complete_dropoff_table.cend(); ++it)
 		{
-			complete_dropoff_table_aux.insert(std::make_pair(it->first, it->second));
+			dropoff_table[it->first] = it->second;
 		}
 	}
 	if (write == true)
 	{
 		complete_dropoff_table_out.clear();
-		complete_dropoff_table_out.insert(complete_dropoff_table_aux.cbegin(), complete_dropoff_table_aux.cend());
+		complete_dropoff_table_out.insert(dropoff_table.cbegin(), dropoff_table.cend());
 		complete_fare_map_out.clear();
-		complete_fare_map_out.insert(complete_fare_map_aux.cbegin(), complete_fare_map_aux.cend());
+		complete_fare_map_out.insert(fare_map.cbegin(), fare_map.cend());
 	}
 }
 
@@ -785,13 +742,13 @@ void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::s
 		{
 			// this is probably a mistake since each pickup-cell has a single list of fare lists
 			// it->second = median_fare;
-			std::cerr << "second_round_update() identified duplicate pickup-cell record. the cell-id: " << pickup_cell <<
+			std::cout << "second_round_update() identified duplicate pickup-cell record. the cell-id: " << pickup_cell <<
 				" was encountered twice. current median value found: " << it->second <<
 				", new value: " << median_fare << ".\n";
 		}
 		else
 		{
-			pickup_cell_median_fare.insert(std::make_pair(pickup_cell, median_fare));
+			pickup_cell_median_fare[pickup_cell] = median_fare;
 		}
 	}
 }
@@ -805,35 +762,41 @@ void Experiment::DebsChallenge::ProfitableArea::second_round_update(const std::s
 	}
 	else
 	{
-		dropoff_cell_empty_taxi_count.insert(std::make_pair(dropoff_cell, 1));
+		dropoff_cell_empty_taxi_count[dropoff_cell] = 1;
 	}
 }
 
 void Experiment::DebsChallenge::ProfitableArea::partial_finalize(std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer)
 {
-	for (auto dropoff_cell_it = dropoff_cell_empty_taxi_count.begin(); dropoff_cell_it != dropoff_cell_empty_taxi_count.end(); dropoff_cell_it++)
+	for (auto dropoff_cell_it = dropoff_cell_empty_taxi_count.cbegin(); dropoff_cell_it != dropoff_cell_empty_taxi_count.cend(); dropoff_cell_it++)
 	{
-		auto pickup_cell_it = pickup_cell_median_fare.find(dropoff_cell_it->first);
-		if (pickup_cell_it != pickup_cell_median_fare.end())
+		auto cell_profit_buffer_it = cell_profit_buffer.find(dropoff_cell_it->first);
+		if (cell_profit_buffer_it != cell_profit_buffer.end())
 		{
-			// calculate profit
-			auto cell_profit_buffer_it = cell_profit_buffer.find(dropoff_cell_it->first);
-			if (cell_profit_buffer_it != cell_profit_buffer.end())
-			{
-				cell_profit_buffer_it->second.first += dropoff_cell_it->second;
-				cell_profit_buffer_it->second.second += pickup_cell_it->second;
-			}
-			else
-			{
-				cell_profit_buffer[dropoff_cell_it->first] = std::make_pair(dropoff_cell_it->second, pickup_cell_it->second);
-			}
+			cell_profit_buffer_it->second.second += dropoff_cell_it->second;
+		}
+		else
+		{
+			cell_profit_buffer[dropoff_cell_it->first] = std::make_pair(0.0, dropoff_cell_it->second);
+		}
+	}
+	for (auto fare_it = pickup_cell_median_fare.cbegin(); fare_it != pickup_cell_median_fare.cend(); ++fare_it)
+	{
+		auto cell_profit_buffer_it = cell_profit_buffer.find(fare_it->first);
+		if (cell_profit_buffer_it != cell_profit_buffer.end())
+		{
+			cell_profit_buffer_it->second.first += fare_it->second;
+		}
+		else
+		{
+			cell_profit_buffer[fare_it->first] = std::make_pair(fare_it->second, 0);
 		}
 	}
 }
 
 void Experiment::DebsChallenge::ProfitableArea::finalize(std::unordered_map<std::string, float>& cell_profit_buffer)
 {
-	for (auto dropoff_cell_it = dropoff_cell_empty_taxi_count.begin(); dropoff_cell_it != dropoff_cell_empty_taxi_count.end(); dropoff_cell_it++)
+	for (auto dropoff_cell_it = dropoff_cell_empty_taxi_count.cbegin(); dropoff_cell_it != dropoff_cell_empty_taxi_count.cend(); ++dropoff_cell_it)
 	{
 		auto pickup_cell_it = pickup_cell_median_fare.find(dropoff_cell_it->first);
 		if (pickup_cell_it != pickup_cell_median_fare.end())
@@ -870,11 +833,15 @@ void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::sort_final_aggr
 			ordered_result[cit->second] = tmp;
 		}
 	}
-	for (std::map<float, std::vector<std::string>>::const_iterator c = ordered_result.cbegin(); c != ordered_result.cend(); ++c)
+	for (std::map<float, std::vector<std::string>>::const_reverse_iterator c = ordered_result.crbegin(); c != ordered_result.crend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
 			final_result.push_back(std::make_pair(c->first, *i));
+		}
+		if (final_result.size() >= 10)
+		{
+			break;
 		}
 	}
 	ordered_result.clear();
@@ -884,7 +851,7 @@ void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::calculate_and_s
 	std::vector<std::pair<float, std::string>>& final_result)
 {
 	std::unordered_map<std::string, std::pair<float, int>> cell_profit_final_buffer;
-	for (std::unordered_map<std::string, std::pair<float, int>>::const_iterator cit = cell_profit_buffer.cbegin(); cit != cell_profit_buffer.cend(); ++cit)
+	for (auto cit = cell_profit_buffer.cbegin(); cit != cell_profit_buffer.cend(); ++cit)
 	{
 		auto it = cell_profit_final_buffer.find(cit->first);
 		if (it != cell_profit_final_buffer.end())
@@ -898,26 +865,33 @@ void Experiment::DebsChallenge::ProfitableAreaOfflineAggregator::calculate_and_s
 		}
 	}
 	std::map<float, std::vector<std::string>> ordered_result;
-	for (auto cit = cell_profit_final_buffer.begin(); cit != cell_profit_final_buffer.end(); ++cit)
+	for (auto cit = cell_profit_final_buffer.cbegin(); cit != cell_profit_final_buffer.cend(); ++cit)
 	{
-		float final_profit = cit->second.first / cit->second.second;
-		auto it = ordered_result.find(final_profit);
-		if (it != ordered_result.end())
+		if (cit->second.second > 0)
 		{
-			it->second.push_back(cit->first);
-		}
-		else
-		{
-			std::vector<std::string> tmp;
-			tmp.push_back(cit->first);
-			ordered_result[final_profit] = tmp;
+			float final_profit = cit->second.first / cit->second.second;
+			auto it = ordered_result.find(final_profit);
+			if (it != ordered_result.end())
+			{
+				it->second.push_back(cit->first);
+			}
+			else
+			{
+				std::vector<std::string> tmp;
+				tmp.push_back(cit->first);
+				ordered_result[final_profit] = tmp;
+			}
 		}
 	}
-	for (std::map<float, std::vector<std::string>>::const_iterator c = ordered_result.cbegin(); c != ordered_result.cend(); ++c)
+	for (std::map<float, std::vector<std::string>>::const_reverse_iterator c = ordered_result.crbegin(); c != ordered_result.crend(); ++c)
 	{
 		for (std::vector<std::string>::const_iterator i = c->second.cbegin(); i != c->second.cend(); ++i)
 		{
 			final_result.push_back(std::make_pair(c->first, *i));
+		}
+		if (final_result.size() >= 10)
+		{
+			break;
 		}
 	}
 	ordered_result.clear();
@@ -943,69 +917,6 @@ Experiment::DebsChallenge::ProfitableAreaPartition::ProfitableAreaPartition()
 Experiment::DebsChallenge::ProfitableAreaPartition::~ProfitableAreaPartition()
 {
 }
-
-//double Experiment::DebsChallenge::ProfitableAreaPartition::debs_concurrent_partition(const std::vector<uint16_t>& tasks, const std::vector<Experiment::DebsChallenge::CompactRide>& route_table,
-//	Partitioner& partitioner, const std::string partitioner_name, const size_t max_queue_size)
-//{
-//	// initialize shared memory
-//	queues = new std::queue<Experiment::DebsChallenge::CompactRide>*[tasks.size()];
-//	mu_xes = new std::mutex[tasks.size()];
-//	cond_vars = new std::condition_variable[tasks.size()];
-//	threads = new std::thread*[tasks.size()];
-//	query_workers = new Experiment::DebsChallenge::ProfitableArea*[tasks.size()];
-//	this->max_queue_size = max_queue_size;
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		queues[i] = new std::queue<Experiment::DebsChallenge::CompactRide>();
-//		query_workers[i] = new Experiment::DebsChallenge::ProfitableArea(queues[i], &mu_xes[i], &cond_vars[i]);
-//		threads[i] = new std::thread(debs_profitable_area_worker, query_workers[i]);
-//	}
-//	//std::cout << partitioner_name << " thread INITIATES partitioning (profit-areas).\n";
-//	// start partitioning
-//	std::chrono::system_clock::time_point partition_start = std::chrono::system_clock::now();
-//	for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = route_table.cbegin(); it != route_table.cend(); ++it)
-//	{
-//		std::string key = it->medallion;
-//		short task = partitioner.partition_next(key.c_str(), key.length());
-//		std::unique_lock<std::mutex> locker(mu_xes[task]);
-//		cond_vars[task].wait(locker, [this, task, max_queue_size]() { return queues[task]->size() < max_queue_size; });
-//		queues[task]->push(*it);
-//		locker.unlock();
-//		cond_vars[task].notify_all();
-//	}
-//	//std::cout << partitioner_name << " thread SENT all rides (profit-areas).\n";
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		Experiment::DebsChallenge::CompactRide final_ride;
-//		final_ride.trip_distance = -1;
-//		std::unique_lock<std::mutex> locker(mu_xes[i]);
-//		cond_vars[i].wait(locker, [this, i, max_queue_size]() { return queues[i]->size() < max_queue_size; });
-//		queues[i]->push(final_ride);
-//		locker.unlock();
-//		cond_vars[i].notify_all();
-//	}
-//	// wait for workers to join
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		threads[i]->join();
-//	}
-//	std::chrono::system_clock::time_point partition_end = std::chrono::system_clock::now();
-//	std::chrono::duration<double, std::milli> partition_time = partition_end - partition_start;
-//	//std::cout << partitioner_name << " total partition time: " << partition_time.count() << " (msec) (profit-areas).\n";
-//	for (size_t i = 0; i < tasks.size(); ++i)
-//	{
-//		delete threads[i];
-//		delete query_workers[i];
-//		delete queues[i];
-//	}
-//	delete[] threads;
-//	delete[] query_workers;
-//	delete[] queues;
-//	delete[] mu_xes;
-//	delete[] cond_vars;
-//	//std::cout << "------END-----\n";
-//	return partition_time.count();
-//}
 
 void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number)
 {
@@ -1096,34 +1007,42 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operat
 	ImbalanceScoreAggr<Experiment::DebsChallenge::CompactRide, std::string> imbalance_aggregator(task_number, key_extractor);
 	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
 	p_copy->init();
-	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
 	if (writer)
 	{
+		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
 		for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = buffer->cbegin(); it != buffer->cend(); ++it)
 		{
 			char med_buffer[33];
 			memcpy(med_buffer, it->medallion, 32 * sizeof(char));
 			med_buffer[32] = '\0';
-			std::string key = med_buffer;
-			uint16_t task = p_copy->partition_next(key.c_str(), key.length());
+			uint16_t task = p_copy->partition_next(med_buffer, strlen(med_buffer));
 			imbalance_aggregator.incremental_measure_score(task, *it);
 			(*worker_buffer)[task].push_back(*it);
 		}
+		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+		total_duration = (part_end - part_start);
+		size_t total_elements = 0;
+		for (size_t i = 0; i < task_number; i++)
+		{
+			(*worker_buffer)[i].shrink_to_fit();
+			total_elements += (*worker_buffer)[i].size();
+		}
+		(*worker_buffer).shrink_to_fit();
 	}
 	else
 	{
+		std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
 		for (std::vector<Experiment::DebsChallenge::CompactRide>::const_iterator it = buffer->cbegin(); it != buffer->cend(); ++it)
 		{
 			char med_buffer[33];
 			memcpy(med_buffer, it->medallion, 32 * sizeof(char));
 			med_buffer[32] = '\0';
-			std::string key = med_buffer;
-			uint16_t task = p_copy->partition_next(key.c_str(), key.length());
+			uint16_t task = p_copy->partition_next(med_buffer, strlen(med_buffer));
 			imbalance_aggregator.incremental_measure_score_tuple_count(task, *it);
 		}
+		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
+		total_duration = (part_end - part_start);
 	}
-	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
-	total_duration = (part_end - part_start);
 	*duration = total_duration.count();
 	*imbalance = imbalance_aggregator.imbalance();
 	*key_imbalance = imbalance_aggregator.cardinality_imbalance();
@@ -1136,6 +1055,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operat
 	float* dropoff_imbalance, float* dropoff_key_imbalance, double* duration, std::vector<std::vector<std::pair<std::string, std::vector<float>>>>* fare_sub_table,
 	std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>>* dropoffs_sub_table)
 {
+	std::chrono::system_clock::time_point part_one_start, part_one_end, part_two_start, part_two_end;
 	std::chrono::duration<double, std::milli> total_duration;
 	DebsProfCellCompleteFareKeyExtractor complete_fare_key_extractor;
 	DebsProfCellDropoffCellKeyExtractor dropoff_cell_key_extractor;
@@ -1145,49 +1065,76 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operat
 		dropoff_cell_key_extractor);
 	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
 	p_copy->init();
-	std::chrono::system_clock::time_point part_one_start = std::chrono::system_clock::now();
+	
 	if (writer == true)
 	{
+		part_one_start = std::chrono::system_clock::now();
 		for (auto it = fares->cbegin(); it != fares->cend(); ++it)
 		{
 			std::string key = it->first;
-			uint16_t task = p_copy->partition_next(key.c_str(), key.length());
+			char* c_key = (char*)malloc(sizeof(char) * (key.length() + 1));
+			strcpy(c_key, key.c_str());
+			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
+			free(c_key);
 			complete_fare_imb_aggregator.incremental_measure_score(task, *it);
 			(*fare_sub_table)[task].push_back(std::make_pair(it->first, it->second));
 		}
+		part_one_end = std::chrono::system_clock::now();
+		for (size_t i = 0; i < task_number; ++i)
+		{
+			(*fare_sub_table)[i].shrink_to_fit();
+		}
+		(*fare_sub_table).shrink_to_fit();
 	}
 	else
 	{
+		part_one_start = std::chrono::system_clock::now();
 		for (auto it = fares->cbegin(); it != fares->cend(); ++it)
 		{
 			std::string key = it->first;
-			uint16_t task = p_copy->partition_next(key.c_str(), key.length());
+			char* c_key = (char*)malloc(sizeof(char) * (key.length() + 1));
+			strcpy(c_key, key.c_str());
+			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
+			free(c_key);
 			complete_fare_imb_aggregator.incremental_measure_score_tuple_count(task, *it);
 		}
+		part_one_end = std::chrono::system_clock::now();
 	}
-	std::chrono::system_clock::time_point part_one_end = std::chrono::system_clock::now();
 	p_copy->init();
-	std::chrono::system_clock::time_point part_two_start = std::chrono::system_clock::now();
 	if (writer)
 	{
+		part_two_start = std::chrono::system_clock::now();
 		for (auto it = dropoffs->cbegin(); it != dropoffs->cend(); ++it)
 		{
 			std::string key = it->second.first;
-			uint16_t task = p_copy->partition_next(key.c_str(), key.length());
+			char* c_key = (char*)malloc(sizeof(char) * (key.length() + 1));
+			strcpy(c_key, key.c_str());
+			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
+			free(c_key);
 			dropoff_cell_imb_aggregator.incremental_measure_score(task, *it);
 			(*dropoffs_sub_table)[task].push_back(std::make_pair(it->first, it->second));
 		}
+		part_two_end = std::chrono::system_clock::now();
+		for (size_t i = 0; i < task_number; ++i)
+		{
+			(*dropoffs_sub_table)[i].shrink_to_fit();
+		}
+		(*dropoffs_sub_table).shrink_to_fit();
 	}
 	else
 	{
+		part_two_start = std::chrono::system_clock::now();
 		for (auto it = dropoffs->cbegin(); it != dropoffs->cend(); ++it)
 		{
 			std::string key = it->second.first;
-			uint16_t task = p_copy->partition_next(key.c_str(), key.length());
+			char* c_key = (char*)malloc(sizeof(char) * (key.length() + 1));
+			strcpy(c_key, key.c_str());
+			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
+			free(c_key);
 			dropoff_cell_imb_aggregator.incremental_measure_score_tuple_count(task, *it);
 		}
+		part_two_end = std::chrono::system_clock::now();
 	}
-	std::chrono::system_clock::time_point part_two_end = std::chrono::system_clock::now();
 	total_duration = std::chrono::duration<double, std::milli>((part_one_end - part_one_start) + (part_two_end - part_two_start));
 	*duration = total_duration.count();
 	*fare_imbalance = complete_fare_imb_aggregator.imbalance();
@@ -1246,18 +1193,9 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 	threads = new std::thread*[7];
 	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		if (part_run == 0)
-		{
-			threads[part_run] = new std::thread(Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operate_step_one,
-				true, std::string(partitioner_name), partitioner, rides, tasks.size(), &med_imbalance[part_run], &med_key_imbalance[part_run],
-				&med_part_durations[part_run], &worker_input_buffer);
-		}
-		else
-		{
-			threads[part_run] = new std::thread(Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operate_step_one,
-				false, std::string(partitioner_name), partitioner, rides, tasks.size(), &med_imbalance[part_run], &med_key_imbalance[part_run],
-				&med_part_durations[part_run], &worker_input_buffer);
-		}
+		threads[part_run] = new std::thread(Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operate_step_one,
+			(part_run == 0), std::string(partitioner_name), partitioner, rides, tasks.size(), &med_imbalance[part_run], &med_key_imbalance[part_run],
+			&med_part_durations[part_run], &worker_input_buffer);
 	}
 	// start gathering results
 	for (size_t part_run_thread = 0; part_run_thread < 7; ++part_run_thread)
@@ -1267,11 +1205,6 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 		part_medallion_durations.push_back(med_part_durations[part_run_thread]);
 	}
 	delete[] threads;
-	for (size_t i = 0; i < tasks.size(); i++)
-	{
-		worker_input_buffer[i].shrink_to_fit();
-	}
-	worker_input_buffer.shrink_to_fit();
 	// first parallel round of processing (for each pickup cell gather full-fares, for each medallion keep track of the latest dropoff-cell)
 	for (size_t task = 0; task < tasks.size(); ++task)
 	{
@@ -1281,16 +1214,8 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 		threads = new std::thread*[7];
 		for (size_t run = 0; run < 7; ++run)
 		{
-			if (run == 0)
-			{
-				threads[run] = new std::thread(thread_execution_step_one, true, partitioner_name, &worker_input_buffer[task], &complete_fare_table_aux, &complete_fare_table,
-					&dropoff_table_aux, &dropoff_table, &step_one_durations[run]);
-			}
-			else
-			{
-				threads[run] = new std::thread(thread_execution_step_one, false, partitioner_name, &worker_input_buffer[task], &complete_fare_table_aux, &complete_fare_table,
-					&dropoff_table_aux, &dropoff_table, &step_one_durations[run]);
-			}
+			threads[run] = new std::thread(thread_execution_step_one, (run == 0), partitioner_name, &worker_input_buffer[task], &complete_fare_table_aux, &complete_fare_table,
+				&dropoff_table_aux, &dropoff_table, &step_one_durations[run]);
 		}
 		for (size_t run = 0; run < 7; ++run)
 		{
@@ -1307,24 +1232,13 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 		worker_input_buffer[task].clear();
 		durations.clear();
 	}
-	// Partition data - Keys: pickup_cell, dropoff_cell
 	threads = new std::thread*[7];
 	for (size_t part_run = 0; part_run < 7; ++part_run)
 	{
-		if (part_run == 0)
-		{
-			threads[part_run] = new std::thread(Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operate_step_two,
-				true, std::string(partitioner_name), partitioner, &complete_fare_table, &dropoff_table, tasks.size(), &complete_fare_imbalance[part_run],
-				&complete_fare_key_imbalance[part_run], &dropoff_cell_imbalance[part_run], &dropoff_cell_key_imbalance[part_run], &part_two_durations[part_run], 
-				&complete_fare_sub_table, &dropoff_cell_sub_table);
-		}
-		else
-		{
-			threads[part_run] = new std::thread(Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operate_step_two,
-				false, std::string(partitioner_name), partitioner, &complete_fare_table, &dropoff_table, tasks.size(), &complete_fare_imbalance[part_run],
-				&complete_fare_key_imbalance[part_run], &dropoff_cell_imbalance[part_run], &dropoff_cell_key_imbalance[part_run], &part_two_durations[part_run],
-				&complete_fare_sub_table, &dropoff_cell_sub_table);
-		}
+		threads[part_run] = new std::thread(Experiment::DebsChallenge::ProfitableAreaPartition::partition_thread_operate_step_two,
+			(part_run == 0), std::string(partitioner_name), partitioner, &complete_fare_table, &dropoff_table, tasks.size(), &complete_fare_imbalance[part_run],
+			&complete_fare_key_imbalance[part_run], &dropoff_cell_imbalance[part_run], &dropoff_cell_key_imbalance[part_run], &part_two_durations[part_run],
+			&complete_fare_sub_table, &dropoff_cell_sub_table);
 	}
 	for (size_t i = 0; i < 7; i++)
 	{
@@ -1333,11 +1247,8 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 		part_cell_durations.push_back(part_two_durations[i]);
 	}
 	delete[] threads;
-	complete_fare_sub_table.shrink_to_fit();
-	dropoff_cell_sub_table.shrink_to_fit();
 	complete_fare_table.clear();
-	dropoff_table.clear();
-	
+ 	dropoff_table.clear();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;

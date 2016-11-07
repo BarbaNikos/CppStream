@@ -93,15 +93,11 @@ int main(int argc, char** argv)
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);
 	 profitable_cell_table.clear();
 
-	//const unsigned int p = 16;
-	//plot_cardinality_estimation_correctness(p, 10, (uint64_t)1e+5, (size_t)1e+6);
-
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries
 	 */
 	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
-	std::cout << "parsed all task events: total size: " << task_event_table.size() << ".\n";
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(&task_event_table, 8);
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(&task_event_table, 16);
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(&task_event_table, 32);

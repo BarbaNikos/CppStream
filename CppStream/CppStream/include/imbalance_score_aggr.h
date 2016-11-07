@@ -125,7 +125,8 @@ inline uint32_t TpchQueryThreeLineitemKeyExtractor::extract_key(const Experiment
 inline std::string DebsFrequentRideKeyExtractor::extract_key(const Experiment::DebsChallenge::CompactRide& r) const 
 {
 	std::stringstream str_stream;
-	str_stream << r.pickup_cell.first << "." << r.pickup_cell.second << "-" << r.dropoff_cell.first << "." << r.dropoff_cell.second;
+	str_stream << (unsigned short)r.pickup_cell.first << "." << (unsigned short)r.pickup_cell.second << "-" << (unsigned short)r.dropoff_cell.first << "." <<
+		(unsigned short)r.dropoff_cell.second;
 	return str_stream.str();
 }
 

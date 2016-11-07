@@ -38,6 +38,7 @@ public:
 	}
 	unsigned int partition_next(const void* key, const size_t key_len)
 	{
+		std::string str_key = (char*)key;
 		uint64_t hash_code, long_hash_code[2];
 		unsigned int selected_task;
 		MurmurHash3_x64_128(key, key_len, 13, &long_hash_code);
