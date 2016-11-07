@@ -127,6 +127,8 @@ namespace Experiment
 			~ProfitableArea();
 			void operate();
 			void update(const DebsChallenge::CompactRide& ride);
+			void first_round_gather(std::vector<std::pair<std::string, std::vector<float>>>& fare_table,
+				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>& dropoff_table);
 			void first_round_aggregation(std::unordered_map<std::string, std::vector<float>>& complete_fare_map,
 				std::unordered_map<std::string, std::vector<float>>& complete_fare_map_out,
 				std::unordered_map<std::string, std::pair<std::string, std::time_t>>& complete_dropoff_table,
@@ -151,6 +153,10 @@ namespace Experiment
 		public:
 			ProfitableAreaOfflineAggregator();
 			~ProfitableAreaOfflineAggregator();
+			void step_one_aggregation(std::vector<std::pair<std::string, std::vector<float>>>& fare_table,
+				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>& dropoff_table);
+			void step_one_materialize_aggregation(std::vector<std::pair<std::string, std::vector<float>>>& fare_table,
+				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>& dropoff_table);
 			void sort_final_aggregation(const std::unordered_map<std::string, float>& cell_profit_buffer, std::vector<std::pair<float, std::string>>& final_result);
 			void calculate_and_sort_final_aggregation(const std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer, std::vector<std::pair<float, std::string>>& final_result);
 			void output_result_to_file(const std::vector<std::pair<float, std::string>>& final_result, const std::string& out_file);
