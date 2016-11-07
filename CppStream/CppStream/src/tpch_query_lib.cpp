@@ -184,15 +184,15 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 
 	std::cout << "TPC-H Q1 ***\n";
 	std::cout << "partitioner,task-num,max-exec-msec,min-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-part-msec,imbalance,key-imbalance\n";
-	query_one_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
-	query_one_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
-	query_one_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
+	//query_one_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
+	//query_one_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
+	//query_one_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
+	//query_one_partitioner_simulation(lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
 	query_one_partitioner_simulation(lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
+	//query_one_partitioner_simulation(lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
 	query_one_partitioner_simulation(lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	query_one_partitioner_simulation(lines, tasks, la_naive, "la_naive", la_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, la_hll, "la_hll", la_hll_file_name);
+	//query_one_partitioner_simulation(lines, tasks, la_naive, "la_naive", la_naive_file_name);
+	//query_one_partitioner_simulation(lines, tasks, la_hll, "la_hll", la_hll_file_name);
 
 	delete rrg;
 	delete fld;
@@ -306,7 +306,7 @@ void Experiment::Tpch::QueryOnePartition::thread_aggregate(const bool write, con
 	if (write)
 	{
 		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
 		{
 			aggregator.calculate_and_produce_final_result(*input_buffer, *result);
 		}
@@ -325,7 +325,7 @@ void Experiment::Tpch::QueryOnePartition::thread_aggregate(const bool write, con
 	else
 	{
 		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
 		{
 			aggregator.calculate_and_produce_final_result(*input_buffer, aux_result);
 		}
@@ -736,16 +736,16 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 		"avg-part-c-msec,avg-part-o-msec,avg-part-li-msec,c-imb,c-key-imb,o-imb,o-key-imb,li-imb,li-key-imb\n";
 	std::string info_message = info_stream.str();
 	std::cout << info_message;
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "ca_naive", ca_naive_file_name);
+	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);
+	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
+	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);
+	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "ca_naive", ca_naive_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "ca_hll", ca_hll_file_name);
+	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "ca_hll", ca_hll_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "la_naive", la_naive_file_name);
+	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "la_naive", la_naive_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, "la_hll", la_hll_file_name);
-
+*/
 	delete rrg;
 	delete fld;
 	delete pkg;
@@ -873,7 +873,7 @@ void Experiment::Tpch::QueryThreePartition::thread_li_partition(bool write, std:
 		duration = part_end - part_start;
 		for (size_t i = 0; i < task_number; ++i)
 		{
-			(*li_worker_input_buffer).shrink_to_fit();
+			(*li_worker_input_buffer)[i].shrink_to_fit();
 		}
 		(*li_worker_input_buffer).shrink_to_fit();
 	}
@@ -970,7 +970,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 				worker.step_one_update(*it, partitioner_name);
 			}
 			// finalize
-			if (partitioner_name.compare("fld") == 0)
+			if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
 			{
 				worker.step_one_finalize(step_one_result_buffer_copy);
 			}
@@ -1010,7 +1010,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		std::unordered_map<uint32_t, Tpch::order> s_one_order_aux(step_one_order_buffer);
 		Experiment::Tpch::QueryThreeOfflineAggregator aggregator;
 		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") == 0)
+		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
 		{
 			aggregator.step_one_sort(s_one_result_aux, broadcast_result);
 		}
@@ -1080,7 +1080,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>> final_result;
 		Experiment::Tpch::QueryThreeOfflineAggregator aggregator;
 		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") == 0)
+		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
 		{
 			aggregator.step_two_sort(result_buffer, final_result);
 		}

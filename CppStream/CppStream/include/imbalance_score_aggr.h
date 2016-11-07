@@ -94,6 +94,7 @@ public:
 	void incremental_measure_score_tuple_count(size_t index, const Tuple& t);
 	float imbalance();
 	float cardinality_imbalance();
+	bool locate_replicated_keys();
 private:
 	KeyExtractor<Tuple, Tuple_Key>& key_extractor;
 	unsigned long tasks;
@@ -222,4 +223,23 @@ inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::cardinality_imbalance()
 	std::vector<size_t>::iterator max_key_it = std::max_element(key_count_size.begin(), key_count_size.end());
 	float mean_key_count = (float)std::accumulate(key_count_size.begin(), key_count_size.end(), 0.0) / key_count_size.size();
 	return *max_key_it - mean_key_count;
+}
+
+template<class Tuple, class Tuple_Key>
+inline bool ImbalanceScoreAggr<Tuple, Tuple_Key>::locate_replicated_keys()
+{
+	for (auto it = key_count.cbegin(); it != key_count.cend(); ++it)
+	{
+		for (auto inner_it = it + 1; inner_it != key_count.cend(); ++inner_it)
+		{
+			for (auto element_it = it->cbegin(); element_it != it->cend(); ++element_it)
+			{
+				if (inner_it->find(*element_it) != inner_it->cend())
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
