@@ -225,6 +225,7 @@ namespace Experiment
 		class MeanCpuPerJobIdWorker
 		{
 		public:
+			MeanCpuPerJobIdWorker() {}
 			MeanCpuPerJobIdWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex* mu, std::condition_variable* cond);
 			~MeanCpuPerJobIdWorker();
 			void operate();

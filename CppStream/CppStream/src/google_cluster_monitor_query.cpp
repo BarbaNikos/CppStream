@@ -352,7 +352,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		std::vector<cm_one_result> final_result;
 		// TIME CRITICAL - START
 		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
 		{
 			aggregator.calculate_and_sort_final_aggregation(intermediate_buffer, final_result);
 		}
@@ -388,8 +388,8 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	std::stringstream result_stream;
 	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
 		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," <<
-		aggr_duration << "," << write_output_duration << "," << mean_part_time << "," << class_imbalance[0] << "," << class_key_imbalance[0] << "\n";
+		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << 
+		write_output_duration << "," << mean_part_time << "," << class_imbalance[0] << "," << class_key_imbalance[0] << "\n";
 	std::cout << result_stream.str();
 }
 
@@ -581,21 +581,16 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulatio
 void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partitioner_simulation(std::vector<Experiment::GoogleClusterMonitor::task_event>* buffer, 
 	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
-	std::queue<Experiment::GoogleClusterMonitor::task_event> queue;
-	std::mutex mu;
-	std::condition_variable cond;
 	// get maximum and minimum running times
 	std::vector<double> exec_durations(tasks.size(), double(0));
 	double aggr_duration, write_output_duration;
 	std::vector<Experiment::GoogleClusterMonitor::cm_two_result> intermediate_buffer;
 	std::vector<std::vector<GoogleClusterMonitor::task_event>> worker_input_buffer(tasks.size(), std::vector<GoogleClusterMonitor::task_event>());
-
 	// partition tuples
 	for (auto it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
 		int key = it->scheduling_class;
-		//TODO: Fix the following
-		uint16_t task = partitioner->partition_next(&key, sizeof(it->scheduling_class));
+		uint16_t task = partitioner->partition_next(&key, sizeof(key));
 		worker_input_buffer[task].push_back(*it);
 	}
 	for	(size_t i = 0; i < tasks.size(); ++i)
@@ -605,13 +600,12 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		// 	" has size: " << worker_input_buffer[i].size() << " tuples.\n";
 	}
 	worker_input_buffer.shrink_to_fit();
-
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
 		for (size_t run = 0; run < 7; ++run)
 		{
-			Experiment::GoogleClusterMonitor::MeanCpuPerJobIdWorker worker(&queue, &mu, &cond);
+			Experiment::GoogleClusterMonitor::MeanCpuPerJobIdWorker worker;
 			std::vector<cm_two_result> intermediate_buffer_copy(intermediate_buffer);
 			// TIME CRITICAL - START
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -637,7 +631,6 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		worker_input_buffer[i].clear();
 	}
 	worker_input_buffer.clear();
-	// std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation(): partitioner: " << partitioner_name << ", intermediate buffer size: " << intermediate_buffer.size() << ".\n";
 	std::vector<double> aggr_durations;
 	for (size_t aggr_run = 0; aggr_run < 7; ++aggr_run)
 	{
@@ -645,7 +638,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		Experiment::GoogleClusterMonitor::MeanCpuPerJobIdOfflineAggregator aggregator;
 		// TIME CRITICAL - START
 		std::chrono::system_clock::time_point aggregate_start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
 		{
 			aggregator.calculate_and_sort_final_aggregation(intermediate_buffer, final_result);
 		}
@@ -677,8 +670,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	std::stringstream result_stream;
 	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
 		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," <<
-		aggr_duration << "," << write_output_duration << "\n";
+		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << write_output_duration << "\n";
 	std::cout << result_stream.str();
 }
 
