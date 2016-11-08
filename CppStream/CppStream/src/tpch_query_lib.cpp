@@ -736,16 +736,16 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 		"avg-part-c-msec,avg-part-o-msec,avg-part-li-msec,c-imb,c-key-imb,o-imb,o-key-imb,li-imb,li-key-imb\n";
 	std::string info_message = info_stream.str();
 	std::cout << info_message;
-	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);
-	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
-	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);
-	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "ca_naive", ca_naive_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "ca_naive", ca_naive_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	//query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "ca_hll", ca_hll_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "ca_hll", ca_hll_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "la_naive", la_naive_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "la_naive", la_naive_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, "la_hll", la_hll_file_name);
-*/
+
 	delete rrg;
 	delete fld;
 	delete pkg;
@@ -1104,9 +1104,9 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	std::vector<double>::iterator min_step_one_it = std::min_element(step_one_exec_durations.begin(), step_one_exec_durations.end());
 	double avg_step_one_exec_time = std::accumulate(step_one_exec_durations.begin(), step_one_exec_durations.end(), 0.0) / step_one_exec_durations.size();
 	// S1 Aggr. time
-	auto max_s1_aggr_time = std::max_element(step_one_aggr_durations.cbegin(), step_one_aggr_durations.cend());
+	std::vector<double>::iterator max_s1_aggr_time = std::max_element(step_one_aggr_durations.begin(), step_one_aggr_durations.end());
 	step_one_aggr_durations.erase(max_s1_aggr_time);
-	auto min_s1_aggr_time = std::min_element(step_one_aggr_durations.cbegin(), step_one_aggr_durations.cend());
+	std::vector<double>::iterator min_s1_aggr_time = std::min_element(step_one_aggr_durations.begin(), step_one_aggr_durations.end());
 	step_one_aggr_durations.erase(min_s1_aggr_time);
 	double mean_s1_aggr_duration = std::accumulate(step_two_aggr_durations.begin(), step_two_aggr_durations.end(), 0.0) / step_two_aggr_durations.size();
 	// S2 exec time
@@ -1114,9 +1114,9 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	std::vector<double>::iterator min_step_two_it = std::min_element(step_two_exec_durations.begin(), step_two_exec_durations.end());
 	double avg_step_two_exec_time = std::accumulate(step_two_exec_durations.begin(), step_two_exec_durations.end(), 0.0) / step_two_exec_durations.size();
 	// S2 Aggr. time
-	auto max_s2_aggr_time = std::max_element(step_two_aggr_durations.cbegin(), step_two_aggr_durations.cend());
+	std::vector<double>::iterator max_s2_aggr_time = std::max_element(step_two_aggr_durations.begin(), step_two_aggr_durations.end());
 	step_two_aggr_durations.erase(max_s2_aggr_time);
-	auto min_s2_aggr_time = std::min_element(step_two_aggr_durations.cbegin(), step_two_aggr_durations.cend());
+	std::vector<double>::iterator min_s2_aggr_time = std::min_element(step_two_aggr_durations.begin(), step_two_aggr_durations.end());
 	step_two_aggr_durations.erase(min_s2_aggr_time);
 	double mean_s2_aggr_duration = std::accumulate(step_two_aggr_durations.begin(), step_two_aggr_durations.end(), 0.0) / step_two_aggr_durations.size();
 	// Partition times
