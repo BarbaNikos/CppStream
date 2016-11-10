@@ -374,10 +374,11 @@ void Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate
 			str_stream << (unsigned short)it->pickup_cell.first << "." << (unsigned short)it->pickup_cell.second << "-" << 
 				(unsigned short)it->dropoff_cell.first << "." << (unsigned short)it->dropoff_cell.second;
 			std::string key = str_stream.str();
-			char* c_key = (char*)malloc(key.length() + 1 * sizeof(char));
+			/*char* c_key = (char*)malloc(key.length() + 1 * sizeof(char));
 			strcpy(c_key, key.c_str());
 			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
-			free(c_key);
+			free(c_key);*/
+			uint16_t task = p_copy->partition_next(key.c_str(), strlen(key.c_str()));
 			imbalance_aggregator.incremental_measure_score(task, *it);
 			(*worker_input_buffer)[task].push_back(*it);
 		}
@@ -398,10 +399,11 @@ void Experiment::DebsChallenge::FrequentRoutePartition::partition_thread_operate
 			str_stream << (unsigned short)it->pickup_cell.first << "." << (unsigned short)it->pickup_cell.second << "-" << 
 				(unsigned short)it->dropoff_cell.first << "." << (unsigned short)it->dropoff_cell.second;
 			std::string key = str_stream.str();
-			char* c_key = (char*)malloc(key.length() + 1 * sizeof(char));
+			/*char* c_key = (char*)malloc(key.length() + 1 * sizeof(char));
 			strcpy(c_key, key.c_str());
 			uint16_t task = p_copy->partition_next(c_key, strlen(c_key));
-			free(c_key);
+			free(c_key);*/
+			uint16_t task = p_copy->partition_next(key.c_str(), strlen(key.c_str()));
 			imbalance_aggregator.incremental_measure_score_tuple_count(task, *it);
 		}
 		std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
