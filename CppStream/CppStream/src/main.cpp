@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	 std::vector<Experiment::Tpch::q3_customer> customer_table;
+	 /*std::vector<Experiment::Tpch::q3_customer> customer_table;
 	 std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	 std::vector<Experiment::Tpch::order> order_table;
 
@@ -73,11 +73,11 @@ int main(int argc, char** argv)
 	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
 	 customer_table.clear();
 	 lineitem_table.clear();
-	 order_table.clear();
+	 order_table.clear();*/
 	/*
 	 * DEBS queries
 	 */
-	 std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	 /*std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	 std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
 	 Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 	 debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);
-	 profitable_cell_table.clear();
+	 profitable_cell_table.clear();*/
 
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries

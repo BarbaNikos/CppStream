@@ -283,6 +283,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	GCMTaskEventKeyExtractor key_extractor;
 	ImbalanceScoreAggr<Experiment::GoogleClusterMonitor::task_event, int> sch_class_imb_aggregator(tasks.size(), key_extractor);
 	Partitioner* p_copy = PartitionerFactory::generate_copy(partitioner_name, partitioner);
+	std::unordered_set<int> scheduling_class_keys;
 	std::chrono::system_clock::time_point part_start = std::chrono::system_clock::now();
 	for (std::vector<Experiment::GoogleClusterMonitor::task_event>::const_iterator it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
@@ -290,10 +291,13 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
 		sch_class_imb_aggregator.incremental_measure_score(task, *it);
 		worker_input_buffer[task].push_back(*it);
+		scheduling_class_keys.insert(key);
 	}
 	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
 	duration = (part_end - part_start);
 	delete p_copy;
+	std::cout << "total scheduling class keys: " << scheduling_class_keys.size() << ".\n";
+	scheduling_class_keys.clear();
 	// start gathering results
 	part_durations[0] = duration.count();
 	class_imbalance[0] = sch_class_imb_aggregator.imbalance();
@@ -582,22 +586,26 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
 	// get maximum and minimum running times
-	std::vector<double> exec_durations(tasks.size(), double(0));
+	std::vector<double> exec_durations;
 	double aggr_duration, write_output_duration;
 	std::vector<Experiment::GoogleClusterMonitor::cm_two_result> intermediate_buffer;
 	std::vector<std::vector<GoogleClusterMonitor::task_event>> worker_input_buffer(tasks.size(), std::vector<GoogleClusterMonitor::task_event>());
+	std::unordered_set<int> total_job_ids;
 	// partition tuples
 	for (auto it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
-		int key = it->scheduling_class;
-		uint16_t task = partitioner->partition_next(&key, sizeof(key));
+		long key = it->job_id;
+		uint16_t task = partitioner->partition_next(&key, sizeof(long));
 		worker_input_buffer[task].push_back(*it);
+		total_job_ids.insert(key);
 	}
+	std::cout << "total number of job-IDs: " << total_job_ids.size() << ".\n";
+	total_job_ids.clear();
 	for	(size_t i = 0; i < tasks.size(); ++i)
 	{
 		worker_input_buffer[i].shrink_to_fit();
-		// std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation():: partitioner: " << partitioner_name << ", input workload for task " << i << 
-		// 	" has size: " << worker_input_buffer[i].size() << " tuples.\n";
+		/*std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation():: partitioner: " << partitioner_name << ", input workload for task " << i << 
+		 	" has size: " << worker_input_buffer[i].size() << " tuples.\n";*/
 	}
 	worker_input_buffer.shrink_to_fit();
 	for (size_t i = 0; i < tasks.size(); ++i)
@@ -627,8 +635,9 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		durations.erase(min_it);
 		auto max_it = std::max_element(durations.begin(), durations.end());
 		durations.erase(max_it);
-		exec_durations[i] = std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
+
 		worker_input_buffer[i].clear();
+		exec_durations.push_back(std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size());
 	}
 	worker_input_buffer.clear();
 	std::vector<double> aggr_durations;
@@ -663,15 +672,15 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	auto max_it = std::max_element(aggr_durations.begin(), aggr_durations.end());
 	aggr_durations.erase(max_it);
 	aggr_duration = std::accumulate(aggr_durations.begin(), aggr_durations.end(), 0.0) / aggr_durations.size();
-	aggr_durations.clear();
 	intermediate_buffer.clear();
-	exec_durations.clear();
-	
+
 	std::stringstream result_stream;
 	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
 		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
 		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << write_output_duration << "\n";
 	std::cout << result_stream.str();
+	exec_durations.clear();
+	aggr_durations.clear();
 }
 
 Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker(std::queue<Experiment::GoogleClusterMonitor::task_event>* input_queue, std::mutex * mu, std::condition_variable * cond)
