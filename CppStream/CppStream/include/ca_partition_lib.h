@@ -46,7 +46,7 @@ namespace CaPartitionLib
 		}
 		~CA_Exact_Partitioner()
 		{
-			for (std::vector<std::unordered_set<uint64_t>>::iterator i = task_cardinality.begin(); i != task_cardinality.end(); ++i)
+			for (auto i = task_cardinality.begin(); i != task_cardinality.end(); ++i)
 			{
 				i->clear();
 			}
@@ -54,7 +54,7 @@ namespace CaPartitionLib
 			task_cardinality.clear();
 			delete policy;
 		}
-		void init()
+		void init() override
 		{
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
@@ -66,7 +66,7 @@ namespace CaPartitionLib
 			max_task_cardinality = 0;
 			min_task_cardinality = 0;
 		}
-		unsigned int partition_next(const void* key, const size_t key_len)
+		unsigned int partition_next(const void* key, const size_t key_len) override
 		{
 			uint64_t hash_one, hash_two;
 			uint64_t long_hash_one[2], long_hash_two[2];
@@ -94,10 +94,10 @@ namespace CaPartitionLib
 			min_task_cardinality = *std::min_element(v.begin(), v.end());
 			return tasks[selected_choice];
 		}
-		unsigned long long get_min_task_count() { return min_task_count; }
-		unsigned long long get_max_task_count() { return max_task_count; }
-		unsigned long long get_max_cardinality() { return max_task_cardinality; }
-		unsigned long long get_min_cardinality() { return min_task_cardinality; }
+		unsigned long long get_min_task_count() override { return min_task_count; }
+		unsigned long long get_max_task_count() override { return max_task_count; }
+		unsigned long long get_max_cardinality() const { return max_task_cardinality; }
+		unsigned long long get_min_cardinality() const { return min_task_cardinality; }
 		void  get_cardinality_vector(std::vector<unsigned long long>& v)
 		{
 			for (size_t i = 0; i < this->task_cardinality.size(); ++i)
@@ -128,14 +128,14 @@ namespace CaPartitionLib
 			max_task_cardinality(p.max_task_cardinality), min_task_cardinality(p.min_task_cardinality) {}
 		~CA_Exact_Aff_Partitioner()
 		{
-			for (std::vector<std::unordered_set<uint64_t>>::iterator i = task_cardinality.begin(); i != task_cardinality.end(); ++i)
+			for (auto i = task_cardinality.begin(); i != task_cardinality.end(); ++i)
 			{
 				i->clear();
 			}
 			task_count.clear();
 			task_cardinality.clear();
 		}
-		void init()
+		void init() override
 		{
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
@@ -147,7 +147,7 @@ namespace CaPartitionLib
 			max_task_cardinality = 0;
 			min_task_cardinality = 0;
 		}
-		unsigned int partition_next(const void* key, const size_t key_len)
+		unsigned int partition_next(const void* key, const size_t key_len) override
 		{
 			uint64_t hash_one, long_hash_one[2], hash_two, long_hash_two[2];
 			unsigned int first_choice, second_choice;
@@ -155,8 +155,8 @@ namespace CaPartitionLib
 			MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 			hash_one = long_hash_one[0] ^ long_hash_one[1];
 			hash_two = long_hash_two[0] ^ long_hash_two[1];
-			first_choice = (unsigned int)hash_one % tasks.size();
-			second_choice = (unsigned int)hash_two % tasks.size();
+			first_choice = static_cast<unsigned int>(hash_one) % tasks.size();
+			second_choice = static_cast<unsigned int>(hash_two) % tasks.size();
 			unsigned long first_card = task_cardinality[first_choice].size();
 			unsigned long second_card = task_cardinality[second_choice].size();
 			auto first_it_find = task_cardinality[first_choice].find(hash_one);
@@ -191,15 +191,15 @@ namespace CaPartitionLib
 				return tasks[selected_choice];
 			}
 		}
-		unsigned long long get_min_task_count() { return min_task_count; }
-		unsigned long long get_max_task_count() { return max_task_count; }
-		unsigned long long get_max_cardinality() { return max_task_cardinality; }
-		unsigned long long get_min_cardinality() { return min_task_cardinality; }
-		void get_cardinality_vector(std::vector<unsigned long long>& v)
+		unsigned long long get_min_task_count() override { return min_task_count; }
+		unsigned long long get_max_task_count() override { return max_task_count; }
+		unsigned long long get_max_cardinality() const { return max_task_cardinality; }
+		unsigned long long get_min_cardinality() const { return min_task_cardinality; }
+		void get_cardinality_vector(std::vector<unsigned long long>& v) const
 		{
 			for (size_t i = 0; i < this->task_cardinality.size(); ++i)
 			{
-				v.push_back(uint64_t(task_cardinality[i].size()));
+				v.push_back(this->task_cardinality[i].size());
 			}
 		}
 	private:
@@ -222,10 +222,10 @@ namespace CaPartitionLib
 			max_task_cardinality(0), min_task_cardinality(0), k(k)
 		{
 			this->policy = policy->make_copy();
-			this->task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
+			this->task_cardinality = static_cast<hll_8**>(malloc(tasks.size() * sizeof(hll_8*)));
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
-				this->task_cardinality[i] = (hll_8*)malloc(sizeof(hll_8));
+				this->task_cardinality[i] = static_cast<hll_8*>(malloc(sizeof(hll_8)));
 				init_8(this->task_cardinality[i], k, sizeof(uint64_t));
 			}
 		}
@@ -235,10 +235,10 @@ namespace CaPartitionLib
 		{
 			this->policy = p.policy->make_copy();
 			// first initialize HLLs
-			this->task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
+			this->task_cardinality = static_cast<hll_8**>(malloc(tasks.size() * sizeof(hll_8*)));
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
-				this->task_cardinality[i] = (hll_8*)malloc(sizeof(hll_8));
+				this->task_cardinality[i] = static_cast<hll_8*>(malloc(sizeof(hll_8)));
 				init_8(this->task_cardinality[i], this->k, sizeof(uint64_t));
 			}
 			// then copy HLL values
@@ -257,7 +257,7 @@ namespace CaPartitionLib
 			free(this->task_cardinality);
 			delete policy;
 		}
-		void init()
+		void init() override
 		{
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
@@ -269,7 +269,7 @@ namespace CaPartitionLib
 			max_task_cardinality = 0;
 			min_task_cardinality = 0;
 		}
-		unsigned int partition_next(const void* key, const size_t key_len)
+		unsigned int partition_next(const void* key, const size_t key_len) override
 		{
 			uint64_t hash_one, hash_two;
 			uint64_t long_hash_one[2], long_hash_two[2];
@@ -278,17 +278,17 @@ namespace CaPartitionLib
 			MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 			hash_one = long_hash_one[0] ^ long_hash_one[1];
 			hash_two = long_hash_two[0] ^ long_hash_two[1];
-			first_choice = (unsigned int)hash_one % tasks.size();
-			second_choice = (unsigned int)hash_two % tasks.size();
-			unsigned long first_card = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[first_choice]);
-			unsigned long second_card = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[second_choice]);
+			first_choice = static_cast<unsigned int>(hash_one) % tasks.size();
+			second_choice = static_cast<unsigned int>(hash_two) % tasks.size();
+			unsigned long first_card = static_cast<unsigned long>(opt_cardinality_estimation_8(this->task_cardinality[first_choice]));
+			unsigned long second_card = static_cast<unsigned long>(opt_cardinality_estimation_8(this->task_cardinality[second_choice]));
 			// decision
 			unsigned int selected_choice = policy->get_score(first_choice, task_count[first_choice], first_card,
 				second_choice, task_count[second_choice], second_card, min_task_count, max_task_count,
 				min_task_cardinality, max_task_cardinality);
 			// update metrics
 			opt_update_8(this->task_cardinality[selected_choice], hash_one);
-			unsigned long selected_cardinality = (unsigned long)opt_cardinality_estimation_8(this->task_cardinality[selected_choice]);
+			unsigned long selected_cardinality = static_cast<unsigned long>(opt_cardinality_estimation_8(this->task_cardinality[selected_choice]));
 			task_count[selected_choice] += 1;
 			max_task_count = BitWizard::max_uint64(max_task_count, task_count[selected_choice]);
 			max_task_cardinality = BitWizard::max_uint64(max_task_cardinality, selected_cardinality);
@@ -299,11 +299,11 @@ namespace CaPartitionLib
 			min_task_count = *std::min_element(task_count.begin(), task_count.end());
 			return tasks[selected_choice];
 		}
-		unsigned long long get_min_task_count() { return min_task_count; }
-		unsigned long long get_max_task_count() { return max_task_count; }
-		unsigned long get_max_cardinality() { return max_task_cardinality; }
-		unsigned long get_min_cardinality() { return min_task_cardinality; }
-		void get_cardinality_vector(std::vector<unsigned long long>& v)
+		unsigned long long get_min_task_count() override { return min_task_count; }
+		unsigned long long get_max_task_count() override { return max_task_count; }
+		unsigned long get_max_cardinality() const { return max_task_cardinality; }
+		unsigned long get_min_cardinality() const { return min_task_cardinality; }
+		void get_cardinality_vector(std::vector<unsigned long long>& v) const
 		{
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
@@ -329,10 +329,10 @@ namespace CaPartitionLib
 		CA_HLL_Aff_Partitioner(const std::vector<uint16_t>& tasks, uint8_t k) : tasks(tasks), task_count(tasks.size(), 0), 
 			max_task_count(0), min_task_count(0), max_task_cardinality(0), min_task_cardinality(0), k(k)
 		{
-			this->_task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
+			this->_task_cardinality = static_cast<hll_8**>(malloc(tasks.size() * sizeof(hll_8*)));
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
-				this->_task_cardinality[i] = (hll_8*)malloc(sizeof(hll_8));
+				this->_task_cardinality[i] = static_cast<hll_8*>(malloc(sizeof(hll_8)));
 				init_8(this->_task_cardinality[i], k, sizeof(uint64_t));
 			}
 		}
@@ -341,10 +341,10 @@ namespace CaPartitionLib
 			min_task_cardinality(p.min_task_cardinality), k(p.k)
 		{
 			// first initialize HLLs
-			this->_task_cardinality = (hll_8**)malloc(tasks.size() * sizeof(hll_8*));
+			this->_task_cardinality = static_cast<hll_8**>(malloc(tasks.size() * sizeof(hll_8*)));
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
-				this->_task_cardinality[i] = (hll_8*)malloc(sizeof(hll_8));
+				this->_task_cardinality[i] = static_cast<hll_8*>(malloc(sizeof(hll_8)));
 				init_8(this->_task_cardinality[i], k, sizeof(uint64_t));
 			}
 			// then copy HLL values
@@ -362,7 +362,7 @@ namespace CaPartitionLib
 			}
 			free(this->_task_cardinality);
 		}
-		void init()
+		void init() override
 		{
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{
@@ -374,7 +374,7 @@ namespace CaPartitionLib
 			max_task_cardinality = 0;
 			min_task_cardinality = 0;
 		}
-		unsigned int partition_next(const void* key, const size_t key_len)
+		unsigned int partition_next(const void* key, const size_t key_len) override
 		{
 			uint64_t hash_one, long_hash_one[2], hash_two, long_hash_two[2];
 			unsigned int first_choice, second_choice;
@@ -382,13 +382,13 @@ namespace CaPartitionLib
 			MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
 			hash_one = long_hash_one[0] ^ long_hash_one[1];
 			hash_two = long_hash_two[0] ^ long_hash_two[1];
-			first_choice = (unsigned int)hash_one % tasks.size();
-			second_choice = (unsigned int)hash_two % tasks.size();
-			unsigned long first_card = (unsigned long)opt_cardinality_estimation_8(this->_task_cardinality[first_choice]);
-			unsigned long second_card = (unsigned long)opt_cardinality_estimation_8(this->_task_cardinality[second_choice]);
+			first_choice = static_cast<unsigned int>(hash_one) % tasks.size();
+			second_choice = static_cast<unsigned int>(hash_two) % tasks.size();
+			unsigned long first_card = static_cast<unsigned long>(opt_cardinality_estimation_8(this->_task_cardinality[first_choice]));
+			unsigned long second_card = static_cast<unsigned long>(opt_cardinality_estimation_8(this->_task_cardinality[second_choice]));
 			// calculate new cardinality estimates (EXTRA COST)
-			unsigned long first_card_est = (unsigned long)opt_new_cardinality_estimate_8(this->_task_cardinality[first_choice], hash_one);
-			unsigned long second_card_est = (unsigned long)opt_new_cardinality_estimate_8(this->_task_cardinality[second_choice], hash_one);
+			unsigned long first_card_est = static_cast<unsigned long>(opt_new_cardinality_estimate_8(this->_task_cardinality[first_choice], hash_one));
+			unsigned long second_card_est = static_cast<unsigned long>(opt_new_cardinality_estimate_8(this->_task_cardinality[second_choice], hash_one));
 			// decision
 			if (first_card_est - first_card == 0)
 			{
@@ -421,7 +421,7 @@ namespace CaPartitionLib
 				unsigned int selected_choice = first_card < second_card ? first_choice : second_choice;
 				// update metrics
 				opt_update_8(this->_task_cardinality[selected_choice], hash_one);
-				unsigned long selected_cardinality = (unsigned long)opt_cardinality_estimation_8(this->_task_cardinality[selected_choice]);
+				unsigned long selected_cardinality = static_cast<unsigned long>(opt_cardinality_estimation_8(this->_task_cardinality[selected_choice]));
 				task_count[selected_choice] += 1;
 				// really slow
 				std::vector<unsigned long long> v;
@@ -433,11 +433,11 @@ namespace CaPartitionLib
 				return tasks[selected_choice];
 			}
 		}
-		unsigned long long get_min_task_count() { return min_task_count; }
-		unsigned long long get_max_task_count() { return max_task_count; }
-		unsigned long get_max_cardinality() { return max_task_cardinality; }
-		unsigned long get_min_cardinality() { return min_task_cardinality; }
-		void get_cardinality_vector(std::vector<unsigned long long>& v)
+		unsigned long long get_min_task_count() override { return min_task_count; }
+		unsigned long long get_max_task_count() override { return max_task_count; }
+		unsigned long get_max_cardinality() const { return max_task_cardinality; }
+		unsigned long get_min_cardinality() const { return min_task_cardinality; }
+		void get_cardinality_vector(std::vector<unsigned long long>& v) const
 		{
 			for (size_t i = 0; i < tasks.size(); ++i)
 			{

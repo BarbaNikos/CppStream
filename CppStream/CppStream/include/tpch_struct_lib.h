@@ -78,7 +78,7 @@ namespace Experiment
 			std::string to_string() const
 			{
 				std::stringstream ss;
-				ss << (unsigned int) year << "-" << (unsigned int) month << "-" << (unsigned int) day;
+				ss << static_cast<unsigned int>(year) << "-" << static_cast<unsigned int>(month) << "-" << static_cast<unsigned int>(day);
 				return ss.str();
 			}
 			uint16_t year;

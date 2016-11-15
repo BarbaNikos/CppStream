@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <cstdlib>
 #include <cinttypes>
@@ -18,13 +19,13 @@ public:
 	void decrease_size();
 	void progress_head();
 	void progress_tail();
-	bool is_empty();
-	bool is_full();
-	size_t get_size();
+	bool is_empty() const;
+	bool is_full() const;
+	size_t get_size() const;
 	WindowLib::BasicWindow<T>* peek_tail();
 	WindowLib::BasicWindow<T>** get_buffer();
-	uint16_t get_head();
-	uint16_t get_tail();
+	uint16_t get_head() const;
+	uint16_t get_tail() const;
 private:
 	WindowLib::BasicWindow<T>** _buffer;
 	uint16_t head;
@@ -88,19 +89,19 @@ inline void CircularBuffer<T>::progress_tail()
 }
 
 template<class T>
-inline bool CircularBuffer<T>::is_empty()
+inline bool CircularBuffer<T>::is_empty() const
 {
 	return size == size_t(0);
 }
 
 template<class T>
-inline bool CircularBuffer<T>::is_full()
+inline bool CircularBuffer<T>::is_full() const
 {
 	return size == buffer_size;
 }
 
 template<class T>
-inline size_t CircularBuffer<T>::get_size()
+inline size_t CircularBuffer<T>::get_size() const
 {
 	return size;
 }
@@ -125,13 +126,13 @@ inline WindowLib::BasicWindow<T>** CircularBuffer<T>::get_buffer()
 }
 
 template<class T>
-inline uint16_t CircularBuffer<T>::get_head()
+inline uint16_t CircularBuffer<T>::get_head() const
 {
 	return head;
 }
 
 template<class T>
-inline uint16_t CircularBuffer<T>::get_tail()
+inline uint16_t CircularBuffer<T>::get_tail() const
 {
 	return tail;
 }

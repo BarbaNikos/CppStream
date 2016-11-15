@@ -250,11 +250,11 @@ inline void Experiment::Tpch::TableJoinUtil::hash_join_lineitem_order(const std:
 {
 	// first build hash index on orders (which is the smaller table)
 	std::unordered_map<uint32_t, Experiment::Tpch::order> order_index;
-	for (std::vector<Tpch::order>::const_iterator it = order_table.cbegin(); it != order_table.cend(); ++it)
+	for (auto it = order_table.cbegin(); it != order_table.cend(); ++it)
 	{
 		order_index[it->o_orderkey] = *it;
 	}
-	for (std::vector<Tpch::lineitem>::const_iterator li_it = lineitem_table.cbegin(); li_it != lineitem_table.cend(); ++li_it)
+	for (auto li_it = lineitem_table.cbegin(); li_it != lineitem_table.cend(); ++li_it)
 	{
 		std::unordered_map<uint32_t, Tpch::order>::const_iterator o_it = order_index.find(li_it->l_order_key);
 		result.push_back(Experiment::Tpch::lineitem_order(o_it->second, *li_it));
@@ -274,11 +274,11 @@ inline void Experiment::Tpch::TableJoinUtil::hash_join_customer_lineitem_order(c
 	}
 	// second build hash index on orders (which is the smaller table)
 	std::unordered_map<uint32_t, Experiment::Tpch::order> order_index;
-	for (std::vector<Tpch::order>::const_iterator it = order_table.cbegin(); it != order_table.cend(); ++it)
+	for (auto it = order_table.cbegin(); it != order_table.cend(); ++it)
 	{
 		order_index[it->o_orderkey] = *it;
 	}
-	for (std::vector<Tpch::lineitem>::const_iterator li_it = lineitem_table.cbegin(); li_it != lineitem_table.cend(); ++li_it)
+	for (auto li_it = lineitem_table.cbegin(); li_it != lineitem_table.cend(); ++li_it)
 	{
 		std::unordered_map<uint32_t, Tpch::order>::const_iterator o_it = order_index.find(li_it->l_order_key);
 		std::unordered_map<uint32_t, Tpch::customer>::const_iterator c_it = customer_index.find(o_it->second.o_custkey);

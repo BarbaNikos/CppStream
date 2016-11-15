@@ -24,8 +24,7 @@ namespace Experiment
 			{
 				auto h1 = std::hash<uint16_t>{}(p.first);
 				auto h2 = std::hash<uint16_t>{}(p.second);
-				std::size_t result = h1 ^ h2;
-				return result;
+				return h1 ^ h2;
 			}
 		}pair_hash;
 
@@ -59,8 +58,8 @@ namespace Experiment
 			~DebsCellAssignment();
 			void parse_ride(std::string ride_info, Experiment::DebsChallenge::Ride& ride);
 			int parse_compact_ride(std::string ride_info, Experiment::DebsChallenge::CompactRide& ride);
-			void output_to_file(std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::string output_file_name);
-			time_t produce_timestamp(const std::string& datetime_literal);
+			static void output_to_file(std::vector<Experiment::DebsChallenge::CompactRide>& rides, const std::string output_file_name);
+			static time_t produce_timestamp(const std::string& datetime_literal);
 		private:
 			std::unordered_map<std::pair<uint16_t, uint16_t>, std::array<double, 8>, Experiment::DebsChallenge::pair_hash> cells;
 			const static double latitude;

@@ -32,31 +32,31 @@ public:
 class TpchQueryOneKeyExtractor : public KeyExtractor<Experiment::Tpch::lineitem, std::string>
 {
 public:
-	std::string extract_key(const Experiment::Tpch::lineitem& l) const;
+	std::string extract_key(const Experiment::Tpch::lineitem& l) const override;
 };
 
 class TpchQueryThreeCustomerKeyExtractor : public KeyExtractor<Experiment::Tpch::q3_customer, uint32_t>
 {
 public:
-	uint32_t extract_key(const Experiment::Tpch::q3_customer& c) const;
+	uint32_t extract_key(const Experiment::Tpch::q3_customer& c) const override;
 };
 
 class TpchQueryThreeOrderKeyExtractor : public KeyExtractor<Experiment::Tpch::order, uint32_t>
 {
 public:
-	uint32_t extract_key(const Experiment::Tpch::order& o) const;
+	uint32_t extract_key(const Experiment::Tpch::order& o) const override;
 };
 
 class TpchQueryThreeLineitemKeyExtractor : public KeyExtractor<Experiment::Tpch::lineitem, uint32_t>
 {
 public:
-	uint32_t extract_key(const Experiment::Tpch::lineitem& l) const;
+	uint32_t extract_key(const Experiment::Tpch::lineitem& l) const override;
 };
 
 class DebsFrequentRideKeyExtractor : public KeyExtractor<Experiment::DebsChallenge::CompactRide, std::string>
 {
 public:
-	std::string extract_key(const Experiment::DebsChallenge::CompactRide& r) const;
+	std::string extract_key(const Experiment::DebsChallenge::CompactRide& r) const override;
 };
 
 class DebsProfitCellMedallionKeyExtractor : public KeyExtractor<Experiment::DebsChallenge::CompactRide, std::string>
@@ -68,19 +68,19 @@ public:
 class DebsProfCellCompleteFareKeyExtractor : public KeyExtractor<std::pair<std::string, std::vector<float>>, std::string>
 {
 public:
-	std::string extract_key(const std::pair<std::string, std::vector<float>>& p) const;
+	std::string extract_key(const std::pair<std::string, std::vector<float>>& p) const override;
 };
 
 class DebsProfCellDropoffCellKeyExtractor : public KeyExtractor<std::pair<std::string, std::pair<std::string, std::time_t>>, std::string>
 {
 public:
-	std::string extract_key(const std::pair<std::string, std::pair<std::string, std::time_t>>& p) const;
+	std::string extract_key(const std::pair<std::string, std::pair<std::string, std::time_t>>& p) const override;
 };
 
 class GCMTaskEventKeyExtractor : public KeyExtractor<Experiment::GoogleClusterMonitor::task_event, int>
 {
 public:
-	int extract_key(const Experiment::GoogleClusterMonitor::task_event& e) const;
+	int extract_key(const Experiment::GoogleClusterMonitor::task_event& e) const override;
 };
 
 template <class Tuple, class Tuple_Key>
@@ -126,8 +126,8 @@ inline uint32_t TpchQueryThreeLineitemKeyExtractor::extract_key(const Experiment
 inline std::string DebsFrequentRideKeyExtractor::extract_key(const Experiment::DebsChallenge::CompactRide& r) const 
 {
 	std::stringstream str_stream;
-	str_stream << (unsigned short)r.pickup_cell.first << "." << (unsigned short)r.pickup_cell.second << "-" << (unsigned short)r.dropoff_cell.first << "." <<
-		(unsigned short)r.dropoff_cell.second;
+	str_stream << static_cast<unsigned short>(r.pickup_cell.first) << "." << static_cast<unsigned short>(r.pickup_cell.second) << "-" << 
+		static_cast<unsigned short>(r.dropoff_cell.first) << "." << static_cast<unsigned short>(r.dropoff_cell.second);
 	return str_stream.str();
 }
 
@@ -208,7 +208,7 @@ template<class Tuple, class Tuple_Key>
 inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::imbalance()
 {
 	std::vector<unsigned long long>::iterator max_it = std::max_element(tuple_count.begin(), tuple_count.end());
-	float mean_tuple_count = (float)std::accumulate(tuple_count.begin(), tuple_count.end(), 0.0) / tuple_count.size();
+	float mean_tuple_count = static_cast<float>(std::accumulate(tuple_count.begin(), tuple_count.end(), 0.0)) / tuple_count.size();
 	return *max_it - mean_tuple_count;
 }
 
@@ -221,7 +221,7 @@ inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::cardinality_imbalance()
 		key_count_size.push_back(it->size());
 	}
 	std::vector<size_t>::iterator max_key_it = std::max_element(key_count_size.begin(), key_count_size.end());
-	float mean_key_count = (float)std::accumulate(key_count_size.begin(), key_count_size.end(), 0.0) / key_count_size.size();
+	float mean_key_count = static_cast<float>(std::accumulate(key_count_size.begin(), key_count_size.end(), 0.0)) / key_count_size.size();
 	return *max_key_it - mean_key_count;
 }
 

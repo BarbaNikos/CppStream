@@ -26,14 +26,14 @@ public:
 		tasks.clear();
 		task_count.clear();
 	}
-	void init()
+	void init() override
 	{
 		std::vector<unsigned long long>(tasks.size(), uint64_t(0)).swap(task_count);
 		next_task = -1;
 		max_task_count = 0;
 		min_task_count = 0;
 	}
-	unsigned int partition_next(const void* key, const size_t key_len)
+	unsigned int partition_next(const void* key, const size_t key_len) override
 	{
 		next_task = next_task >= tasks.size() - 1 ? 0 : next_task + 1;
 		task_count[next_task]++;
@@ -41,8 +41,8 @@ public:
 		min_task_count = *std::min_element(task_count.begin(), task_count.end());
 		return tasks[next_task];
 	}
-	unsigned long long get_min_task_count() { return min_task_count; }
-	unsigned long long get_max_task_count() { return max_task_count; }
+	unsigned long long get_min_task_count() override { return min_task_count; }
+	unsigned long long get_max_task_count() override { return max_task_count; }
 private:
 	std::vector<uint16_t> tasks;
 	std::vector<unsigned long long> task_count;

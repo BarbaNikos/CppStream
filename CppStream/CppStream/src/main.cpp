@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	/*
 	 * TPC-H query
 	 */
-	 /*std::vector<Experiment::Tpch::q3_customer> customer_table;
+	 std::vector<Experiment::Tpch::q3_customer> customer_table;
 	 std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	 std::vector<Experiment::Tpch::order> order_table;
 
@@ -73,11 +73,11 @@ int main(int argc, char** argv)
 	 Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
 	 customer_table.clear();
 	 lineitem_table.clear();
-	 order_table.clear();*/
+	 order_table.clear();
 	/*
 	 * DEBS queries
 	 */
-	 /*std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
+	 std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	 std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
 	 Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 	 debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
 	 debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);
-	 profitable_cell_table.clear();*/
+	 profitable_cell_table.clear();
 
 	/*
 	 * GOOGLE-MONITOR-CLUSTER queries
@@ -131,8 +131,8 @@ void log_normal_simulation(std::string input_file)
 
 double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
 {
-	double sum = 0.0;
-	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
+	auto sum = 0.0;
+	for (auto it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
 	{
 		sum += it->size();
 	}
@@ -141,8 +141,8 @@ double get_cardinality_average(const std::vector<std::unordered_set<uint32_t>>& 
 
 double get_cardinality_max(const std::vector<std::unordered_set<uint32_t>>& task_cardinality)
 {
-	double max = 0.0;
-	for (std::vector<std::unordered_set<uint32_t>>::const_iterator it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
+	auto max = 0.0;
+	for (auto it = task_cardinality.cbegin(); it != task_cardinality.cend(); ++it)
 	{
 		max = max < it->size() ? it->size() : max;
 	}
@@ -156,115 +156,7 @@ double get_imbalance(const std::vector<std::unordered_set<uint32_t>>& task_cardi
 
 double get_imbalance(const std::vector<uint32_t>& task_cardinality)
 {
-	uint32_t max_card = *std::max_element(task_cardinality.begin(), task_cardinality.end());
+	auto max_card = *std::max_element(task_cardinality.begin(), task_cardinality.end());
 	double sum_card = std::accumulate(task_cardinality.begin(), task_cardinality.end(), 0);
 	return max_card - (sum_card / task_cardinality.size());
-}
-
-void plot_cardinality_estimation_correctness(const unsigned int p, const size_t task_number, const uint64_t cardinality, const size_t stream_length)
-{
-	std::ofstream imbalance_plot("imbalance_plot.csv");
-	//imbalance_plot << "tuple-id";
-	std::vector<uint16_t> tasks;
-	uint64_t* stream;
-	hll_8** opt_cardinality_estimator = (hll_8**)malloc(sizeof(hll_8*) * task_number);
-	hll_32** opt_32_cardinality_estimator = (hll_32**)malloc(sizeof(hll_32*) * task_number);
-
-	srand(time(NULL));
-
-	//for (size_t i = 0; i < task_number; i++)
-	//{
-	//	if (i < task_number - 1)
-	//	{
-	//		//imbalance_plot << std::to_string(i) << "-err,";
-	//	}
-	//	else
-	//	{
-	//		//imbalance_plot << std::to_string(i) << "-err";
-	//	}
-	//}
-	//imbalance_plot << "\n";
-
-	for (size_t i = 0; i < task_number; i++)
-	{
-		tasks.push_back(uint16_t(i));
-		opt_cardinality_estimator[i] = (hll_8*)malloc(sizeof(hll_8));
-		init_8(opt_cardinality_estimator[i], p, sizeof(uint64_t));
-		opt_32_cardinality_estimator[i] = (hll_32*)malloc(sizeof(hll_32));
-		init_32(opt_32_cardinality_estimator[i], p, sizeof(uint64_t));
-	}
-	CardinalityAwarePolicy ca;
-	CaPartitionLib::CA_Exact_Partitioner cag_naive(tasks, &ca);
-	stream = new uint64_t[stream_length];
-	for (size_t i = 0; i < stream_length; ++i)
-	{
-		stream[i] = rand() % cardinality;
-	}
-	std::cout << "Generated stream.\n";
-
-	for (size_t i = 0; i < stream_length; ++i)
-	{
-		uint64_t element = stream[i];
-		uint64_t long_code[2];
-		MurmurHash3_x64_128(&element, sizeof(uint64_t), 13, &long_code);
-		uint64_t xor_long_code = long_code[0] ^ long_code[1];
-		uint16_t naive_choice = cag_naive.partition_next(&element, sizeof(uint64_t));
-		opt_update_8(opt_cardinality_estimator[naive_choice], xor_long_code);
-		opt_update_32(opt_32_cardinality_estimator[naive_choice], xor_long_code);
-		std::vector<unsigned long long> cag_naive_cardinality_vector;
-		cag_naive.get_cardinality_vector(cag_naive_cardinality_vector);
-		imbalance_plot << std::to_string(i) << ",";
-		for (size_t i = 0; i < task_number; i++)
-		{
-			//uint64_t opt_estimate = opt_cardinality_estimation_8(opt_cardinality_estimator[i]);
-			uint64_t opt_32_estimate = opt_cardinality_estimation_32(opt_32_cardinality_estimator[i]);
-			//uint16_t pc_estimate = pc[i]->cardinality_estimation_64();
-			//int64_t opt_diff = cag_naive_cardinality_vector[i] - opt_estimate;
-			int64_t opt_32_diff = cag_naive_cardinality_vector[i] - opt_32_estimate;
-			/*if (cag_naive_cardinality_vector[i])
-			{
-			double relative_diff = double(opt_diff) / cag_naive_cardinality_vector[i];
-			if (i < task_number - 1)
-			{
-			imbalance_plot << std::to_string(relative_diff) << ",";
-			}
-			else
-			{
-			imbalance_plot << std::to_string(relative_diff);
-			}
-			}
-			else
-			{
-			double relative_diff = 0;
-			if (i < task_number - 1)
-			{
-			imbalance_plot << std::to_string(relative_diff) << ",";
-			}
-			else
-			{
-			imbalance_plot << std::to_string(relative_diff);
-			}
-			}*/
-			if (i < task_number - 1)
-			{
-				imbalance_plot << std::to_string(abs(opt_32_diff)) << ",";
-			}
-			else
-			{
-				imbalance_plot << std::to_string(abs(opt_32_diff));
-			}
-		}
-		imbalance_plot << "\n";
-	}
-	std::cout << "Finished the partitioning and the output of the plot.\n";
-	tasks.clear();
-	delete[] stream;
-	imbalance_plot.flush();
-	imbalance_plot.close();
-	for (size_t i = 0; i < task_number; i++)
-	{
-		destroy_8(opt_cardinality_estimator[i]);
-		free(opt_cardinality_estimator[i]);
-	}
-	free(opt_cardinality_estimator);
 }

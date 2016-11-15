@@ -86,8 +86,8 @@ namespace Experiment
 		public:
 			FrequentRouteOfflineAggregator();
 			~FrequentRouteOfflineAggregator();
-			void sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& full_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
-			void calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
+			static void sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& full_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
+			static void calculate_and_sort_final_aggregation(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
 			void write_output_to_file(const std::vector<std::pair<unsigned long, std::string>>& result, const std::string& outfile_name);
 		};
 
