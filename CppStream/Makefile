@@ -8,7 +8,7 @@ debs_cell_coordinate_util.o c_hll.o debs_query_lib.o google_cluster_monitor_quer
 tpch_query_lib.o main.o
 
 all: ${OBJS}
-	${CC} ${FLAGS} ${OBJS} -o target_bin ${LIBS}
+	${CC} ${FLAGS} ${OBJS} -o part_main ${LIBS}
 
 main.o: ./CppStream/src/main.cpp
 	${CC} ${FLAGS} -c ./CppStream/src/main.cpp ${INCLUDE_FLAGS}
@@ -36,4 +36,4 @@ bit_trick_utils.o: ./CppStream/src/bit_trick_utils.cpp ./CppStream/include/bit_t
 
 clean:
 	rm -rf *.o
-	rm target_bin
+	rm part_main
