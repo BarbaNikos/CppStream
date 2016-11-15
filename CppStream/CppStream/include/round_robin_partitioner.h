@@ -53,7 +53,7 @@ private:
 	std::vector<uint16_t> tasks;
 	std::vector<unsigned long long> task_count;
 	int next_task;
-	unsigned int max_task_index;
+	int max_task_index;
 	unsigned long long max_task_count;
 	unsigned long long min_task_count;
 };
