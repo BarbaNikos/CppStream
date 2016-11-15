@@ -2,8 +2,11 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import sys
 
-main_file = 'imbalance_plot.csv'
+if (len(sys.argv) < 2):
+    print "required argument: <imbalance-plot.csv>\n"
+main_file = sys.argv[1]
 
 max_error = 0
 task_number = 10
@@ -12,7 +15,6 @@ element_sequence_id = []
 absolute_error = dict()
 for i in range(1, task_number + 1):
     absolute_error[i] = list()
-    #print "added task-%d" % i
 
 lines = list()
 with open(main_file) as abs_error_file:
@@ -33,7 +35,6 @@ markers = ['b.', 'ro', 'b^', 'gx', 'yo', 'cv', 'k1', 'gD', 'm.', 'r,', 'bp']
 colors = [ 'red', 'blue', 'green', 'purple', 'orange', 'yellow', 'black', 'grey', 'purple', 'pink', 'red']
 fig, ax = plt.subplots(1)
 for i in range(1, task_number + 1):
-    #print "index: %d" % i
     task_label = 't-' + str(i)
     ax.plot(element_sequence_id, absolute_error[i], markers[i], label=task_label, linewidth=2, markersize=5)
 
