@@ -3,9 +3,8 @@ CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
 FLAGS = -std=c++11 -g -O3 -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
 LIBS = -lpthread -lm							# additional libraries
-OBJS = bit_trick_utils.o murmurhash_3.o \
-debs_cell_coordinate_util.o c_hll.o debs_query_lib.o google_cluster_monitor_query.o \
-tpch_query_lib.o main.o
+OBJS = murmurhash_3.o debs_cell_coordinate_util.o c_hll.o debs_query_lib.o \
+google_cluster_monitor_query.o tpch_query_lib.o main.o
 
 all: ${OBJS}
 	${CC} ${FLAGS} ${OBJS} -o part_main ${LIBS}

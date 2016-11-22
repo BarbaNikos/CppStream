@@ -92,9 +92,6 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\bit_trick_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\murmurhash_3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

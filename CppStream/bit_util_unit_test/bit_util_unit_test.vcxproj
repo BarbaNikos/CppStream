@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{57D79A30-52E7-47AD-AE43-F06DF8B534F0}</ProjectGuid>
-    <RootNamespace>CppStream</RootNamespace>
+    <ProjectGuid>{64CC92C7-3F63-4A65-BD26-7A666A57349B}</ProjectGuid>
+    <RootNamespace>bit_util_unit_test</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -74,7 +74,6 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -82,9 +81,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <CompileAs>CompileAsCpp</CompileAs>
+      <AdditionalIncludeDirectories>C:\Users\nickk\Documents\CppStream\CppStream\CppStream\include;C:\Users\nickk\Documents\CppStream\CppStream\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -94,7 +91,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -104,13 +100,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\nickk\Documents\CppStream\CppStream\CppStream\include;C:\Users\nickk\Documents\CppStream\CppStream\googletest\googletest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -118,42 +112,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\BasicWindow.h" />
-    <ClInclude Include="include\bit_trick_utils.h" />
-    <ClInclude Include="include\ca_partition_lib.h" />
-    <ClInclude Include="include\CircularBuffer.h" />
-    <ClInclude Include="include\c_hll.h" />
-    <ClInclude Include="include\debs_query_lib.h" />
-    <ClInclude Include="include\debs_cell_coordinate_util.h" />
-    <ClInclude Include="include\debs_structure_lib.h" />
-    <ClInclude Include="include\google_cluster_monitor_query.h" />
-    <ClInclude Include="include\google_cluster_monitor_util.h" />
-    <ClInclude Include="include\hash_fld_partitioner.h" />
-    <ClInclude Include="include\imbalance_score_aggr.h" />
-    <ClInclude Include="include\lognormal_experiment.h" />
-    <ClInclude Include="include\murmurhash_3.h" />
-    <ClInclude Include="include\partitioner.h" />
-    <ClInclude Include="include\partitioner_factory.h" />
-    <ClInclude Include="include\partition_policy.h" />
-    <ClInclude Include="include\pkg_partitioner.h" />
-    <ClInclude Include="include\round_robin_partitioner.h" />
-    <ClInclude Include="include\tpch_query_lib.h" />
-    <ClInclude Include="include\tpch_util.h" />
-    <ClInclude Include="include\tpch_struct_lib.h" />
-    <ClInclude Include="include\WindowLoad.h" />
-    <ClInclude Include="include\window_partitioner.h" />
+    <ProjectReference Include="..\CppStream\CppStream.vcxproj">
+      <Project>{57d79a30-52e7-47ad-ae43-f06df8b534f0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\googletest\googletest\msvc\gtest.vcxproj">
+      <Project>{c8f6c172-56f2-4e76-b5fa-c3b423b31be7}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\c_hll.c" />
-    <ClCompile Include="src\debs_cell_coordinate_util.cpp" />
-    <ClCompile Include="src\debs_query_lib.cpp" />
-    <ClCompile Include="src\google_cluster_monitor_query.cpp" />
+    <ClCompile Include="src\bit_trick_utils_test.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\murmurhash_3.cpp" />
-    <ClCompile Include="src\tpch_query_lib.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Makefile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
