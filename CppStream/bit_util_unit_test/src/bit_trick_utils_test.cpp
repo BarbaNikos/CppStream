@@ -1,6 +1,3 @@
-#include <ctime>
-#include <cstdlib>
-
 #include "gtest/gtest.h"
 #include "bit_trick_utils.h"
 
