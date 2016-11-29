@@ -46,6 +46,10 @@
 #include "partitioner_factory.h"
 #endif // !PARTITIONER_FACTORY_H_
 
+#ifndef NAIVE_SHED_FLD_PARTITIONER_H_
+#include "naive_shed_fld.h"
+#endif // !NAIVE_SHED_FLD_PARTITIONER_H_
+
 #ifndef TPCH_QUERY_LIB_H_
 #define TPCH_QUERY_LIB_H_
 namespace Experiment
@@ -159,10 +163,10 @@ namespace Experiment
 			void step_one_update(const Experiment::Tpch::order& order, std::string partitioner_name);
 			void step_one_finalize(std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer);
 			void step_one_partial_finalize(std::unordered_set<uint32_t>& c_index, std::unordered_map<uint32_t, Tpch::order>& o_index,
-				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer);
+				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer) const;
 			void step_two_init(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result);
 			void step_two_update(const Experiment::Tpch::lineitem& line_item);
-			void finalize(std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer);
+			void finalize(std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer) const;
 		private:
 			Experiment::Tpch::query_three_predicate predicate;
 			std::unordered_set<uint32_t> cu_index;
@@ -175,14 +179,14 @@ namespace Experiment
 		{
 		public:
 			void step_one_sort(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, 
-				std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer);
+				std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer) const;
 			void step_one_materialize_and_sort(const std::unordered_set<uint32_t>& c_index, const std::unordered_map<uint32_t, Tpch::order>& o_index,
-				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer);
+				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer) const;
 			void step_two_sort(const std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer, 
-				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result);
+				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result) const;
 			void step_two_calculate_and_sort(const std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer,
-				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result);
-			void write_output_to_file(const std::vector<std::pair<std::string, query_three_result>>& final_result, const std::string& output_file);
+				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result) const;
+			void write_output_to_file(const std::vector<std::pair<std::string, query_three_result>>& final_result, const std::string& output_file) const;
 		};
 
 		class QueryThreePartition

@@ -132,8 +132,8 @@ namespace Experiment
 			void second_round_init();
 			void second_round_update(const std::string& pickup_cell, const std::vector<float>& fare_list);
 			void second_round_update(const std::string& medallion, const std::string& dropoff_cell, const time_t& timestamp);
-			void partial_finalize(std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer); // place results in intermediate buffer - 2 choice partitioner
-			void partial_second_step_finalize(std::vector<std::pair<std::string, std::pair<float, int>>>& partial_result_table);
+			void partial_finalize(std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer) const; // place results in intermediate buffer - 2 choice partitioner
+			void partial_second_step_finalize(std::vector<std::pair<std::string, std::pair<float, int>>>& partial_result_table) const;
 			void finalize(std::unordered_map<std::string, float>& cell_profit_buffer); // place results in intermediate buffer - 1 choice partitioner
 		private:
 			std::mutex* mu;
@@ -153,10 +153,10 @@ namespace Experiment
 			void step_one_materialize_aggregation(const std::vector<std::pair<std::string, std::vector<float>>>& fare_table, 
 				std::vector<std::pair<std::string, std::vector<float>>>& final_fare_table, 
 				const std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>& dropoff_table, 
-				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>& final_dropoff_table);
-			void sort_final_aggregation(const std::unordered_map<std::string, float>& cell_profit_buffer, std::vector<std::pair<float, std::string>>& final_result);
-			void calculate_and_sort_final_aggregation(const std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer, std::vector<std::pair<float, std::string>>& final_result);
-			void output_result_to_file(const std::vector<std::pair<float, std::string>>& final_result, const std::string& out_file);
+				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>& final_dropoff_table) const;
+			void sort_final_aggregation(const std::unordered_map<std::string, float>& cell_profit_buffer, std::vector<std::pair<float, std::string>>& final_result) const;
+			void calculate_and_sort_final_aggregation(const std::unordered_map<std::string, std::pair<float, int>>& cell_profit_buffer, std::vector<std::pair<float, std::string>>& final_result) const;
+			void output_result_to_file(const std::vector<std::pair<float, std::string>>& final_result, const std::string& out_file) const;
 		private:
 			std::unordered_map<std::string, uint64_t> result;
 		};
@@ -182,7 +182,7 @@ namespace Experiment
 				const std::unordered_map<std::string, float>* full_input_buffer, std::vector<std::pair<float, std::string>>* final_result, const std::string worker_output_file_name,
 				double* total_duration, double* io_duration);
 			void most_profitable_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
-				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name) const;
 		};
 	}
 }

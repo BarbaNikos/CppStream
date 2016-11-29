@@ -12,6 +12,10 @@
 #include "hash_fld_partitioner.h"
 #endif // !HASH_FLD_PARTITIONER_H_
 
+#ifndef NAIVE_SHED_FLD_PARTITIONER_H_
+#include "naive_shed_fld.h"
+#endif // !NAIVE_SHED_FLD_PARTITIONER_H_
+
 #ifndef PKG_PARTITIONER_H_
 #include "pkg_partitioner.h"
 #endif // !PKG_PARTITIONER_H_
@@ -33,6 +37,10 @@ public:
 		else if (partitioner_identifier.compare("fld") == 0)
 		{
 			return new HashFieldPartitioner(*(HashFieldPartitioner*)prototype);
+		}
+		else if (partitioner_identifier.compare("naive_shed_fld") == 0)
+		{
+			return new NaiveShedFieldPartitioner(*(NaiveShedFieldPartitioner*)prototype);
 		}
 		else if (partitioner_identifier.compare("pk") == 0)
 		{

@@ -246,7 +246,10 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::partition_t
 	{
 		int key = it->scheduling_class;
 		uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
-		sch_class_imb_aggregator.incremental_measure_score_tuple_count(task, *it);
+		if (task < (*buffer).size())
+		{
+			sch_class_imb_aggregator.incremental_measure_score_tuple_count(task, *it);
+		}
 	}
 	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
 	duration = (part_end - part_start);
@@ -289,8 +292,11 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	{
 		int key = it->scheduling_class;
 		uint16_t task = p_copy->partition_next(&key, sizeof(it->scheduling_class));
-		sch_class_imb_aggregator.incremental_measure_score(task, *it);
-		worker_input_buffer[task].push_back(*it);
+		if (task < worker_input_buffer.size())
+		{
+			worker_input_buffer[task].push_back(*it);
+			sch_class_imb_aggregator.incremental_measure_score(task, *it);
+		}
 		scheduling_class_keys.insert(key);
 	}
 	std::chrono::system_clock::time_point part_end = std::chrono::system_clock::now();
@@ -590,17 +596,20 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	double aggr_duration, write_output_duration;
 	std::vector<Experiment::GoogleClusterMonitor::cm_two_result> intermediate_buffer;
 	std::vector<std::vector<GoogleClusterMonitor::task_event>> worker_input_buffer(tasks.size(), std::vector<GoogleClusterMonitor::task_event>());
-	std::unordered_set<int> total_job_ids;
+	//std::unordered_set<int> total_job_ids;
 	// partition tuples
 	for (auto it = buffer->cbegin(); it != buffer->cend(); ++it)
 	{
 		long key = it->job_id;
 		uint16_t task = partitioner->partition_next(&key, sizeof(long));
-		worker_input_buffer[task].push_back(*it);
-		total_job_ids.insert(key);
+		if (task < worker_input_buffer.size())
+		{
+			worker_input_buffer[task].push_back(*it);
+		}
+		//total_job_ids.insert(key);
 	}
-	std::cout << "total number of job-IDs: " << total_job_ids.size() << ".\n";
-	total_job_ids.clear();
+	//std::cout << "total number of job-IDs: " << total_job_ids.size() << ".\n";
+	//total_job_ids.clear();
 	for	(size_t i = 0; i < tasks.size(); ++i)
 	{
 		worker_input_buffer[i].shrink_to_fit();

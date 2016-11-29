@@ -1,5 +1,5 @@
-CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
-#CC = g++
+#CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
+CC = g++
 FLAGS = -std=c++11 -g -O3 -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
 LIBS = -lpthread -lm							# additional libraries

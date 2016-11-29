@@ -87,6 +87,9 @@
     <ClInclude Include="include\partitioner_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\naive_shed_fld.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
