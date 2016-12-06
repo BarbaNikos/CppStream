@@ -3,7 +3,7 @@
 #include <cinttypes>
 
 #ifndef BIT_TRICK_UTILS_H_
-#include "bit_trick_utils.h"
+#include "bit_util.h"
 #endif // !BIT_TRICK_UTILS_H_
 
 #ifndef PARTITIONER_H_

@@ -86,7 +86,7 @@
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -116,10 +116,16 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="..\bit_util\bit_util.vcxproj">
+      <Project>{64cc92c7-3f63-4a65-bd26-7a666a57349b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\hll\hll.vcxproj">
+      <Project>{8982ef83-c97c-45c1-bf6a-ddbd4c1b2f23}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\stream_partition_lib\stream_partition_lib.vcxproj">
       <Project>{b46b918f-cd9a-4669-a466-8d8e8233e6ff}</Project>
     </ProjectReference>

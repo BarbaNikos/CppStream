@@ -8,7 +8,7 @@
 #endif // !PARTITIONER_H_
 
 #ifndef BIT_TRICK_UTILS_H_
-#include "bit_trick_utils.h"
+#include "bit_util.h"
 #endif // !BIT_TRICK_UTILS_H_
 
 #ifndef ROUND_ROBIN_PARTITIONER_H_

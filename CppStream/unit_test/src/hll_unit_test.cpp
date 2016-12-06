@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../include/c_hll.h"
+#include "c_hll.h"
 
 TEST(DummyTest, Zero)
 {
