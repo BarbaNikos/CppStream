@@ -131,6 +131,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\naive_shed_experiment.h" />
     <ClInclude Include="include\tpch_key_extractor.h" />
     <ClInclude Include="include\tpch_query_lib.h" />
     <ClInclude Include="include\tpch_struct_lib.h" />

@@ -2,6 +2,9 @@
 #include "../include/bit_util.h"
 #endif
 
+/*
+ * Technique found at S. E. Anderson's `Bit Twiddling Hacks' web-page http://www.graphics.stanford.edu/~seander/bithacks.html
+ */
 uint32_t BitWizard::log_base_2_of_power_of_2_uint(uint32_t value)
 {
 	const uint8_t MultiplyDeBruijnBitPosition2[32] = {
@@ -9,7 +12,10 @@ uint32_t BitWizard::log_base_2_of_power_of_2_uint(uint32_t value)
 		31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9 };
 	return value == 0 ? 0 : MultiplyDeBruijnBitPosition2[static_cast<uint32_t>(value * 0x077CB531U) >> 27];
 }
-
+/*
+ * Technique found at S. E. Anderson's `Bit Twiddling Hacks' web-page http://www.graphics.stanford.edu/~seander/bithacks.html
+ * named `Reverse an N-bit quantity in parallel in 5 * lg(N) operations`
+ */
 uint32_t BitWizard::swap_bits_32(uint32_t v)
 {
 	v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1);

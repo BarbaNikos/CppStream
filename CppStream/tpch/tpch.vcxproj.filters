@@ -27,6 +27,9 @@
     <ClInclude Include="include\tpch_key_extractor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\naive_shed_experiment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\tpch_query_lib.cpp">

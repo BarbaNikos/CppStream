@@ -71,9 +71,9 @@ namespace Hll
 		size_t hash_code_len_in_bits;
 	}hll_32;
 
-	void init_8(hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes);
+	int init_8(hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes);
 	void copy_8(hll_8* _new_hll, const hll_8* _src_hll);
-	void init_32(hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes);
+	int init_32(hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes);
 	void copy_32(hll_32* _new_hll, const hll_32* _src_hll);
 	void update_8(hll_8* _hll, uint32_t hash_value);
 	void update_8(hll_8* _hll, uint64_t hash_value);

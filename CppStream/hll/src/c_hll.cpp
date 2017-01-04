@@ -2,13 +2,13 @@
 #include "../include/c_hll.h"
 #endif // C_HLL_H_
 
-void Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
+int Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
 	size_t i;
 	if (p > (hash_code_len_in_bytes * CHAR_BIT))
 	{
 		printf("init_32 error: p value given cannot exceed length of hash_code.\n");
-		exit(1);
+		return -1;
 	}
 	if (_hll != nullptr)
 	{
@@ -38,11 +38,12 @@ void Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes
 		_hll->pow_2_to_32 = pow(2, 32);
 		_hll->condition_value_test_2 = (1 / 30) * _hll->pow_2_to_32;
 		_hll->m_times_log_m = _hll->m * log(_hll->m);
+		return 0;
 	}
 	else
 	{
 		printf("empty hll structure provided.\n");
-		exit(1);
+		return -1;
 	}
 }
 
@@ -70,13 +71,13 @@ void Hll::copy_8(Hll::hll_8 * _new_hll, const Hll::hll_8* _src_hll)
 	_new_hll->hash_code_len_in_bits = _src_hll->hash_code_len_in_bits;
 }
 
-void Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes)
+int Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
 	size_t i;
 	if (p > (hash_code_len_in_bytes * CHAR_BIT))
 	{
 		printf("init_32 error: p value given cannot exceed length of hash_code.\n");
-		exit(1);
+		return -1;
 	}
 	if (_hll != nullptr)
 	{
@@ -107,11 +108,12 @@ void Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_byt
 		_hll->pow_2_to_32 = pow(2, 32);
 		_hll->condition_value_test_2 = (1 / 30) * _hll->pow_2_to_32;
 		_hll->m_times_log_m = _hll->m * log(_hll->m);
+		return 0;
 	}
 	else
 	{
 		printf("empty hll structure provided.\n");
-		exit(1);
+		return -1;
 	}
 }
 
