@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <string.h>
 #include <cstring>
+#include <climits>
+#include <cmath>
 
 #ifndef BIT_TRICK_UTILS_H_
 #include "bit_util.h"
@@ -25,14 +27,11 @@
 #define C_HLL_H_
 namespace Hll
 {
-	const double a_16 = 0.673;
-
-	const double a_32 = 0.697;
-
-	const double a_64 = 0.709;
-
 	typedef struct hll_8_str
 	{
+		double a_16;
+		double a_32;
+		double a_64;
 		double current_sum;
 		unsigned int p;
 		unsigned int m;
@@ -53,6 +52,9 @@ namespace Hll
 
 	typedef struct hll_32_str
 	{
+		double a_16;
+		double a_32;
+		double a_64;
 		double current_sum;
 		unsigned int p;
 		unsigned int m;

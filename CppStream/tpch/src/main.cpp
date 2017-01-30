@@ -22,9 +22,9 @@
 #include "../include/tpch_query_lib.h"
 #endif // !TPCH_QUERY_LIB_H_
 
-#ifndef TPCH_NAIVE_SHED_EXPERIMENT_H_
-#include "../include/naive_shed_experiment.h"
-#endif // !TPCH_NAIVE_SHED_EXPERIMENT_H_
+//#ifndef TPCH_NAIVE_SHED_EXPERIMENT_H_
+//#include "../include/naive_shed_experiment.h"
+//#endif // !TPCH_NAIVE_SHED_EXPERIMENT_H_
 
 
 int main(int argc, char** argv)
@@ -44,8 +44,8 @@ int main(int argc, char** argv)
 	std::vector<Experiment::Tpch::lineitem> lineitem_table;
 	std::vector<Experiment::Tpch::order> order_table;
 
-	Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
-	Experiment::Tpch::ShedRouteLab::correct_result(lineitem_table, 8);
+	/*Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
+	Experiment::Tpch::ShedRouteLab::correct_result(lineitem_table, 8);*/
 	/*Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
 	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
 	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);*/

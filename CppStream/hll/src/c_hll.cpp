@@ -4,6 +4,9 @@
 
 int Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
+	_hll->a_16 = 0.673;
+	_hll->a_32 = 0.697;
+	_hll->a_64 = 0.709;
 	size_t i;
 	if (p > (hash_code_len_in_bytes * CHAR_BIT))
 	{
@@ -28,7 +31,7 @@ int Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 			_hll->bucket[i] = 0x00;
 			_hll->current_sum += (1 / (pow(2, 0)));
 		}
-		_hll->_multiplier = a_16 * _hll->m * _hll->m;
+		_hll->_multiplier = _hll->a_16 * _hll->m * _hll->m;
 		_hll->hash_code_len_in_bits = hash_code_len_in_bytes * CHAR_BIT;
 		_hll->bitmap_offset = _hll->hash_code_len_in_bits - _hll->p - _hll->bitmap_size;
 		_hll->v = _hll->m;
@@ -49,6 +52,9 @@ int Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 
 void Hll::copy_8(Hll::hll_8 * _new_hll, const Hll::hll_8* _src_hll)
 {
+	_new_hll->a_16 = 0.673;
+	_new_hll->a_32 = 0.697;
+	_new_hll->a_64 = 0.709;
 	_new_hll->current_sum = _src_hll->current_sum;
 	_new_hll->p = _src_hll->p;
 	_new_hll->m = _src_hll->m;
@@ -73,6 +79,9 @@ void Hll::copy_8(Hll::hll_8 * _new_hll, const Hll::hll_8* _src_hll)
 
 int Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
+	_hll->a_16 = 0.673;
+	_hll->a_32 = 0.697;
+	_hll->a_64 = 0.709;
 	size_t i;
 	if (p > (hash_code_len_in_bytes * CHAR_BIT))
 	{
@@ -97,7 +106,7 @@ int Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_byte
 			_hll->bucket[i] = static_cast<unsigned int>(0x00000000);
 			_hll->current_sum += (1 / (pow(2, 0)));
 		}
-		_hll->_multiplier = a_32 * _hll->m * _hll->m;
+		_hll->_multiplier = _hll->a_32 * _hll->m * _hll->m;
 		_hll->hash_code_len_in_bits = hash_code_len_in_bytes * CHAR_BIT;
 		_hll->bitmap_offset = (_hll->hash_code_len_in_bits - _hll->p - _hll->bitmap_size) < 0 ? 0 : 
 			(_hll->hash_code_len_in_bits - _hll->p - _hll->bitmap_size);
@@ -119,6 +128,9 @@ int Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_byte
 
 void Hll::copy_32(Hll::hll_32 * _new_hll, const Hll::hll_32* _src_hll)
 {
+	_new_hll->a_16 = 0.673;
+	_new_hll->a_32 = 0.697;
+	_new_hll->a_64 = 0.709;
 	_new_hll->current_sum = _src_hll->current_sum;
 	_new_hll->p = _src_hll->p;
 	_new_hll->m = _src_hll->m;

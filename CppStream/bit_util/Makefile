@@ -1,17 +1,19 @@
 include ../Makefile.inc
 
-SRC_DIR: src/
-INCLUDE_DIR: include/
+BIT_UTIL_OBJS = bit_util.o
 
-OBJS: bit_util.o
-HEADER_FILES: include/bit_util.h
+BIT_UTIL_LIB = libbitutil.a
 
-BIT_LIB: libbitutil.a
+SRC_DIR = src/
 
-all: $(BIT_LIB)
+all: $(BIT_UTIL_LIB)
 
-$(BIT_LIB): $(OBJS)
-	ar rcs $@ $^
+$(BIT_UTIL_LIB): $(BIT_UTIL_OBJS)
+	$(AR) rcs $(BIT_UTIL_LIB) $(BIT_UTIL_OBJS)
 
 bit_util.o: $(SRC_DIR)bit_util.cpp
 	$(CC) $(FLAGS) -c $(SRC_DIR)bit_util.cpp
+
+clean: 
+	rm -rf $(BIT_UTIL_OBJS) 
+	rm -rf $(BIT_UTIL_LIB)
