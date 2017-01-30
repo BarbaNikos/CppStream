@@ -21,6 +21,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_test", "unit_test\unit
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adaptive_partition", "adaptive_partition\adaptive_partition.vcxproj", "{5E74E881-D64A-4DDD-A825-1150AC6A0FBC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9006B53C-D137-4E72-8AE8-BAE3BDD2B61F}"
+	ProjectSection(SolutionItems) = preProject
+		Makefile.inc = Makefile.inc
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

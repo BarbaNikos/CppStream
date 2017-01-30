@@ -1,11 +1,14 @@
-#CC = /opt/rh/devtoolset-2/root/usr/bin/g++				# Compiler to use
-CC = g++
-FLAGS = -std=c++11 -g -O3 -Wall						# -g for debug, -O2 for optimize, -Wall additional messages
+include Makefile.inc
+
+DIRS = bit_util hll stream_partition_lib googletest unit_test debs gcm tpch
+
 INCLUDE_FLAGS = -I ./CppStream/include/					# include headers
-LIBS = -lpthread -lm							# additional libraries
+
 OBJS = murmurhash_3.o debs_cell_coordinate_util.o c_hll.o debs_query_lib.o \
 google_cluster_monitor_query.o tpch_query_lib.o main.o
 
+bit_util_lib: bit_util/src/bit_util.cpp
+	${CC} ${FLAGS} -c bit_util/src/bit_util.cpp 
 all: ${OBJS}
 	${CC} ${FLAGS} ${OBJS} -o part_main ${LIBS}
 
