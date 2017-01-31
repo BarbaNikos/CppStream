@@ -26,33 +26,58 @@
 #include "../include/debs_query_lib.h"
 #endif // !DEBS_QUERY_LIB_H_
 
+#ifndef PARTITION_LATENCY_EXP_
+#include "../include/partition_latency.h"
+#endif // !PARTITION_LATENCY_EXP_
+
 int main(int argc, char** argv)
 {
-	if (argc < 3)
+	if (argc < 4)
 	{
-		std::cout << "usage: <debs_ride_q1.csv> <debs_ride_q2.csv>\n";
+		std::cout << "usage: <debs_ride_q1.csv> <debs_ride_q2.csv> <experiment: 1 - queries, 2 - part. latency>\n";
 		exit(1);
 	}
 	std::string ride_q1_file = argv[1];
 	std::string ride_q2_file = argv[2];
-	/*
-	* DEBS queries
-	*/
+	std::string experiment = argv[3];
+
 	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
 	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
-	debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 8);
-	debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 16);
-	debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 32);
-	frequent_ride_table.clear();
 
-	debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
-	Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
-	debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
-	debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
-	debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);
-	profitable_cell_table.clear();
+	if (experiment.compare("1") == 0)
+	{
+		/*
+		* DEBS queries
+		*/
+		debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+		debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 8);
+		debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 16);
+		debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 32);
+		frequent_ride_table.clear();
+		debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
+		Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
+		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
+		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
+		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);
+		profitable_cell_table.clear();
+	}
+	else if (experiment.compare("2") == 0)
+	{
+		/*
+		 * Partition latency on DEBS Query 1
+		 */
+		PartitionLatency latency_experiment;
+		debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+		latency_experiment.measure_latency(8, frequent_ride_table);
+		latency_experiment.measure_latency(16, frequent_ride_table);
+		latency_experiment.measure_latency(32, frequent_ride_table);
+		frequent_ride_table.clear();
+	}
+	else
+	{
+		std::cout << "un-recognized experiment-id. valid ids: 1 - debs queries, 2 - debs q1 part. latency\n";
+	}
 #ifdef _WIN32
 	std::cout << "Press ENTER to Continue";
 	std::cin.ignore();

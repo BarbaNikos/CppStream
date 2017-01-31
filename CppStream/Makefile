@@ -1,8 +1,8 @@
 include Makefile.inc
 
-DIRS = bit_util hll stream_partition_lib tpch
+DIRS = bit_util hll stream_partition_lib tpch debs
 
-all: bit_util hll stream_partition_lib tpch unit_test
+all: bit_util hll stream_partition_lib tpch debs unit_test
 
 .PHONY: bit_util 
 bit_util: 
@@ -20,6 +20,10 @@ stream_partition_lib:
 tpch: 
 	make -C tpch/
 
+.PHONY: debs
+debs:
+	make -C debs/
+
 .PHONY: unit_test
 unit_test:
 	make -C unit_test/
@@ -29,4 +33,5 @@ clean:
 	make clean -C hll/
 	make clean -C stream_partition_lib/
 	make clean -C tpch/
+	make clean -C debs/
 	make clean -C unit_test/
