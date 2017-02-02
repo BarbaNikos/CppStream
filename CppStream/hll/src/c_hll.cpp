@@ -4,9 +4,6 @@
 
 int Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
-	_hll->a_16 = 0.673;
-	_hll->a_32 = 0.697;
-	_hll->a_64 = 0.709;
 	size_t i;
 	if (p > (hash_code_len_in_bytes * CHAR_BIT))
 	{
@@ -15,6 +12,9 @@ int Hll::init_8(Hll::hll_8* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 	}
 	if (_hll != nullptr)
 	{
+		_hll->a_16 = 0.673;
+		_hll->a_32 = 0.697;
+		_hll->a_64 = 0.709;
 		_hll->current_sum = 0;
 		_hll->p = p;
 		_hll->m = static_cast<unsigned int>(pow(2, p));
@@ -79,9 +79,6 @@ void Hll::copy_8(Hll::hll_8 * _new_hll, const Hll::hll_8* _src_hll)
 
 int Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_bytes)
 {
-	_hll->a_16 = 0.673;
-	_hll->a_32 = 0.697;
-	_hll->a_64 = 0.709;
 	size_t i;
 	if (p > (hash_code_len_in_bytes * CHAR_BIT))
 	{
@@ -90,6 +87,9 @@ int Hll::init_32(Hll::hll_32* _hll, unsigned int p, size_t hash_code_len_in_byte
 	}
 	if (_hll != nullptr)
 	{
+		_hll->a_16 = 0.673;
+		_hll->a_32 = 0.697;
+		_hll->a_64 = 0.709;
 		_hll->current_sum = 0;
 		_hll->p = p;
 		_hll->m = static_cast<unsigned int>(pow(2, p));
