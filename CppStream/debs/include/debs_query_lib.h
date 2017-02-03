@@ -98,29 +98,22 @@ namespace Experiment
 		class FrequentRoutePartition
 		{
 		public:
-			FrequentRoutePartition();
-			~FrequentRoutePartition();
-			void produce_compact_ride_file(const std::string& input_file_name, const std::string& output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
+			/**
+			 * De-serialize rides from file
+			 */
+			static void produce_compact_ride_file(const std::string& input_file_name, const std::string& output_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
 			std::vector<Experiment::DebsChallenge::CompactRide> parse_debs_rides(const std::string input_file_name, uint32_t cell_side_size, uint32_t grid_side_size_in_cells);
-			void parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer);
-			static void partition_thread_operate(bool write, std::string partitioner_name, Partitioner* partitioner,
-				std::vector<Experiment::DebsChallenge::CompactRide>* rides, std::vector<std::vector<Experiment::DebsChallenge::CompactRide>>* worker_input_buffer,
-				size_t task_number, float* imbalance, float* key_imbalance, double* duration);
+			static void parse_debs_rides_with_to_string(const std::string input_file_name, std::vector<Experiment::DebsChallenge::CompactRide>* buffer);
+			
+			static void partition(Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* rides, 
+				std::vector<std::vector<Experiment::DebsChallenge::CompactRide>>* worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance);
 			static void worker_thread_operate(bool write, std::vector<Experiment::DebsChallenge::CompactRide>* input, std::vector<Experiment::DebsChallenge::frequent_route>* result_buffer,
 				double* total_duration);
 			static void aggregation_thread_operate(bool write, std::string partitioner_name, std::vector<Experiment::DebsChallenge::frequent_route>* input_buffer,
 				std::vector<std::pair<unsigned long, std::string>>* result, double* total_duration, std::string worker_output_file_name, double* io_duration);
-			void frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
-			void frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
+			static void frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
+			static void frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
-		private:
-			static void debs_frequent_route_worker(Experiment::DebsChallenge::FrequentRouteWorkerThread* frequent_route);
-			std::queue<Experiment::DebsChallenge::CompactRide>** queues;
-			std::mutex* mu_xes;
-			std::condition_variable* cond_vars;
-			std::thread** threads;
-			Experiment::DebsChallenge::FrequentRouteWorkerThread** query_workers;
-			size_t max_queue_size;
 		};
 
 		class ProfitableArea
@@ -171,15 +164,18 @@ namespace Experiment
 			ProfitableAreaPartition();
 			~ProfitableAreaPartition();
 			void most_profitable_cell_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
-			static void thread_partition_medallion(bool writer, std::string partitioner_name, Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
-				size_t task_number, float* imbalance, float* key_imbalance, double* duration, std::vector<std::vector<CompactRide>>* worker_buffer);
+			/*
+			 * partition methods
+			 */
+			static void partition_medallion(Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* buffer,
+				size_t task_number, float* imbalance, float* key_imbalance, std::vector<std::vector<CompactRide>>* worker_buffer);
+			static void partition_step_two(Partitioner* partitioner, std::vector<std::pair<std::string, std::vector<float>>>* fares,
+				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>* dropoffs, size_t task_number, float* fare_imbalance, float* fare_key_imbalance,
+				float* dropoff_imbalance, float* dropoff_key_imbalance, std::vector<std::vector<std::pair<std::string, std::vector<float>>>>* fare_sub_table,
+				std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>>* dropoffs_sub_table);
 			static void thread_execution_aggregation_step_one(bool write, const std::string partitioner_name, const std::vector<std::pair<std::string, std::vector<float>>>* fare_table,
 				const std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>* dropoff_table, std::vector<std::pair<std::string, std::vector<float>>>* fare_table_out,
 				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>* dropoff_table_out, double* total_duration);
-			static void thread_partition_step_two(bool writer, std::string partitioner_name, Partitioner* partitioner, std::vector<std::pair<std::string, std::vector<float>>>* fares, 
-				std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>* dropoffs, size_t task_number, float* fare_imbalance, float* fare_key_imbalance, 
-				float* dropoff_imbalance, float* dropoff_key_imbalance, double* duration, std::vector<std::vector<std::pair<std::string, std::vector<float>>>>* fare_sub_table,
-				std::vector<std::vector<std::pair<std::string, std::pair<std::string, std::time_t>>>>* dropoffs_sub_table);
 			static void thread_execution_step_one(bool write, const std::vector<Experiment::DebsChallenge::CompactRide>* input_buffer, 
 				std::vector<std::pair<std::string, std::vector<float>>>* fare_table, std::vector<std::pair<std::string, std::pair<std::string, time_t>>>* dropoff_table, double* total_duration);
 			static void thread_final_aggregation(bool write, const std::string partitioner_name, std::unordered_map<std::string, std::pair<float, int>>* partial_input_buffer,
