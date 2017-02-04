@@ -43,19 +43,18 @@ int main(int argc, char** argv)
 
 	std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
 	std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
-	Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
-
 	if (experiment.compare("1") == 0)
 	{
 		/*
 		* DEBS queries
 		*/
-		debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+		Experiment::DebsChallenge::Parser::parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+		Experiment::DebsChallenge::FrequentRoutePartition debs_experiment_frequent_route;
 		debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 8);
 		debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 16);
 		debs_experiment_frequent_route.frequent_route_simulation(&frequent_ride_table, 32);
 		frequent_ride_table.clear();
-		debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
+		Experiment::DebsChallenge::Parser::parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
 		Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
 		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
 		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
@@ -68,7 +67,7 @@ int main(int argc, char** argv)
 		 * Partition latency on DEBS Query 1
 		 */
 		PartitionLatency latency_experiment;
-		debs_experiment_frequent_route.parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
+		Experiment::DebsChallenge::Parser::parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
 		latency_experiment.measure_latency(8, frequent_ride_table);
 		latency_experiment.measure_latency(16, frequent_ride_table);
 		latency_experiment.measure_latency(32, frequent_ride_table);

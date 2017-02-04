@@ -148,7 +148,7 @@ namespace Experiment
 				memcpy(med_buffer, medallion, 32 * sizeof(char));
 				med_buffer[32] = '\0';
 				std::string med = med_buffer;
-				return med + "," + std::to_string(trip_distance) + "," + std::to_string(dropoff_datetime) + "," + 
+				return med + "," + std::to_string(trip_distance) + "," + std::to_string(dropoff_datetime) + "," +
 					std::to_string(pickup_cell.first) + "," + std::to_string(pickup_cell.second) + "," +
 					std::to_string(dropoff_cell.first) + "," + std::to_string(dropoff_cell.second) + "," +
 					std::to_string(fare_amount) + "," + std::to_string(tip_amount);
