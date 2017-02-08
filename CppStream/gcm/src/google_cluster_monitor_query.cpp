@@ -181,12 +181,12 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simul
 	sh = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pk = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
-	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
+	/*ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
+	ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
+	ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
+	la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
+	la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);*/
 
 	std::string sh_file_name = "shg_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
@@ -536,12 +536,12 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulatio
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
-	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
+	/*ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
+	ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
+	ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
+	la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
+	la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);*/
 	std::cout << "GCM Q2 ***\n";
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-num,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec\n";
@@ -828,12 +828,12 @@ Experiment::GoogleClusterMonitor::SimpleScanWorker::SimpleScanWorker(std::queue<
 		rrg = new RoundRobinPartitioner(tasks);
 		fld = new HashFieldPartitioner(tasks);
 		pkg = new PkgPartitioner(tasks);
-		ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
-		ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-		ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
-		ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-		la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
-		la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
+		/*ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
+		ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
+		ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
+		ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
+		la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
+		la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);*/
 
 		std::string sh_file_name = "shg_google_q3_" + std::to_string(tasks.size()) + "_result.csv";
 		std::string fld_file_name = "fld_google_q3_" + std::to_string(tasks.size()) + "_result.csv";

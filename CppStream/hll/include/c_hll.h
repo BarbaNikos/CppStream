@@ -12,16 +12,16 @@
 #include "bit_util.h"
 #endif // !BIT_TRICK_UTILS_H_
 
-#if defined(_MSC_VER)
-
-#include <intrin.h>
-#define popcnt64(x)	__popcnt64(x)
-
-#else	// defined(_MSC_VER)
-
-#define popcnt64(x)	__builtin_popcountll(x)
-
-#endif	// !defined(_MSC_VER)
+//#if defined(_MSC_VER)
+//
+//#include <intrin.h>
+//#define popcnt64(x)	__popcnt64(x)
+//
+//#else	// defined(_MSC_VER)
+//
+//#define popcnt64(x)	__builtin_popcountll(x)
+//
+//#endif	// !defined(_MSC_VER)
 
 #ifndef C_HLL_H_
 #define C_HLL_H_

@@ -125,9 +125,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\BasicWindow.h" />
+    <ClInclude Include="include\card_estimator.h" />
     <ClInclude Include="include\ca_partition_lib.h" />
     <ClInclude Include="include\CircularBuffer.h" />
+    <ClInclude Include="include\dense_array.h" />
     <ClInclude Include="include\hash_fld_partitioner.h" />
+    <ClInclude Include="include\hip_estimator.h" />
     <ClInclude Include="include\imbalance_score_aggr.h" />
     <ClInclude Include="include\murmurhash_3.h" />
     <ClInclude Include="include\naive_shed_fld.h" />

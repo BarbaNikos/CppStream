@@ -57,6 +57,15 @@
     <ClInclude Include="include\WindowLoad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\dense_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\hip_estimator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\card_estimator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\murmurhash_3.cpp">

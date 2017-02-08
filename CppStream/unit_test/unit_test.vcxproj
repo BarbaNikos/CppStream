@@ -139,11 +139,7 @@
     <ClCompile Include="src\bit_trick_utils_test.cpp" />
     <ClCompile Include="src\hll_unit_test.cpp" />
     <ClCompile Include="src\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\dense_array.h" />
-    <ClInclude Include="include\distinct_counter.h" />
-    <ClInclude Include="include\hyperloglog.hpp" />
+    <ClCompile Include="src\streampart_lib_test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

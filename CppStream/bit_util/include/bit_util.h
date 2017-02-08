@@ -9,6 +9,7 @@
 #if defined(_MSC_VER)
 
 #include <intrin.h>
+#define popcnt64(x)	__popcnt64(x)
 #pragma intrinsic(_BitScanForward)
 #pragma intrinsic(_BitScanForward64)
 
@@ -34,6 +35,7 @@ inline uint64_t __mvc_ctz_64(uint64_t value)
 	return mask;
 }
 #else	// defined(_MSC_VER)
+#define popcnt64(x)	__builtin_popcountll(x)
 #define tzcnt16(x)	__builtin_ctz(x)
 #define tzcnt32(x)	__builtin_ctz(x)
 #define	tzcnt64(x)	__builtin_ctz(x)

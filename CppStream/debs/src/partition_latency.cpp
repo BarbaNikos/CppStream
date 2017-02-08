@@ -71,12 +71,12 @@ void PartitionLatency::measure_latency(unsigned int task_number, const std::vect
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &ca_policy);
-	ca_aff_naive = new CaPartitionLib::CA_Exact_Aff_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::CA_HLL_Aff_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Exact_Partitioner(tasks, &la_policy);
-	la_hll = new CaPartitionLib::CA_HLL_Partitioner(tasks, &la_policy, 12);
+	/*ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
+	ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
+	ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
+	ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
+	la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
+	la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);*/
 
 	debs_frequent_route_partition_latency("shf", rrg, frequent_ride_table);
 	debs_frequent_route_partition_latency("fld", fld, frequent_ride_table);

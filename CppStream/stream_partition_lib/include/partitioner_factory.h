@@ -48,19 +48,19 @@ public:
 		}
 		else if (partitioner_identifier.compare("ca_naive") == 0 || partitioner_identifier.compare("la_naive") == 0)
 		{
-			return new CaPartitionLib::CA_Exact_Partitioner(*(CaPartitionLib::CA_Exact_Partitioner*)prototype);
+			//return new CaPartitionLib::CA_Partitioner(*(CaPartitionLib::CA_Partitioner*)prototype);
 		}
 		else if (partitioner_identifier.compare("ca_aff_naive") == 0)
 		{
-			return new CaPartitionLib::CA_Exact_Aff_Partitioner(*(CaPartitionLib::CA_Exact_Aff_Partitioner*)prototype);
+			//return new CaPartitionLib::AN_Partitioner(*(CaPartitionLib::AN_Partitioner*)prototype);
 		}
 		else if (partitioner_identifier.compare("ca_hll") == 0 || partitioner_identifier.compare("la_hll") == 0)
 		{
-			return new CaPartitionLib::CA_HLL_Partitioner(*(CaPartitionLib::CA_HLL_Partitioner*)prototype);
+			//return new CaPartitionLib::CHLL_Partitioner(*(CaPartitionLib::CHLL_Partitioner*)prototype);
 		}
 		else if (partitioner_identifier.compare("ca_aff_hll") == 0)
 		{
-			return new CaPartitionLib::CA_HLL_Aff_Partitioner(*(CaPartitionLib::CA_HLL_Aff_Partitioner*)prototype);
+			//return new CaPartitionLib::AHLL_Partitioner(*(CaPartitionLib::AHLL_Partitioner*)prototype);
 		}
 		else
 		{

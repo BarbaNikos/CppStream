@@ -57,7 +57,7 @@ uint16_t BitWizard::lowest_order_bit_index_slow(uint16_t value)
 
 uint32_t BitWizard::lowest_order_bit_index_slow(uint32_t value)
 {
-	uint32_t index = 0x00000001;
+	uint32_t index = uint32_t(1);
 	if (value == uint32_t(0))
 	{
 		return uint32_t(0);
@@ -85,7 +85,7 @@ uint64_t BitWizard::lowest_order_bit_index_slow(uint64_t value)
 
 uint8_t BitWizard::highest_order_bit_index_slow(uint8_t value)
 {
-	uint8_t index = 0x01;
+	uint8_t index = uint8_t(8);
 	if (value == 0x00)
 	{
 		return 0x00;
