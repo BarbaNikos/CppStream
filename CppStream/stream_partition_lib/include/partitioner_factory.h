@@ -28,44 +28,44 @@
 class PartitionerFactory
 {
 public:
-	static Partitioner* generate_copy(const std::string& partitioner_identifier, const Partitioner* prototype)
-	{
-		if (partitioner_identifier.compare("sh") == 0)
-		{
-			return new RoundRobinPartitioner(*(RoundRobinPartitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("fld") == 0)
-		{
-			return new HashFieldPartitioner(*(HashFieldPartitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("naive_shed_fld") == 0)
-		{
-			return new NaiveShedFieldPartitioner(*(NaiveShedFieldPartitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("pk") == 0)
-		{
-			return new PkgPartitioner(*(PkgPartitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("ca_naive") == 0 || partitioner_identifier.compare("la_naive") == 0)
-		{
-			//return new CaPartitionLib::CA_Partitioner(*(CaPartitionLib::CA_Partitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("ca_aff_naive") == 0)
-		{
-			//return new CaPartitionLib::AN_Partitioner(*(CaPartitionLib::AN_Partitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("ca_hll") == 0 || partitioner_identifier.compare("la_hll") == 0)
-		{
-			//return new CaPartitionLib::CHLL_Partitioner(*(CaPartitionLib::CHLL_Partitioner*)prototype);
-		}
-		else if (partitioner_identifier.compare("ca_aff_hll") == 0)
-		{
-			//return new CaPartitionLib::AHLL_Partitioner(*(CaPartitionLib::AHLL_Partitioner*)prototype);
-		}
-		else
-		{
-			return nullptr;
-		}
-	}
+	//static Partitioner* generate_copy(const std::string& partitioner_identifier, const Partitioner* prototype)
+	//{
+	//	if (partitioner_identifier.compare("sh") == 0)
+	//	{
+	//		return new RoundRobinPartitioner(*(RoundRobinPartitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("fld") == 0)
+	//	{
+	//		return new HashFieldPartitioner(*(HashFieldPartitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("naive_shed_fld") == 0)
+	//	{
+	//		return new NaiveShedFieldPartitioner(*(NaiveShedFieldPartitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("pk") == 0)
+	//	{
+	//		return new PkgPartitioner(*(PkgPartitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("ca_naive") == 0 || partitioner_identifier.compare("la_naive") == 0)
+	//	{
+	//		//return new CaPartitionLib::CA_Partitioner(*(CaPartitionLib::CA_Partitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("ca_aff_naive") == 0)
+	//	{
+	//		//return new CaPartitionLib::AN_Partitioner(*(CaPartitionLib::AN_Partitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("ca_hll") == 0 || partitioner_identifier.compare("la_hll") == 0)
+	//	{
+	//		//return new CaPartitionLib::CHLL_Partitioner(*(CaPartitionLib::CHLL_Partitioner*)prototype);
+	//	}
+	//	else if (partitioner_identifier.compare("ca_aff_hll") == 0)
+	//	{
+	//		//return new CaPartitionLib::AHLL_Partitioner(*(CaPartitionLib::AHLL_Partitioner*)prototype);
+	//	}
+	//	else
+	//	{
+	//		return nullptr;
+	//	}
+	//}
 };
 #endif // !PARTITIONER_FACTORY_H_

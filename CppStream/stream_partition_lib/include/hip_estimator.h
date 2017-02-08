@@ -92,6 +92,27 @@ public:
 		}
 	}
 
+	size_t imitate_insert(const key_type &v) const 
+	{
+		static constexpr uint64_t num_register_bits = RegisterSizeInBits;
+		static constexpr uint64_t register_limit = (uint64_t(1) << num_register_bits) - 1;
+
+		const uint64_t h = hash_(v) * magic1() + magic2();
+		const uint64_t h0 = h & ((uint64_t(1) << num_bucket_bits_) - 1); // isolate register bits
+		const uint64_t h1 = h >> num_bucket_bits_; // isolate bucket value
+
+		const uint64_t b_old = M.get(h0);
+		const uint64_t b_new = h1 == 0 ? register_limit : std::min(register_limit, uint64_t(1 + tzcnt64(h1)));
+
+		double c_copy_ = c_;
+
+		if (b_new > b_old)
+		{
+			c_copy_ += 1.0 / (s_ / (uint64_t(1) << num_bucket_bits_));
+		}
+		return round(c_copy_);
+	}
+
 	size_t count() const 
 	{
 		return round(c_);

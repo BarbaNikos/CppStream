@@ -14,7 +14,9 @@ namespace CardinalityEstimator
 		virtual void init() = 0;
 		virtual void insert(const Key &v) = 0;
 		virtual size_t count() const = 0;
+		virtual size_t imitate_insert(const Key &v) const = 0;
 		virtual void copy(const cardinality_estimator<Key>& o) = 0;
+		virtual cardinality_estimator<Key>* clone() const = 0;
 	};
 
 	template<typename Key>
@@ -40,11 +42,23 @@ namespace CardinalityEstimator
 			return S.size();
 		}
 
+		size_t imitate_insert(const Key &v) const override
+		{
+			return S.find(v) == S.end() ? S.size() + 1 : S.size();
+		}
+
 		void copy(const cardinality_estimator<Key>& o) override
 		{
 			naive_cardinality_estimator<Key>* rename_ptr = (naive_cardinality_estimator<Key>*)(&o);
 			S = rename_ptr->S;
 		}
+
+		cardinality_estimator<Key>* clone() const override
+		{
+			cardinality_estimator<Key>* ptr = new naive_cardinality_estimator<Key>(*this);
+			return ptr;
+		}
+
 	private:
 		std::unordered_set<Key> S;
 	};
@@ -77,10 +91,21 @@ namespace CardinalityEstimator
 			return hip.count();
 		}
 
+		size_t imitate_insert(const Key &v) const override
+		{
+			return hip.imitate_insert(v);
+		}
+
 		void copy(const cardinality_estimator<Key>& o) override
 		{
 			hip_cardinality_estimator<Key>* rename_ptr = (hip_cardinality_estimator<Key>*)(&o);
 			hip.copy(rename_ptr->hip);
+		}
+
+		cardinality_estimator<Key>* clone() const override
+		{
+			cardinality_estimator<Key>* ptr = new hip_cardinality_estimator<Key>(*this);
+			return ptr;
 		}
 
 	private:

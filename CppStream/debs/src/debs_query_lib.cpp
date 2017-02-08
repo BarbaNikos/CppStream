@@ -144,7 +144,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
 	std::vector<uint16_t> tasks(task_number, 0);
-
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
 	Partitioner* rrg;
 	Partitioner* fld;
 	Partitioner* pkg;
@@ -164,12 +165,12 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
-	ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
-	la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);
+	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
+	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
+	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
+	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
+	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
+	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
 
 	std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
@@ -712,7 +713,8 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
 	std::vector<uint16_t> tasks;
-
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
 	Partitioner* rrg;
 	Partitioner* pkg;
 	Partitioner* fld;
@@ -723,8 +725,6 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	Partitioner* la_naive;
 	Partitioner* la_hll;
 
-	Experiment::DebsChallenge::FrequentRoutePartition experiment;
-
 	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
@@ -734,12 +734,12 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
-	ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
-	la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
-	ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
-	la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);
+	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
+	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
+	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
+	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
+	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
+	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
 
 	std::string sh_file_name = "sh_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";

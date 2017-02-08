@@ -118,7 +118,10 @@ TEST(NaiveCardEstimatorTest, Init)
 	for (size_t i = 0; i < 1e+5; ++i)
 	{
 		uint32_t random = rand();
+		size_t card = estimator->imitate_insert(random);
 		estimator->insert(random);
+		size_t new_card = estimator->count();
+		EXPECT_EQ(card, new_card);
 	}
 	ASSERT_TRUE(estimator->count() > 0);
 	estimator->init();
@@ -134,7 +137,10 @@ TEST(NaiveCardEstimatorTest, Copy)
 	for (size_t i = 0; i < 1e+5; ++i)
 	{
 		uint32_t random = rand();
+		size_t card = estimator->imitate_insert(random);
 		estimator->insert(random);
+		size_t new_card = estimator->count();
+		EXPECT_EQ(card, new_card);
 	}
 	ASSERT_TRUE(estimator->count() > 0);
 	CardinalityEstimator::cardinality_estimator<uint32_t>* replica =
@@ -160,7 +166,10 @@ TEST(HipCardEstimatorTest, Init)
 	for (size_t i = 0; i < 1e+5; ++i)
 	{
 		uint32_t random = rand();
+		size_t card = estimator->imitate_insert(random);
 		estimator->insert(random);
+		size_t new_card = estimator->count();
+		EXPECT_EQ(card, new_card);
 	}
 	ASSERT_TRUE(estimator->count() > 0);
 	estimator->init();
@@ -176,7 +185,10 @@ TEST(HipCardEstimatorTest, Copy)
 	for (size_t i = 0; i < 1e+5; ++i)
 	{
 		uint32_t random = rand();
+		size_t card = estimator->imitate_insert(random);
 		estimator->insert(random);
+		size_t new_card = estimator->count();
+		EXPECT_EQ(card, new_card);
 	}
 	ASSERT_TRUE(estimator->count() > 0);
 	CardinalityEstimator::cardinality_estimator<uint32_t>* replica =
@@ -194,13 +206,128 @@ TEST(HipCardEstimatorTest, Copy)
 	delete replica;
 }
 
-TEST(CaPartitionerTest, HipConstructor)
+TEST(CaPartitionerTest, Constructor)
 {
 	std::vector<uint16_t> tasks;
 	tasks.push_back(1);
 	tasks.push_back(2);
 	tasks.push_back(3);
 	CardinalityEstimator::naive_cardinality_estimator<uint64_t> est;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_est;
 	LoadAwarePolicy policy;
-	CaPartitionLib::CN<uint64_t> partitioner(tasks, &policy);
+	CaPartitionLib::CA<uint64_t> partitioner(tasks, policy, est);
+	std::vector<size_t> v;
+	partitioner.get_cardinality_vector(v);
+	CaPartitionLib::CA<uint64_t> hip_partitioner(tasks, policy, hip_est);
+	std::vector<size_t> v_hip;
+	hip_partitioner.get_cardinality_vector(v_hip);
+	EXPECT_EQ(v.size(), v_hip.size());
+	EXPECT_EQ(tasks.size(), v.size());
+	for (size_t i = 0; i < v_hip.size(); ++i)
+	{
+		EXPECT_EQ(v[i], v_hip[i]);
+	}
+	EXPECT_EQ(partitioner.get_max_cardinality(), 0);
+	EXPECT_EQ(partitioner.get_max_task_count(), 0);
+	EXPECT_EQ(hip_partitioner.get_max_cardinality(), 0);
+	EXPECT_EQ(hip_partitioner.get_max_task_count(), 0);
+}
+
+TEST(AnPartitionTest, Constructor)
+{
+	std::vector<uint16_t> tasks;
+	tasks.push_back(1);
+	tasks.push_back(2);
+	tasks.push_back(3);
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> est;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_est;
+	CaPartitionLib::AN<uint64_t> partitioner(tasks, est);
+	CaPartitionLib::AN<uint64_t> hip_partitioner(tasks, est);
+	std::vector<size_t> v;
+	partitioner.get_cardinality_vector(v);
+	std::vector<size_t> v_hip;
+	hip_partitioner.get_cardinality_vector(v_hip);
+	EXPECT_EQ(v.size(), v_hip.size());
+	EXPECT_EQ(tasks.size(), v.size());
+	for (size_t i = 0; i < v_hip.size(); ++i)
+	{
+		EXPECT_EQ(v[i], v_hip[i]);
+	}
+	EXPECT_EQ(partitioner.get_max_cardinality(), 0);
+	EXPECT_EQ(partitioner.get_max_task_count(), 0);
+	EXPECT_EQ(hip_partitioner.get_max_cardinality(), 0);
+	EXPECT_EQ(hip_partitioner.get_max_task_count(), 0);
+}
+
+TEST(CaPartitionerTest, CopyConstructor)
+{
+	std::vector<uint16_t> tasks;
+	tasks.push_back(1);
+	tasks.push_back(2);
+	tasks.push_back(3);
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> est;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_est;
+	LoadAwarePolicy policy;
+	CaPartitionLib::CA<uint64_t> partitioner(tasks, policy, est);
+	CaPartitionLib::CA<uint64_t> hip_partitioner(tasks, policy, hip_est);
+	for (size_t i = 0; i < 100; ++i)
+	{
+		srand(time(nullptr));
+		uint64_t r = rand() % 1000;
+		partitioner.partition_next(&r, sizeof(r));
+		hip_partitioner.partition_next(&r, sizeof(r));
+	}
+	ASSERT_TRUE(partitioner.get_max_task_count() <= 100);
+	ASSERT_TRUE(partitioner.get_max_cardinality() <= 100);
+	ASSERT_TRUE(hip_partitioner.get_max_task_count() <= 100);
+	ASSERT_TRUE(hip_partitioner.get_max_cardinality() <= 100);
+	CaPartitionLib::CA<uint64_t> partitioner_replica(partitioner);
+	CaPartitionLib::CA<uint64_t> hip_partitioner_replica(hip_partitioner);
+	for (size_t i = 0; i < 10; ++i)
+	{
+		srand(time(nullptr));
+		uint64_t r = rand() % 1000;
+		size_t c1 = partitioner.partition_next(&r, sizeof(r));
+		size_t c2 = partitioner_replica.partition_next(&r, sizeof(r));
+		EXPECT_EQ(c1, c2);
+		size_t hc1 = hip_partitioner.partition_next(&r, sizeof(r));
+		size_t hc2 = hip_partitioner_replica.partition_next(&r, sizeof(r));
+		EXPECT_EQ(hc1, hc2);
+	}
+}
+
+TEST(AnPartitionTest, CopyConstructor)
+{
+	std::vector<uint16_t> tasks;
+	tasks.push_back(1);
+	tasks.push_back(2);
+	tasks.push_back(3);
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> est;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_est;
+	CaPartitionLib::AN<uint64_t> partitioner(tasks, est);
+	CaPartitionLib::AN<uint64_t> hip_partitioner(tasks, est);
+	for (size_t i = 0; i < 100; ++i)
+	{
+		srand(time(nullptr));
+		uint64_t r = rand() % 1000;
+		partitioner.partition_next(&r, sizeof(r));
+		hip_partitioner.partition_next(&r, sizeof(r));
+	}
+	ASSERT_TRUE(partitioner.get_max_task_count() <= 100);
+	ASSERT_TRUE(partitioner.get_max_cardinality() <= 100);
+	ASSERT_TRUE(hip_partitioner.get_max_task_count() <= 100);
+	ASSERT_TRUE(hip_partitioner.get_max_cardinality() <= 100);
+	CaPartitionLib::AN<uint64_t> partitioner_replica(partitioner);
+	CaPartitionLib::AN<uint64_t> hip_partitioner_replica(hip_partitioner);
+	for (size_t i = 0; i < 10; ++i)
+	{
+		srand(time(nullptr));
+		uint64_t r = rand() % 1000;
+		size_t c1 = partitioner.partition_next(&r, sizeof(r));
+		size_t c2 = partitioner_replica.partition_next(&r, sizeof(r));
+		EXPECT_EQ(c1, c2);
+		size_t hc1 = hip_partitioner.partition_next(&r, sizeof(r));
+		size_t hc2 = hip_partitioner_replica.partition_next(&r, sizeof(r));
+		EXPECT_EQ(hc1, hc2);
+	}
 }

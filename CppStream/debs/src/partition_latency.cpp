@@ -49,7 +49,8 @@ void PartitionLatency::measure_latency(unsigned int task_number, const std::vect
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
 	std::vector<uint16_t> tasks(task_number, 0);
-
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
 	Partitioner* rrg;
 	Partitioner* fld;
 	Partitioner* pkg;
@@ -71,12 +72,12 @@ void PartitionLatency::measure_latency(unsigned int task_number, const std::vect
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
-	/*ca_naive = new CaPartitionLib::CA_Partitioner(tasks, &ca_policy);
-	ca_aff_naive = new CaPartitionLib::AN_Partitioner(tasks);
-	ca_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &ca_policy, 12);
-	ca_aff_hll = new CaPartitionLib::AHLL_Partitioner(tasks, 12);
-	la_naive = new CaPartitionLib::CA_Partitioner(tasks, &la_policy);
-	la_hll = new CaPartitionLib::CHLL_Partitioner(tasks, &la_policy, 12);*/
+	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
+	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
+	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
+	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
+	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
+	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
 
 	debs_frequent_route_partition_latency("shf", rrg, frequent_ride_table);
 	debs_frequent_route_partition_latency("fld", fld, frequent_ride_table);
