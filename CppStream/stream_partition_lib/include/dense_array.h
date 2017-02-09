@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <memory>
+#include <limits.h>
 
 /*
 * Implementation taken from https://github.com/iwiwi/hyperloglog-hip

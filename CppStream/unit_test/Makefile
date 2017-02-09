@@ -56,10 +56,10 @@ bit_trick_utils_test.o : $(USER_DIR)/bit_trick_utils_test.cpp $(GTEST_HEADERS)
 	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) $(CXXFLAGS) -c $(USER_DIR)/bit_trick_utils_test.cpp
 
 c_hll.o : ../hll/src/c_hll.cpp 
-	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) $(CXXFLAGS) -c ../hll/src/c_hll.cpp
+	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(STREAM_LIB_HEADERS) $(CXXFLAGS) -c ../hll/src/c_hll.cpp
 
 hll_unit_test.o : $(USER_DIR)/hll_unit_test.cpp
-	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(HLL_HEADERS) $(CXXFLAGS) -c $(USER_DIR)/hll_unit_test.cpp
+	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(HLL_HEADERS) -I$(STREAM_LIB_HEADERS) $(CXXFLAGS) -c $(USER_DIR)/hll_unit_test.cpp
 
 murmurhash_3.o : ../stream_partition_lib/src/murmurhash_3.cpp
 	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(STREAM_LIB_HEADERS) $(CXXFLAGS) -c ../stream_partition_lib/src/murmurhash_3.cpp
