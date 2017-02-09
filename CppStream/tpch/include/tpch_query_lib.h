@@ -121,39 +121,31 @@ namespace Experiment
 		class QueryOneWorker
 		{
 		public:
-			QueryOneWorker() {}
-			QueryOneWorker(std::queue<Experiment::Tpch::lineitem>* input_queue, std::mutex* mu, std::condition_variable* cond);
-			~QueryOneWorker();
-			void operate();
 			void update(const Tpch::lineitem& line_item);
 			void finalize(std::vector<query_one_result>& buffer) const;
 		private:
-			std::mutex* mu;
-			std::condition_variable* cond;
 			std::unordered_map<std::string, Tpch::query_one_result> result;
-			std::queue<Tpch::lineitem>* input_queue;
 		};
 
 		class QueryOneOfflineAggregator
 		{
 		public:
-			QueryOneOfflineAggregator();
-			~QueryOneOfflineAggregator();
-			void sort_final_result(const std::vector<query_one_result>& buffer, std::map<std::string, query_one_result>& result);
-			void calculate_and_produce_final_result(const std::vector<query_one_result>& buffer, std::map<std::string, query_one_result>& result);
-			void write_output_result(const std::map<std::string, query_one_result>& result, const std::string& output_file);
+			static void order_result(const std::vector<query_one_result>& buffer, std::map<std::string, query_one_result>& ordered_result);
+			static void order_result(const std::unordered_map<std::string, query_one_result>& buffer, std::map<std::string, query_one_result>& ordered_result);
+			static void aggregate_final_result(const std::vector<query_one_result>& buffer, std::unordered_map<std::string, query_one_result>& result);
+			static void write_output_result(const std::map<std::string, query_one_result>& result, const std::string& output_file);
 		};
 
 		class QueryOnePartition
 		{
 		public:
 			static void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num);
-			static void thread_lineitem_partition(bool write, size_t task_num, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::lineitem>* input_buffer,
-				std::vector<std::vector<Experiment::Tpch::lineitem>>* worker_input_buffer, float *imbalance, float* key_imbalance, double *total_duration);
+			static void lineitem_partition(size_t task_num, Partitioner& partitioner, const std::vector<Experiment::Tpch::lineitem>& input_buffer,
+				std::vector<std::vector<Experiment::Tpch::lineitem>>& worker_input_buffer, float *imbalance, float* key_imbalance);
 			static void thread_worker_operate(const bool write, const std::vector<Experiment::Tpch::lineitem>* input_buffer, 
 				std::vector<Experiment::Tpch::query_one_result>* result_buffer, double* operate_duration);
 			static void thread_aggregate(const bool write, const std::string partitioner_name, const std::vector<Experiment::Tpch::query_one_result>* input_buffer,
-				std::map<std::string, Experiment::Tpch::query_one_result>* result, const std::string worker_output_file_name, double* total_duration, double* io_duration);
+				std::map<std::string, Experiment::Tpch::query_one_result>* result, const std::string worker_output_file_name, double* aggregate_duration, double* order_duration, double* io_duration);
 			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
