@@ -33,9 +33,9 @@ TEST(TestWillHLLOne, Zero)
 	}
 	size_t real_cardinality = naive.size();
 	size_t hipEstimation = h.count();
-	double absolute_error = abs(size_t(real_cardinality - hipEstimation));
+	double absolute_error = abs(long(real_cardinality - hipEstimation));
 	double relError = absolute_error / (double)real_cardinality;
 	size_t hipStrEstimation = h_str.count();
-	double absolute_str_error = abs(size_t(real_cardinality - hipStrEstimation));
+	double absolute_str_error = abs(long(real_cardinality - hipStrEstimation));
 	double relStrError = absolute_str_error / (double)real_cardinality;
 }
