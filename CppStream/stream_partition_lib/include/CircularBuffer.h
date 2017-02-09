@@ -1,9 +1,4 @@
 #pragma once
-#include <iostream>
-#include <cstdlib>
-#include <cinttypes>
-#include <vector>
-
 #include "BasicWindow.h"
 
 #ifndef CIRCULAR_BUFFER_H_

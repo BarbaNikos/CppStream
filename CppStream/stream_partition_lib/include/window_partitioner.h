@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
-#include <cinttypes>
 
 #ifndef MURMURHASH_3_H_
 #include "murmurhash_3.h"

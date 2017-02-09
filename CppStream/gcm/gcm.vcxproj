@@ -81,7 +81,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)hll\include;$(SolutionDir)bit_util\include;$(SolutionDir)stream_partition_lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)bit_util\include;$(SolutionDir)stream_partition_lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
@@ -109,7 +109,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)hll\include;$(SolutionDir)bit_util\include;$(SolutionDir)stream_partition_lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)bit_util\include;$(SolutionDir)stream_partition_lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
@@ -122,9 +122,6 @@
   <ItemGroup>
     <ProjectReference Include="..\bit_util\bit_util.vcxproj">
       <Project>{64cc92c7-3f63-4a65-bd26-7a666a57349b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\hll\hll.vcxproj">
-      <Project>{8982ef83-c97c-45c1-bf6a-ddbd4c1b2f23}</Project>
     </ProjectReference>
     <ProjectReference Include="..\stream_partition_lib\stream_partition_lib.vcxproj">
       <Project>{b46b918f-cd9a-4669-a466-8d8e8233e6ff}</Project>

@@ -35,13 +35,13 @@ int main(int argc, char** argv)
 	*/
 	std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
 	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
-	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(&task_event_table, 8);
-	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(&task_event_table, 16);
-	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(&task_event_table, 32);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 8);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 16);
+	Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simulation(task_event_table, 32);
 
-	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(&task_event_table, 8);
-	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(&task_event_table, 16);
-	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(&task_event_table, 32);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 8);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 16);
+	Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulation(task_event_table, 32);
 	task_event_table.clear();
 	
 #ifdef _WIN32

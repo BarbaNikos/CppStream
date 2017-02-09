@@ -715,22 +715,12 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	std::vector<uint16_t> tasks;
 	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
-	Partitioner* rrg;
-	Partitioner* pkg;
-	Partitioner* fld;
-	Partitioner* ca_naive;
-	Partitioner* ca_aff_naive;
-	Partitioner* ca_hll;
-	Partitioner* ca_aff_hll;
-	Partitioner* la_naive;
-	Partitioner* la_hll;
-
+	Partitioner* rrg, *pkg, *fld, *ca_naive, *ca_aff_naive, *ca_hll, *ca_aff_hll, *la_naive, *la_hll;
 	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);

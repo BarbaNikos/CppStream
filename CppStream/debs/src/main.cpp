@@ -18,10 +18,6 @@
 #include <algorithm>
 #include <set>
 
-#ifndef C_HLL_H_
-#include "c_hll.h"
-#endif // !C_HLL_H_
-
 #ifndef DEBS_QUERY_LIB_H_
 #include "../include/debs_query_lib.h"
 #endif // !DEBS_QUERY_LIB_H_

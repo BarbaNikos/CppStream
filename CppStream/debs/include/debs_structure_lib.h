@@ -1,8 +1,6 @@
 #pragma once
 #include <iostream>
 #include <cstring>
-#include <ctime>
-#include <cinttypes>
 #include <cmath>
 
 #ifndef DEBS_STRUCTURE_LIB_H_

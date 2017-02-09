@@ -50,10 +50,6 @@
 #include "imbalance_score_aggr.h"
 #endif // !IMBALANCE_SCORE_AGGR_H_
 
-#ifndef PARTITIONER_FACTORY_H_
-#include "partitioner_factory.h"
-#endif // !PARTITIONER_FACTORY_H_
-
 #ifndef DEBS_KEY_EXTRACTOR_H_
 #include "debs_key_extractor.h"
 #endif

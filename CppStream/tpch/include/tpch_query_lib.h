@@ -46,10 +46,6 @@
 #include "../include/tpch_key_extractor.h"
 #endif //!TPCH_KEY_EXTRACTOR_H_
 
-#ifndef PARTITIONER_FACTORY_H_
-#include "partitioner_factory.h"
-#endif // !PARTITIONER_FACTORY_H_
-
 #ifndef NAIVE_SHED_FLD_PARTITIONER_H_
 #include "naive_shed_fld.h"
 #endif // !NAIVE_SHED_FLD_PARTITIONER_H_
@@ -121,10 +117,10 @@ namespace Experiment
 		class QueryOneWorker
 		{
 		public:
-			void update(const Tpch::lineitem& line_item);
+			void update(const lineitem& line_item);
 			void finalize(std::vector<query_one_result>& buffer) const;
 		private:
-			std::unordered_map<std::string, Tpch::query_one_result> result;
+			std::unordered_map<std::string, query_one_result> result;
 		};
 
 		class QueryOneOfflineAggregator
@@ -139,65 +135,65 @@ namespace Experiment
 		class QueryOnePartition
 		{
 		public:
-			static void query_one_simulation(const std::vector<Experiment::Tpch::lineitem>& lines, const size_t task_num);
-			static void lineitem_partition(size_t task_num, Partitioner& partitioner, const std::vector<Experiment::Tpch::lineitem>& input_buffer,
-				std::vector<std::vector<Experiment::Tpch::lineitem>>& worker_input_buffer, float *imbalance, float* key_imbalance);
-			static void thread_worker_operate(const bool write, const std::vector<Experiment::Tpch::lineitem>* input_buffer, 
-				std::vector<Experiment::Tpch::query_one_result>* result_buffer, double* operate_duration);
-			static void thread_aggregate(const bool write, const std::string partitioner_name, const std::vector<Experiment::Tpch::query_one_result>* input_buffer,
-				std::map<std::string, Experiment::Tpch::query_one_result>* result, const std::string worker_output_file_name, double* aggregate_duration, double* order_duration, double* io_duration);
-			static void query_one_partitioner_simulation(const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
+			static void query_one_simulation(const std::vector<lineitem>& lines, const size_t task_num);
+			static void lineitem_partition(size_t task_num, Partitioner& partitioner, const std::vector<lineitem>& input_buffer,
+				std::vector<std::vector<lineitem>>& worker_input_buffer, float *imbalance, float* key_imbalance);
+			static void thread_worker_operate(const bool write, const std::vector<lineitem>* input_buffer, 
+				std::vector<query_one_result>* result_buffer, double* operate_duration);
+			static void thread_aggregate(const bool write, const std::string partitioner_name, const std::vector<query_one_result>* input_buffer,
+				std::map<std::string, query_one_result>* result, const std::string worker_output_file_name, double* aggregate_duration, double* order_duration, double* io_duration);
+			static void query_one_partitioner_simulation(const std::vector<lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
 				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
 
-		class QueryThreeJoinWorker
+		class QueryThreeWorker
 		{
 		public:
-			QueryThreeJoinWorker(const Experiment::Tpch::query_three_predicate& predicate);
-			~QueryThreeJoinWorker();
-			void step_one_update(const Experiment::Tpch::q3_customer& customer, std::string partitioner_name);
-			void step_one_update(const Experiment::Tpch::order& order, std::string partitioner_name);
-			void step_one_finalize(std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer);
-			void step_one_partial_finalize(std::unordered_set<uint32_t>& c_index, std::unordered_map<uint32_t, Tpch::order>& o_index,
-				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer) const;
-			void step_two_init(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result);
-			void step_two_update(const Experiment::Tpch::lineitem& line_item);
-			void finalize(std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer) const;
+			QueryThreeWorker(const query_three_predicate& predicate);
+			void step_one_update(const q3_customer& customer, std::string partitioner_name);
+			void step_one_update(const order& order, std::string partitioner_name);
+			void step_one_finalize(std::unordered_map<uint32_t, query_three_step_one>& step_one_result_buffer);
+			void step_one_partial_finalize(std::unordered_set<uint32_t>& c_index, std::unordered_map<uint32_t, order>& o_index,
+				std::unordered_map<uint32_t, query_three_step_one>& step_one_result_buffer) const;
+			void step_two_init(const std::unordered_map<uint32_t, query_three_step_one>& step_one_result);
+			void step_two_update(const lineitem& line_item);
+			void finalize(std::vector<std::pair<std::string, query_three_result>>& result_buffer) const;
 		private:
-			Experiment::Tpch::query_three_predicate predicate;
+			query_three_predicate predicate;
 			std::unordered_set<uint32_t> cu_index;
-			std::unordered_map<uint32_t, Tpch::order> o_index;
-			std::unordered_map<uint32_t, Tpch::query_three_step_one> step_one_result;
-			std::unordered_map<std::string, Tpch::query_three_result> final_result;
+			std::unordered_map<uint32_t, order> o_index;
+			std::unordered_map<uint32_t, query_three_step_one> step_one_result;
+			std::unordered_map<std::string, query_three_result> final_result;
 		};
 
 		class QueryThreeOfflineAggregator
 		{
 		public:
-			void step_one_sort(const std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, 
-				std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer) const;
-			void step_one_materialize_and_sort(const std::unordered_set<uint32_t>& c_index, const std::unordered_map<uint32_t, Tpch::order>& o_index,
-				std::unordered_map<uint32_t, Tpch::query_three_step_one>& step_one_result_buffer, std::unordered_map<uint32_t, Tpch::query_three_step_one>& result_buffer) const;
-			void step_two_sort(const std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer, 
-				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result) const;
-			void step_two_calculate_and_sort(const std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& result_buffer,
-				std::vector<std::pair<std::string, Experiment::Tpch::query_three_result>>& final_result) const;
-			void write_output_to_file(const std::vector<std::pair<std::string, query_three_result>>& final_result, const std::string& output_file) const;
+			static void step_one_transfer(const std::unordered_map<uint32_t, query_three_step_one>& step_one_result_buffer, 
+				std::unordered_map<uint32_t, query_three_step_one>& result_buffer);
+			static void step_one_materialize(const std::unordered_set<uint32_t>& c_index, const std::unordered_map<uint32_t, order>& o_index,
+				std::unordered_map<uint32_t, query_three_step_one>& step_one_result_buffer, std::unordered_map<uint32_t, query_three_step_one>& result_buffer);
+			static void step_two_order(const std::vector<std::pair<std::string, query_three_result>>& buffer, 
+				std::vector<std::pair<std::string, query_three_result>>& final_result);
+			static void step_two_order(const std::unordered_map<std::string, query_three_result>& buffer, std::vector<std::pair<std::string, query_three_result>>& result);
+			static void step_two_materialize(const std::vector<std::pair<std::string, query_three_result>>& buffer,
+				std::unordered_map<std::string, query_three_result>& result);
+			static void write_output_to_file(const std::vector<std::pair<std::string, query_three_result>>& final_result, const std::string& output_file);
 		};
 
 		class QueryThreePartition
 		{
 		public:
-			static void query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table, 
-				const std::vector<Experiment::Tpch::order>& o_table, const size_t task_num);
-			static void thread_customer_partition(bool write, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::q3_customer>* c_table,
-				std::vector<std::vector<Experiment::Tpch::q3_customer>>* c_worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
-			static void thread_order_partition(bool write, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::order>* o_table,
-				std::vector<std::vector<Experiment::Tpch::order>>* o_worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
-			static void thread_li_partition(bool write, std::string partitioner_name, Partitioner* partitioner, const std::vector<Experiment::Tpch::lineitem>* li_table,
-				std::vector<std::vector<Experiment::Tpch::lineitem>>* li_worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance, double* total_duration);
-			static void query_three_partitioner_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<Experiment::Tpch::lineitem>& li_table,
-				const std::vector<Experiment::Tpch::order>& o_table, const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, 
+			static void query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<lineitem>& li_table, 
+				const std::vector<order>& o_table, const size_t task_num);
+			static void customer_partition(Partitioner& partitioner, const std::vector<q3_customer>& c_table,
+				std::vector<std::vector<q3_customer>>& c_worker_input_buffer, float* imbalance, float* key_imbalance);
+			static void order_partition(Partitioner& partitioner, const std::vector<order>& o_table,
+				std::vector<std::vector<order>>& o_worker_input_buffer, float* imbalance, float* key_imbalance);
+			static void lineitem_partition(Partitioner& partitioner, const std::vector<lineitem>& li_table,
+				std::vector<std::vector<lineitem>>& li_worker_input_buffer, float* imbalance, float* key_imbalance);
+			static void query_three_partitioner_simulation(const std::vector<q3_customer>& c_table, const std::vector<lineitem>& li_table,
+				const std::vector<order>& o_table, const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, 
 				const std::string worker_output_file_name);
 		};
 

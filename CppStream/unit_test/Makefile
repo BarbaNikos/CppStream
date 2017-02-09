@@ -17,6 +17,7 @@ BIT_UTIL_HEADERS = ../bit_util/include
 
 HLL_HEADERS = ../hll/include
 
+STREAM_LIB_HEADERS = ../stream_partition_lib/include
 all : $(TESTS)
 
 clean : 
@@ -60,5 +61,11 @@ c_hll.o : ../hll/src/c_hll.cpp
 hll_unit_test.o : $(USER_DIR)/hll_unit_test.cpp
 	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(HLL_HEADERS) $(CXXFLAGS) -c $(USER_DIR)/hll_unit_test.cpp
 
-unit_test : bit_util.o bit_trick_utils_test.o c_hll.o hll_unit_test.o gtest_main.a
+murmurhash_3.o : ../stream_partition_lib/src/murmurhash_3.cpp
+	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(STREAM_LIB_HEADERS) $(CXXFLAGS) -c ../stream_partition_lib/src/murmurhash_3.cpp
+
+streampart_lib_test.o : $(USER_DIR)/streampart_lib_test.cpp
+	$(CC) $(CPPFLAGS) -I$(BIT_UTIL_HEADERS) -I$(STREAM_LIB_HEADERS) $(CXXFLAGS) -c $(USER_DIR)/streampart_lib_test.cpp
+
+unit_test : streampart_lib_test.o murmurhash_3.o bit_util.o bit_trick_utils_test.o c_hll.o hll_unit_test.o gtest_main.a
 	$(CC) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@

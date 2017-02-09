@@ -1,5 +1,4 @@
 #pragma once
-#include <cinttypes>
 
 #ifndef PARTITION_POLICY_H_
 #include "partition_policy.h"

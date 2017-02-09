@@ -42,9 +42,6 @@
     <ClInclude Include="include\partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\partitioner_factory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\pkg_partitioner.h">
       <Filter>Header Files</Filter>
     </ClInclude>

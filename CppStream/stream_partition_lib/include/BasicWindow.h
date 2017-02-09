@@ -1,8 +1,6 @@
 #pragma once
-#include <iostream>
 #include <vector>
 #include <unordered_set>
-#include <cinttypes>
 
 #ifndef BASIC_WINDOW_H_
 #define BASIC_WINDOW_H_

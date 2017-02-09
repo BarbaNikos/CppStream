@@ -1,6 +1,5 @@
 #pragma once
 #include <iostream>
-#include <cinttypes>
 
 #ifndef PARTITION_POLICY_H_
 #define PARTITION_POLICY_H_
