@@ -24,7 +24,7 @@ public:
 		max_task_count(p.max_task_count), min_task_count(p.min_task_count) {}
 	void init() override
 	{
-		std::vector<unsigned long long>(tasks.size(), 0).swap(task_count);
+		task_count = std::vector<size_t>(tasks.size(), 0);
 		max_task_count = 0;
 		min_task_count = 0;
 	}

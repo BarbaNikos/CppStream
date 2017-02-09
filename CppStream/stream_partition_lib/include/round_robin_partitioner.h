@@ -24,7 +24,7 @@ public:
 	
 	void init() override
 	{
-		std::vector<unsigned long long>(tasks.size(), uint64_t(0)).swap(task_count);
+		task_count = std::vector<size_t>(tasks.size(), 0);
 		next_task = -1;
 		max_task_count = 0;
 		min_task_count = 0;
