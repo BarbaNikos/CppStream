@@ -10,7 +10,8 @@ template <class Tuple, class Tuple_Key>
 class KeyExtractor
 {
 public:
-	virtual Tuple_Key extract_key(const Tuple& t) const { return Tuple_Key(); }
+	virtual Tuple_Key extract_key(const Tuple& t) const = 0;
+	virtual KeyExtractor* clone() const = 0;
 };
 
 
@@ -31,7 +32,7 @@ public:
 	float cardinality_imbalance();
 	bool locate_replicated_keys();
 private:
-	KeyExtractor<Tuple, Tuple_Key> key_extractor;
+	std::unique_ptr<KeyExtractor<Tuple, Tuple_Key>> key_extractor;
 	unsigned long tasks;
 	std::vector<unsigned long long> tuple_count;
 	std::vector<std::unordered_set<Tuple_Key>> key_count;
@@ -39,13 +40,13 @@ private:
 #endif // !IMBALANCE_SCORE_AGGR_H_
 
 template<class Tuple, class Tuple_Key>
-inline ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(unsigned long tasks, const KeyExtractor<Tuple, Tuple_Key>& extractor) : key_extractor(extractor), 
+inline ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(unsigned long tasks, const KeyExtractor<Tuple, Tuple_Key>& extractor) : key_extractor(extractor.clone()), 
 tasks(tasks), tuple_count(tasks, 0), key_count(tasks, std::unordered_set<Tuple_Key>()) 
 {
 }
 
 template <class Tuple, class Tuple_Key>
-ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(const ImbalanceScoreAggr<Tuple, Tuple_Key>& i) : key_extractor(i.key_extractor), tasks(i.tasks), tuple_count(i.tuple_count), 
+ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(const ImbalanceScoreAggr<Tuple, Tuple_Key>& i) : key_extractor(i.key_extractor->clone()), tasks(i.tasks), tuple_count(i.tuple_count), 
 key_count(i.key_count)
 {
 }
@@ -82,7 +83,7 @@ inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::measure_score(const std::vecto
 template<class Tuple, class Tuple_Key>
 inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score(size_t index, const Tuple & t)
 {
-	Tuple_Key key = key_extractor.extract_key(t);
+	Tuple_Key key = key_extractor->extract_key(t);
 	tuple_count[index]++;
 	key_count[index].insert(key);
 }

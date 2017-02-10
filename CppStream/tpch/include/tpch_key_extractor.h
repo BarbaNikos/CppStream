@@ -18,24 +18,40 @@ class TpchQueryOneKeyExtractor : public KeyExtractor<Experiment::Tpch::lineitem,
 {
 public:
 	std::string extract_key(const Experiment::Tpch::lineitem& l) const override;
+	KeyExtractor<Experiment::Tpch::lineitem, std::string>* clone() const override 
+	{
+		return new TpchQueryOneKeyExtractor();
+	}
 };
 
 class TpchQueryThreeCustomerKeyExtractor : public KeyExtractor<Experiment::Tpch::q3_customer, uint32_t>
 {
 public:
 	uint32_t extract_key(const Experiment::Tpch::q3_customer& c) const override;
+	KeyExtractor<Experiment::Tpch::q3_customer, uint32_t>* clone() const override
+	{
+		return new TpchQueryThreeCustomerKeyExtractor();
+	}
 };
 
 class TpchQueryThreeOrderKeyExtractor : public KeyExtractor<Experiment::Tpch::order, uint32_t>
 {
 public:
 	uint32_t extract_key(const Experiment::Tpch::order& o) const override;
+	KeyExtractor<Experiment::Tpch::order, uint32_t>* clone() const override
+	{
+		return new TpchQueryThreeOrderKeyExtractor();
+	}
 };
 
 class TpchQueryThreeLineitemKeyExtractor : public KeyExtractor<Experiment::Tpch::lineitem, uint32_t>
 {
 public:
 	uint32_t extract_key(const Experiment::Tpch::lineitem& l) const override;
+	KeyExtractor<Experiment::Tpch::lineitem, uint32_t>* clone() const override
+	{
+		return new TpchQueryThreeLineitemKeyExtractor();
+	}
 };
 #endif
 
@@ -44,7 +60,7 @@ inline std::string TpchQueryOneKeyExtractor::extract_key(const Experiment::Tpch:
 	return std::to_string(l.l_returnflag) + "," + std::to_string(l.l_linestatus);
 }
 
-inline uint32_t TpchQueryThreeCustomerKeyExtractor::extract_key(const Experiment::Tpch::q3_customer& c) const
+inline uint32_t TpchQueryThreeCustomerKeyExtractor::extract_key(const Experiment::Tpch::q3_customer& c) const 
 {
 	return c.c_custkey;
 }

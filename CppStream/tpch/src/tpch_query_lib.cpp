@@ -703,9 +703,11 @@ void Experiment::Tpch::QueryThreePartition::customer_partition(Partitioner& part
 {
 	TpchQueryThreeCustomerKeyExtractor c_key_extractor;
 	ImbalanceScoreAggr<q3_customer, uint32_t> c_imbalance_aggregator(c_worker_input_buffer.size(), c_key_extractor);
+	std::unordered_set<uint32_t> distinct_customers;
 	for (auto it = c_table.cbegin(); it != c_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->c_custkey, sizeof(uint32_t));
+		//distinct_customers.insert(it->c_custkey);
 		if (task < c_worker_input_buffer.size())
 		{
 			c_worker_input_buffer[task].push_back(*it);
@@ -717,6 +719,7 @@ void Experiment::Tpch::QueryThreePartition::customer_partition(Partitioner& part
 	c_worker_input_buffer.shrink_to_fit();
 	*imbalance = c_imbalance_aggregator.imbalance();
 	*key_imbalance = c_imbalance_aggregator.cardinality_imbalance();
+	//std::cout << "number of distinct customer keys: " << distinct_customers.size() << "\n";
 }
 
 void Experiment::Tpch::QueryThreePartition::order_partition(Partitioner& partitioner, const std::vector<order>& o_table, 
@@ -724,9 +727,11 @@ void Experiment::Tpch::QueryThreePartition::order_partition(Partitioner& partiti
 {
 	TpchQueryThreeOrderKeyExtractor o_key_extractor;
 	ImbalanceScoreAggr<Experiment::Tpch::order, uint32_t> o_imbalance_aggregator(o_worker_input_buffer.size(), o_key_extractor);
+	std::unordered_set<uint32_t> distinct_orders;
 	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(uint32_t));
+		//distinct_orders.insert(it->o_custkey);
 		if (task < o_worker_input_buffer.size())
 		{
 			o_worker_input_buffer[task].push_back(*it);
@@ -738,16 +743,19 @@ void Experiment::Tpch::QueryThreePartition::order_partition(Partitioner& partiti
 	o_worker_input_buffer.shrink_to_fit();
 	*imbalance = o_imbalance_aggregator.imbalance();
 	*key_imbalance = o_imbalance_aggregator.cardinality_imbalance();
+	//std::cout << "number of distinct order keys: " << distinct_orders.size() << "\n";
 }
 
 void Experiment::Tpch::QueryThreePartition::lineitem_partition(Partitioner& partitioner, const std::vector<lineitem>& li_table, 
 	std::vector<std::vector<lineitem>>& li_worker_input_buffer, float* imbalance, float* key_imbalance)
 {
 	TpchQueryThreeLineitemKeyExtractor li_key_extractor;
+	std::unordered_set<uint32_t> distinct_lineitems;
 	ImbalanceScoreAggr<Experiment::Tpch::lineitem, uint32_t> li_imbalance_aggregator(li_worker_input_buffer.size(), li_key_extractor);
 	for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
 	{
 		uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
+		//distinct_lineitems.insert(it->l_order_key);
 		if (task < li_worker_input_buffer.size())
 		{
 			li_worker_input_buffer[task].push_back(*it);
@@ -759,6 +767,7 @@ void Experiment::Tpch::QueryThreePartition::lineitem_partition(Partitioner& part
 	li_worker_input_buffer.shrink_to_fit();
 	*imbalance = li_imbalance_aggregator.imbalance();
 	*key_imbalance = li_imbalance_aggregator.cardinality_imbalance();
+	//std::cout << "number of distinct lineitem keys: " << distinct_lineitems.size() << "\n";
 }
 
 void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(const std::vector<q3_customer>& c_table, 
