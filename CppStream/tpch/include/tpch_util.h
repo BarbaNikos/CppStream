@@ -19,36 +19,36 @@ namespace Experiment
 		class DataParser
 		{
 		public:
-			static void parse_tpch_part(const std::string input_file_name, std::vector<Experiment::Tpch::part>& buffer);
-			static void parse_tpch_supplier(const std::string input_file_name, std::vector<Experiment::Tpch::supplier>& buffer);
-			static void parse_tpch_partsupp(const std::string input_file_name, std::vector<Experiment::Tpch::partsupp>& buffer);
-			static void parse_tpch_customer(const std::string input_file_name, std::vector<Experiment::Tpch::customer>& buffer);
-			static void parse_tpch_q3_customer(const std::string input_file_name, std::vector<Experiment::Tpch::q3_customer>& buffer);
-			static void parse_tpch_lineitem(const std::string input_file_name, std::vector<Experiment::Tpch::lineitem>& buffer);
-			static void parse_tpch_order(const std::string input_file_name, std::vector<Experiment::Tpch::order>& buffer);
-			static void parse_tpch_region(const std::string input_file_name, std::vector<Experiment::Tpch::region>& buffer);
-			static void parse_tpch_nation(const std::string input_file_name, std::vector<Experiment::Tpch::nation>& buffer);
-			static void parse_all_files_test(const std::string input_file_dir);
+			static void parse_tpch_part(const std::string& f, std::vector<part>& buffer);
+			static void parse_tpch_supplier(const std::string& f, std::vector<supplier>& buffer);
+			static void parse_tpch_partsupp(const std::string& f, std::vector<partsupp>& buffer);
+			static void parse_tpch_customer(const std::string& f, std::vector<customer>& buffer);
+			static void parse_tpch_q3_customer(const std::string& f, std::vector<q3_customer>& buffer);
+			static void parse_tpch_lineitem(const std::string& f, std::vector<lineitem>& buffer);
+			static void parse_tpch_order(const std::string& f, std::vector<order>& buffer);
+			static void parse_tpch_region(const std::string& f, std::vector<region>& buffer);
+			static void parse_tpch_nation(const std::string& f, std::vector<nation>& buffer);
+			static void parse_all_files_test(const std::string& f);
 		};
 
 		class TableJoinUtil
 		{
 		public:
-			static void hash_join_lineitem_order(const std::vector<Experiment::Tpch::lineitem>& lineitem_table,
-				const std::vector<Experiment::Tpch::order>& order_table, std::vector<Experiment::Tpch::lineitem_order>& result);
-			static void hash_join_customer_lineitem_order(const std::vector<Experiment::Tpch::customer>& customer_table,
-				const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<Experiment::Tpch::order>& order_table,
-				std::vector<Experiment::Tpch::customer_lineitem_order>& result);
+			static void hash_join_lineitem_order(const std::vector<lineitem>& lineitem_table,
+				const std::vector<order>& order_table, std::vector<lineitem_order>& result);
+			static void hash_join_customer_lineitem_order(const std::vector<customer>& customer_table,
+				const std::vector<lineitem>& lineitem_table, const std::vector<order>& order_table,
+				std::vector<customer_lineitem_order>& result);
 		};
 
 	}
 }
 #endif // TPCH_UTIL_H_
 
-inline void Experiment::Tpch::DataParser::parse_tpch_part(const std::string input_file_name, std::vector<Experiment::Tpch::part>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_part(const std::string& f, std::vector<part>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -64,10 +64,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_part(const std::string inpu
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_supplier(const std::string input_file_name, std::vector<Experiment::Tpch::supplier>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_supplier(const std::string& f, std::vector<supplier>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -83,10 +83,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_supplier(const std::string 
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_partsupp(const std::string input_file_name, std::vector<Experiment::Tpch::partsupp>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_partsupp(const std::string& f, std::vector<partsupp>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -102,10 +102,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_partsupp(const std::string 
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_customer(const std::string input_file_name, std::vector<Experiment::Tpch::customer>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_customer(const std::string& f, std::vector<customer>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -121,10 +121,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_customer(const std::string 
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_q3_customer(const std::string input_file_name, std::vector<Experiment::Tpch::q3_customer>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_q3_customer(const std::string& f, std::vector<q3_customer>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -140,10 +140,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_q3_customer(const std::stri
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_lineitem(const std::string input_file_name, std::vector<Experiment::Tpch::lineitem>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_lineitem(const std::string& f, std::vector<lineitem>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -159,10 +159,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_lineitem(const std::string 
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_order(const std::string input_file_name, std::vector<Experiment::Tpch::order>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_order(const std::string& f, std::vector<order>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -178,10 +178,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_order(const std::string inp
 	line.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_region(const std::string input_file_name, std::vector<Experiment::Tpch::region>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_region(const std::string& f, std::vector<region>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -197,10 +197,10 @@ inline void Experiment::Tpch::DataParser::parse_tpch_region(const std::string in
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_tpch_nation(const std::string input_file_name, std::vector<Experiment::Tpch::nation>& buffer)
+inline void Experiment::Tpch::DataParser::parse_tpch_nation(const std::string& f, std::vector<nation>& buffer)
 {
 	std::string line;
-	std::ifstream file(input_file_name);
+	std::ifstream file(f);
 	if (!file.is_open())
 	{
 		std::cout << "failed to open file.\n";
@@ -216,22 +216,22 @@ inline void Experiment::Tpch::DataParser::parse_tpch_nation(const std::string in
 	buffer.shrink_to_fit();
 }
 
-inline void Experiment::Tpch::DataParser::parse_all_files_test(const std::string input_file_dir)
+inline void Experiment::Tpch::DataParser::parse_all_files_test(const std::string& f)
 {
-	std::string nation_file = input_file_dir + "\\nation.tbl";
-	std::string region_file = input_file_dir + "\\region.tbl";
-	std::string part_file = input_file_dir + "\\part.tbl";
-	std::string supplier_file = input_file_dir + "\\supplier.tbl";
-	std::string partsupp_file = input_file_dir + "\\partsupp.tbl";
-	std::string customer_file = input_file_dir + "\\customer.tbl";
-	std::string orders_file = input_file_dir + "\\orders.tbl";
-	std::vector<Experiment::Tpch::nation> nation_table;
-	std::vector<Experiment::Tpch::region> region_table;
-	std::vector<Experiment::Tpch::part> part_table;
-	std::vector<Experiment::Tpch::supplier> supplier_table;
-	std::vector<Experiment::Tpch::partsupp> partsupp_table;
-	std::vector<Experiment::Tpch::customer> customer_table;
-	std::vector<Experiment::Tpch::order> orders_table;
+	std::string nation_file = f + "\\nation.tbl";
+	std::string region_file = f + "\\region.tbl";
+	std::string part_file = f + "\\part.tbl";
+	std::string supplier_file = f + "\\supplier.tbl";
+	std::string partsupp_file = f + "\\partsupp.tbl";
+	std::string customer_file = f + "\\customer.tbl";
+	std::string orders_file = f + "\\orders.tbl";
+	std::vector<nation> nation_table;
+	std::vector<region> region_table;
+	std::vector<part> part_table;
+	std::vector<supplier> supplier_table;
+	std::vector<partsupp> partsupp_table;
+	std::vector<customer> customer_table;
+	std::vector<order> orders_table;
 	parse_tpch_nation(nation_file, nation_table);
 	parse_tpch_region(region_file, region_table);
 	parse_tpch_part(part_file, part_table);
@@ -245,8 +245,8 @@ inline void Experiment::Tpch::DataParser::parse_all_files_test(const std::string
 		", |ORDERS| = " << orders_table.size() << "\n";
 }
 
-inline void Experiment::Tpch::TableJoinUtil::hash_join_lineitem_order(const std::vector<Experiment::Tpch::lineitem>& lineitem_table,
-	const std::vector<Experiment::Tpch::order>& order_table, std::vector<Experiment::Tpch::lineitem_order>& result)
+inline void Experiment::Tpch::TableJoinUtil::hash_join_lineitem_order(const std::vector<lineitem>& lineitem_table,
+	const std::vector<order>& order_table, std::vector<lineitem_order>& result)
 {
 	// first build hash index on orders (which is the smaller table)
 	std::unordered_map<uint32_t, Experiment::Tpch::order> order_index;
@@ -262,9 +262,9 @@ inline void Experiment::Tpch::TableJoinUtil::hash_join_lineitem_order(const std:
 	order_index.clear();
 }
 
-inline void Experiment::Tpch::TableJoinUtil::hash_join_customer_lineitem_order(const std::vector<Experiment::Tpch::customer>& customer_table, 
-	const std::vector<Experiment::Tpch::lineitem>& lineitem_table, const std::vector<Experiment::Tpch::order>& order_table, 
-	std::vector<Experiment::Tpch::customer_lineitem_order>& result)
+inline void Experiment::Tpch::TableJoinUtil::hash_join_customer_lineitem_order(const std::vector<customer>& customer_table, 
+	const std::vector<lineitem>& lineitem_table, const std::vector<order>& order_table, 
+	std::vector<customer_lineitem_order>& result)
 {
 	// first build hash index on customers (which is the smallest table)
 	std::unordered_map<uint32_t, Experiment::Tpch::customer> customer_index;

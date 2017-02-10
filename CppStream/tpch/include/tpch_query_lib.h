@@ -196,7 +196,6 @@ namespace Experiment
 				const std::vector<order>& o_table, const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, 
 				const std::string worker_output_file_name);
 		};
-
 	}
 }
 #endif // !TPCH_QUERY_LIB_H_

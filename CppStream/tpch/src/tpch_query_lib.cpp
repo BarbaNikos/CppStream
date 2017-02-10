@@ -117,16 +117,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	std::vector<uint16_t> tasks;
 	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
-	Partitioner* rrg;
-	Partitioner* fld;
-	Partitioner* naive_shed_fld;
-	Partitioner* pkg;
-	Partitioner* ca_naive;
-	Partitioner* ca_aff_naive;
-	Partitioner* ca_hll;
-	Partitioner* ca_aff_hll;
-	Partitioner* la_naive;
-	Partitioner* la_hll;
+	Partitioner* rrg, *fld, *pkg, *ca_naive, *ca_aff_naive, *ca_hll, *ca_aff_hll, *la_naive, *la_hll;
+	// Partitioner* naive_shed_fld;
 	for (uint16_t i = 0; i < task_num; i++)
 	{
 		tasks.push_back(i);
@@ -135,7 +127,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 
 	rrg = new RoundRobinPartitioner(tasks);
 	fld = new HashFieldPartitioner(tasks);
-	naive_shed_fld = new NaiveShedFieldPartitioner(tasks);
+	// naive_shed_fld = new NaiveShedFieldPartitioner(tasks);
 	pkg = new PkgPartitioner(tasks);
 	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
 	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
@@ -146,7 +138,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 
 	std::string sh_file_name = "shg_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string naive_shed_fld_file_name = "naive_shed_fld_tpch_q1_" + std::to_string(tasks.size()) + "_results.csv";
+	// std::string naive_shed_fld_file_name = "naive_shed_fld_tpch_q1_" + std::to_string(tasks.size()) + "_results.csv";
 	std::string pkg_file_name = "pkg_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string ca_naive_file_name = "ca_naive_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string ca_aff_naive_file_name = "ca_aff_naive_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
@@ -159,7 +151,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	std::cout << "partitioner,task-num,max-exec-msec,min-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-order-msec,imbalance,key-imbalance\n";
 	query_one_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
 	query_one_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
-	query_one_partitioner_simulation(lines, tasks, naive_shed_fld, "naive_shed_fld", naive_shed_fld_file_name);
+	// query_one_partitioner_simulation(lines, tasks, naive_shed_fld, "naive_shed_fld", naive_shed_fld_file_name);
 	query_one_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
 	query_one_partitioner_simulation(lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
 	query_one_partitioner_simulation(lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
@@ -177,12 +169,12 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	delete ca_aff_hll;
 	delete la_naive;
 	delete la_hll;
-	delete naive_shed_fld;
+	// delete naive_shed_fld;
 	tasks.clear();
 
 	std::remove(sh_file_name.c_str());
 	std::remove(fld_file_name.c_str());
-	std::remove(naive_shed_fld_file_name.c_str());
+	// std::remove(naive_shed_fld_file_name.c_str());
 	std::remove(pkg_file_name.c_str());
 	std::remove(ca_naive_file_name.c_str());
 	std::remove(ca_aff_naive_file_name.c_str());
@@ -323,9 +315,9 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	double aggregate_durations[5], order_durations[5], write_output_duration_in_msec;
 	std::thread** threads;
 	std::vector<double> exec_duration_vector, aggr_duration_vector, order_duration_vector;
-	std::vector<Tpch::query_one_result> intermediate_buffer;
-	std::vector<std::vector<Tpch::lineitem>> worker_input_buffer(tasks.size(), std::vector<Tpch::lineitem>());
-	std::map<std::string, Experiment::Tpch::query_one_result> result_buffer;
+	std::vector<query_one_result> intermediate_buffer;
+	std::vector<std::vector<lineitem>> worker_input_buffer(tasks.size(), std::vector<lineitem>());
+	std::map<std::string, query_one_result> result_buffer;
 	// partition tuples
 	lineitem_partition(tasks.size(), *partitioner, lineitem_table, worker_input_buffer, &imbalance, &cardinality_imbalance);
 	for (size_t i = 0; i < tasks.size(); ++i)
@@ -372,7 +364,6 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	aggr_duration_vector.erase(it);
 	double average_aggr_duration = std::accumulate(aggr_duration_vector.begin(), aggr_duration_vector.end(), 0.0) / 
 		aggr_duration_vector.size();
-	
 	it = std::max_element(exec_duration_vector.begin(), exec_duration_vector.end());
 	exec_duration_vector.erase(it);
 	it = std::min_element(exec_duration_vector.begin(), exec_duration_vector.end());
