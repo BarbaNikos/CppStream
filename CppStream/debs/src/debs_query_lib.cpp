@@ -406,7 +406,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_window_si
 	tasks.shrink_to_fit();
 
 	std::stringstream info_stream;
-	info_stream << "partitioner,task-num,min-s1-msec,max-s1-msec,75ile-max-s1-msec,99ile-max-s1-msec,avg-s1-msec,avg-s1-aggr-msec,avg-order-msec,avg-imb,avg-key-imb\n";
+	info_stream << "partitioner,task-num,min-s1-msec,max-s1-msec,75ile-max-s1-msec,99ile-max-s1-msec,avg-s1-msec,avg-s1-aggr-msec,avg-order-msec,avg-imb,avg-key-imb,mean-window\n";
 	std::cout << info_stream.str();
 	frequent_route_partitioner_window_simulation(file, tasks, rrg, "sh");
 	frequent_route_partitioner_window_simulation(file, tasks, fld, "fld");
@@ -498,8 +498,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		min_parallel_durations.end(), 0.0) / min_parallel_durations.size();
 	double mean_max_parallel_duration = std::accumulate(max_parallel_durations.begin(), 
 		max_parallel_durations.end(), 0.0) / max_parallel_durations.size();
-	double ninety_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.9);
 	double seventyfive_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.75);
+	double ninety_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.9);
 	double mean_mean_parallel_duration = std::accumulate(mean_parallel_durations.begin(), 
 		mean_parallel_durations.end(), 0.0) / mean_parallel_durations.size();
 	double mean_aggr_duration = std::accumulate(aggregate_durations.begin(), 

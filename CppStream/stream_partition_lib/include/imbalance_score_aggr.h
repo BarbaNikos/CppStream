@@ -14,139 +14,81 @@ public:
 	virtual KeyExtractor* clone() const = 0;
 };
 
-
-
 template <class Tuple, class Tuple_Key>
 class ImbalanceScoreAggr
 {
 public:
-	ImbalanceScoreAggr(unsigned long tasks, const KeyExtractor<Tuple, Tuple_Key>& extractor);
-	ImbalanceScoreAggr(const ImbalanceScoreAggr<Tuple, Tuple_Key>& i);
-	~ImbalanceScoreAggr();
-	void measure_score(const std::vector<std::vector<Tuple>>& partitioned_stream, const KeyExtractor<Tuple, Tuple_Key>& extractor);
-	void incremental_measure_score(size_t index, const Tuple& t);
-	void incremental_measure_score(size_t index, const Tuple_Key& k);
-	void incremental_measure_score_tuple_count(size_t index, const Tuple& t);
-	void incremental_measure_score_tuple_count(size_t index, const Tuple_Key& k);
-	float imbalance();
-	float cardinality_imbalance();
-	bool locate_replicated_keys();
-private:
-	std::unique_ptr<KeyExtractor<Tuple, Tuple_Key>> key_extractor;
-	unsigned long tasks;
-	std::vector<unsigned long long> tuple_count;
-	std::vector<std::unordered_set<Tuple_Key>> key_count;
-};
-#endif // !IMBALANCE_SCORE_AGGR_H_
+	ImbalanceScoreAggr(size_t tasks, const KeyExtractor<Tuple, Tuple_Key>& extractor) 
+	: key_extractor(extractor.clone()), tasks(tasks), tuple_count(tasks, 0), 
+	key_count(tasks, std::unordered_set<Tuple_Key>()) {}
 
-template<class Tuple, class Tuple_Key>
-inline ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(unsigned long tasks, const KeyExtractor<Tuple, Tuple_Key>& extractor) : key_extractor(extractor.clone()), 
-tasks(tasks), tuple_count(tasks, 0), key_count(tasks, std::unordered_set<Tuple_Key>()) 
-{
-}
+	ImbalanceScoreAggr(const ImbalanceScoreAggr<Tuple, Tuple_Key>& i) 
+		: key_extractor(i.key_extractor->clone()), tasks(i.tasks), tuple_count(i.tuple_count), 
+	key_count(i.key_count) {}
 
-template <class Tuple, class Tuple_Key>
-ImbalanceScoreAggr<Tuple, Tuple_Key>::ImbalanceScoreAggr(const ImbalanceScoreAggr<Tuple, Tuple_Key>& i) : key_extractor(i.key_extractor->clone()), tasks(i.tasks), tuple_count(i.tuple_count), 
-key_count(i.key_count)
-{
-}
-
-template<class Tuple, class Tuple_Key>
-inline ImbalanceScoreAggr<Tuple, Tuple_Key>::~ImbalanceScoreAggr()
-{
-	tuple_count.clear();
-	for (auto it = key_count.begin(); it != key_count.end(); ++it)
+	void incremental_measure_score(size_t index, const Tuple& t)
 	{
-		it->clear();
+		Tuple_Key key = key_extractor->extract_key(t);
+		tuple_count[index] += 1;
+		key_count[index].insert(key);
 	}
-	key_count.clear();
-}
-
-template<class Tuple, class Tuple_Key>
-inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::measure_score(const std::vector<std::vector<Tuple>>& partitioned_stream, const KeyExtractor<Tuple, Tuple_Key>& extractor)
-{
-	this->key_count.clear();
-	this->tuple_count.clear();
-	for (typename std::vector<std::vector<Tuple>>::const_iterator sub_stream_it = partitioned_stream.cbegin(); sub_stream_it != partitioned_stream.cend(); ++sub_stream_it)
+	void incremental_measure_score(size_t index, const Tuple_Key& k)
 	{
-		std::unordered_set<Tuple_Key> substream_key_set;
-		for (typename std::vector<Tuple>::const_iterator sub_stream_tuple_it = sub_stream_it->cbegin(); sub_stream_tuple_it != sub_stream_it->cend(); ++sub_stream_tuple_it)
-		{
-			Tuple_Key key = extractor.extract_key(*sub_stream_tuple_it);
-			substream_key_set.insert(key);
-		}
-		this->key_count.push_back(substream_key_set);
-		this->tuple_count.push_back(sub_stream_it->size());
+		tuple_count[index] += 1;
+		key_count[index].insert(k);
 	}
-}
 
-template<class Tuple, class Tuple_Key>
-inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score(size_t index, const Tuple & t)
-{
-	Tuple_Key key = key_extractor->extract_key(t);
-	tuple_count[index]++;
-	key_count[index].insert(key);
-}
+	void incremental_measure_score_tuple_count(size_t index, const Tuple& t)
+	{
+		tuple_count[index] += 1;
+	}
+	void incremental_measure_score_tuple_count(size_t index, const Tuple_Key& k)
+	{
+		tuple_count[index] += 1;
+	}
 
-template <class Tuple, class Tuple_Key>
-void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score(size_t index, const Tuple_Key& k)
-{
-	tuple_count[index]++;
-	key_count[index].insert(k);
-}
-
-template<class Tuple, class Tuple_Key>
-inline void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score_tuple_count(size_t index, const Tuple & t)
-{
-	tuple_count[index]++;
-}
-
-template <class Tuple, class Tuple_Key>
-void ImbalanceScoreAggr<Tuple, Tuple_Key>::incremental_measure_score_tuple_count(size_t index, const Tuple_Key& k)
-{
-	tuple_count[index]++;
-}
-
-template<class Tuple, class Tuple_Key>
-inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::imbalance()
-{
-	std::vector<unsigned long long>::iterator max_it = std::max_element(tuple_count.begin(), tuple_count.end());
-	float mean_tuple_count = static_cast<float>(std::accumulate(tuple_count.begin(), tuple_count.end(), 0.0)) / tuple_count.size();
-	/*std::cout << "tuple count: ";
-	for (size_t i = 0; i < tuple_count.size(); ++i)
+	double imbalance() const
+	{
+		double max_ = *(std::max_element(tuple_count.cbegin(), tuple_count.cend()));
+		double mean_ = std::accumulate(tuple_count.cbegin(), tuple_count.cend(), 0.0) / tuple_count.size();
+		/*std::cout << "tuple count: ";
+		for (size_t i = 0; i < tuple_count.size(); ++i)
 		std::cout << "(" << tuple_count[i] << ", " << key_count[i].size() << ") ";
-	std::cout << "\n";*/
-	return *max_it - mean_tuple_count;
-}
-
-template<class Tuple, class Tuple_Key>
-inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::cardinality_imbalance()
-{
-	std::vector<size_t> key_count_size;
-	for (typename std::vector<std::unordered_set<Tuple_Key>>::const_iterator it = this->key_count.cbegin(); it != this->key_count.cend(); ++it)
-	{
-		key_count_size.push_back(it->size());
+		std::cout << "\n";*/
+		return max_ - mean_;
 	}
-	std::vector<size_t>::iterator max_key_it = std::max_element(key_count_size.begin(), key_count_size.end());
-	float mean_key_count = static_cast<float>(std::accumulate(key_count_size.begin(), key_count_size.end(), 0.0)) / key_count_size.size();
-	return *max_key_it - mean_key_count;
-}
 
-template<class Tuple, class Tuple_Key>
-inline bool ImbalanceScoreAggr<Tuple, Tuple_Key>::locate_replicated_keys()
-{
-	for (auto it = key_count.cbegin(); it != key_count.cend(); ++it)
+	float cardinality_imbalance()
 	{
-		for (auto inner_it = it + 1; inner_it != key_count.cend(); ++inner_it)
+		std::vector<size_t> key_count_size;
+		for (auto it = key_count.cbegin(); it != key_count.cend(); ++it)
+			key_count_size.push_back(it->size());
+		double max_ = double(*(std::max_element(key_count_size.cbegin(), key_count_size.cend())));
+		double mean_ = std::accumulate(key_count_size.cbegin(), key_count_size.cend(), 0.0) / key_count_size.size();
+		return max_ - mean_;
+	}
+
+	bool locate_replicated_keys()
+	{
+		for (auto it = key_count.cbegin(); it != key_count.cend(); ++it)
 		{
-			for (auto element_it = it->cbegin(); element_it != it->cend(); ++element_it)
+			for (auto inner_it = it + 1; inner_it != key_count.cend(); ++inner_it)
 			{
-				if (inner_it->find(*element_it) != inner_it->cend())
+				for (auto element_it = it->cbegin(); element_it != it->cend(); ++element_it)
 				{
-					return true;
+					if (inner_it->find(*element_it) != inner_it->cend())
+					{
+						return true;
+					}
 				}
 			}
 		}
+		return false;
 	}
-	return false;
-}
+private:
+	std::unique_ptr<KeyExtractor<Tuple, Tuple_Key>> key_extractor;
+	size_t tasks;
+	std::vector<size_t> tuple_count;
+	std::vector<std::unordered_set<Tuple_Key>> key_count;
+};
+#endif // !IMBALANCE_SCORE_AGGR_H_

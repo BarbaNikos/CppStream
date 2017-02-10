@@ -101,7 +101,8 @@ void PartitionLatency::measure_latency(unsigned int task_number, const std::vect
 	tasks.clear();
 }
 
-void PartitionLatency::debs_frequent_route_partition_latency(const std::string& partitioner_name, Partitioner * partitioner, const std::vector<Experiment::DebsChallenge::CompactRide>& frequent_ride_table)
+void PartitionLatency::debs_frequent_route_partition_latency(const std::string& partitioner_name, Partitioner * partitioner, 
+	const std::vector<Experiment::DebsChallenge::CompactRide>& frequent_ride_table)
 {
 	uint64_t sum = 0;
 	const int debs_window_size_in_sec = 1800; // 30 minutes
