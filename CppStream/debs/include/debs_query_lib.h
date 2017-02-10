@@ -81,15 +81,18 @@ namespace Experiment
 		class FrequentRoutePartition
 		{
 		public:
-			static void partition(Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* rides, 
-				std::vector<std::vector<Experiment::DebsChallenge::CompactRide>>* worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance);
-			static void worker_thread_operate(bool write, std::vector<Experiment::DebsChallenge::CompactRide>* input, std::vector<Experiment::DebsChallenge::frequent_route>* result_buffer,
+			static void partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<CompactRide>& rides, 
+				std::vector<std::vector<CompactRide>>* worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance);
+			static void worker_thread_operate(bool write, std::vector<CompactRide>* input, std::vector<frequent_route>* result_buffer,
 				double* total_duration);
-			static void aggregation_thread_operate(bool write, std::string partitioner_name, std::vector<Experiment::DebsChallenge::frequent_route>* input_buffer,
+			static void aggregation_thread_operate(bool write, std::string partitioner_name, std::vector<frequent_route>* input_buffer,
 				std::vector<std::pair<unsigned long, std::string>>* result, double* total_duration, std::string worker_output_file_name, double* io_duration, double* order_duration);
-			static void frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number);
-			static void frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, const std::vector<uint16_t> tasks,
-				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name);
+			static void frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number);
+			static std::vector<double> frequent_route_partitioner_simulation(const std::vector<CompactRide>& rides, const std::vector<uint16_t>& tasks,
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name);
+			static void frequent_route_window_simulation(const std::string& file, const size_t task_number);
+			static void frequent_route_partitioner_window_simulation(const std::string& rides, const std::vector<uint16_t>& tasks,
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& output_file);
 		};
 
 		class ProfitableAreaWorker

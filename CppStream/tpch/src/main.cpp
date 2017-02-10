@@ -46,15 +46,15 @@ int main(int argc, char** argv)
 
 	Experiment::Tpch::DataParser::parse_tpch_lineitem(lineitem_file, lineitem_table);
 	//Experiment::Tpch::ShedRouteLab::correct_result(lineitem_table, 8);
-	/*Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 8);
 	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 16);
-	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);*/
+	Experiment::Tpch::QueryOnePartition::query_one_simulation(lineitem_table, 32);
 
-	/*Experiment::Tpch::DataParser::parse_tpch_q3_customer(customer_file, customer_table);
+	Experiment::Tpch::DataParser::parse_tpch_q3_customer(customer_file, customer_table);
 	Experiment::Tpch::DataParser::parse_tpch_order(orders_file, order_table);
 	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 8);
 	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 16);
-	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);*/
+	Experiment::Tpch::QueryThreePartition::query_three_simulation(customer_table, lineitem_table, order_table, 32);
 	customer_table.clear();
 	lineitem_table.clear();
 	order_table.clear();

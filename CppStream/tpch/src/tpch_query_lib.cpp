@@ -356,6 +356,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 		threads[run]->join();
 		delete threads[run];
 		aggr_duration_vector.push_back(aggregate_durations[run]);
+		order_duration_vector.push_back(order_durations[run]);
 	}
 	delete[] threads;
 	auto it = std::max_element(aggr_duration_vector.begin(), aggr_duration_vector.end());

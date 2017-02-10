@@ -139,48 +139,33 @@ void Experiment::DebsChallenge::FrequentRouteAggregator::write_output_to_file(co
 	fclose(fd);
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* lines, const size_t task_number)
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number)
 {
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
 	std::vector<uint16_t> tasks(task_number, 0);
 	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
-	Partitioner* rrg;
-	Partitioner* fld;
-	Partitioner* pkg;
-	Partitioner* ca_naive;
-	Partitioner* ca_aff_naive;
-	Partitioner* ca_hll;
-	Partitioner* ca_aff_hll;
-	Partitioner* la_naive;
-	Partitioner* la_hll;
-	
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
 	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks[i] = i;
 	}
 	tasks.shrink_to_fit();
 
-	rrg = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
-	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
-	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
-	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
-	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
-	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
-
-	std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string pkg_file_name = "pk_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_naive_file_name = "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_naive_file_name = "ca_aff_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_hll_file_name = "ca_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_naive_file_name = "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_hll_file_name = "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string pkg_file_name = "pk_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_naive_file_name = "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_aff_naive_file_name = "ca_aff_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_hll_file_name = "ca_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string la_naive_file_name = "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string la_hll_file_name = "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
 	std::cout << "DEBS Q1***\n";
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-number,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,order-msec,imb,key-imb\n";
@@ -194,16 +179,6 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	frequent_route_partitioner_simulation(lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
 	frequent_route_partitioner_simulation(lines, tasks, la_naive, "la_naive", la_naive_file_name);
 	frequent_route_partitioner_simulation(lines, tasks, la_hll, "la_hll", la_hll_file_name);
-
-	delete rrg;
-	delete fld;
-	delete pkg;
-	delete ca_naive;
-	delete ca_aff_naive;
-	delete ca_hll;
-	delete ca_aff_hll;
-	delete la_naive;
-	delete la_hll;
 	tasks.clear();
 
 	std::remove(sh_file_name.c_str());
@@ -217,12 +192,12 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	std::remove(la_hll_file_name.c_str());
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::partition(Partitioner* partitioner, std::vector<Experiment::DebsChallenge::CompactRide>* rides, 
+void Experiment::DebsChallenge::FrequentRoutePartition::partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<CompactRide>& rides, 
 	std::vector<std::vector<Experiment::DebsChallenge::CompactRide>>* worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance)
 {
 	DebsFrequentRideKeyExtractor key_extractor;
-	ImbalanceScoreAggr<Experiment::DebsChallenge::CompactRide, std::string> imbalance_aggregator(task_number, key_extractor);
-	for (auto it = rides->cbegin(); it != rides->cend(); ++it)
+	ImbalanceScoreAggr<CompactRide, std::string> imbalance_aggregator(task_number, key_extractor);
+	for (auto it = rides.cbegin(); it != rides.cend(); ++it)
 	{
 		std::stringstream str_stream;
 		str_stream << (unsigned short)it->pickup_cell.first << "." << (unsigned short)it->pickup_cell.second << "-" <<
@@ -325,8 +300,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_opera
 	*order_duration = order_time.count();
 }
 
-void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(std::vector<Experiment::DebsChallenge::CompactRide>* rides, 
-	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
+std::vector<double> Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(const std::vector<CompactRide>& rides, 
+	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name)
 {
 	float imbalance, key_imbalance;
 	std::thread** threads;
@@ -337,8 +312,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		std::vector<Experiment::DebsChallenge::CompactRide>());
 	std::vector<std::pair<unsigned long, std::string>> result;
 	// partition tuples
-	Experiment::DebsChallenge::FrequentRoutePartition::partition(partitioner, rides, &worker_input_buffer, tasks.size(), 
-			&imbalance, &key_imbalance);
+	partition(partitioner, rides, &worker_input_buffer, tasks.size(), &imbalance, &key_imbalance);
 	// for every task - calculate (partial) workload
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -394,9 +368,98 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << 
 		write_output_duration << "," << order_duration << "," << imbalance << "," << key_imbalance << "\n";
 	std::cout << result_stream.str();
+	std::vector<double> partition_results;
+	partition_results.push_back(*std::min_element(exec_durations.begin(), exec_durations.end()));
+	partition_results.push_back(*std::max_element(exec_durations.begin(), exec_durations.end()));
+	partition_results.push_back((std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()));
+	partition_results.push_back(aggr_duration);
+	partition_results.push_back(write_output_duration);
+	partition_results.push_back(order_duration);
+	partition_results.push_back(imbalance);
+	partition_results.push_back(key_imbalance);
 	partial_result.clear();
 	exec_durations.clear();
 	aggr_durations.clear();
+
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_window_simulation(const std::string& file, const size_t task_number)
+{
+	
+	CardinalityAwarePolicy ca_policy;
+	LoadAwarePolicy la_policy;
+	std::vector<uint16_t> tasks(task_number, 0);
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)), 
+	pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), 
+	ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)), 
+	ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)), 
+	la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
+	for (uint16_t i = 0; i < task_number; i++)
+	{
+		tasks[i] = i;
+	}
+	tasks.shrink_to_fit();
+	const std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string pkg_file_name = "pk_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_naive_file_name = "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_aff_naive_file_name = "ca_aff_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_hll_file_name = "ca_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string la_naive_file_name = "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string la_hll_file_name = "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+
+	
+}
+
+void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_window_simulation(const std::string& rides, 
+	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& output_file)
+{
+	std::vector<std::vector<double>> results;
+	std::vector<CompactRide> window_rides;
+	const int debs_window_size_in_sec = 1800; // 30 minutes
+	std::ifstream infile(rides);
+	std::ofstream outfile;
+	outfile.open(output_file);
+	std::string line;
+	std::getline(infile, line);
+	CompactRide r(line);
+	std::time_t window_start;
+	// first parse the first drop-off time
+	if (line.size() > 0)
+		window_start = r.dropoff_datetime;
+	else
+		return;
+	infile.clear();
+	infile.seekg(0, std::ios::beg);
+	while (std::getline(infile, line))
+	{
+		CompactRide ride(line);
+		double sec_diff = std::difftime(ride.dropoff_datetime, window_start);
+		if (sec_diff >= debs_window_size_in_sec)
+		{
+			// process window
+			std::vector<double> window_results = frequent_route_partitioner_simulation(window_rides, tasks, partitioner, partitioner_name, output_file);
+			window_results.push_back(window_rides.size());
+			window_results.shrink_to_fit();
+			results.push_back(std::move(window_results));
+			for (size_t i = 0; i < window_results.size(); ++i)
+				outfile << std::to_string(window_results[i]) << ",";
+			outfile << "\n";
+			// progress window
+			window_start = ride.dropoff_datetime;
+			window_rides.clear();
+			window_rides.push_back(ride);
+		}
+		else
+		{
+			window_rides.push_back(ride);
+		}
+	}
+	// write output somewhere
+	outfile.close();
 }
 
 void Experiment::DebsChallenge::ProfitableAreaWorker::update(const DebsChallenge::CompactRide & ride)
