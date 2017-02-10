@@ -34,10 +34,9 @@
 #ifndef PARTITION_LATENCY_EXP_
 #define PARTITION_LATENCY_EXP_
 class PartitionLatency {
-private:
-	float get_percentile_duration(const std::vector<float>& sorted_durations, float k);
-	float get_mean(const std::vector<float>& durations);
 public:
+	static float get_percentile_duration(const std::vector<double>& sorted_durations, float k);
+	static float get_mean(const std::vector<double>& durations);
 	void measure_latency(unsigned int task_number, const std::vector<Experiment::DebsChallenge::CompactRide>& frequent_ride_table);
 	void debs_frequent_route_partition_latency(const std::string& partitioner_name, Partitioner* partitioner, 
 		const std::vector<Experiment::DebsChallenge::CompactRide>& frequent_ride_table);

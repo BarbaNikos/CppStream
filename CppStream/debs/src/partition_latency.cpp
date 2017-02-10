@@ -2,7 +2,7 @@
 #include "../include/partition_latency.h"
 #endif // !PARTITION_LATENCY_EXP_
 
-float PartitionLatency::get_percentile_duration(const std::vector<float>& sorted_durations, float k)
+float PartitionLatency::get_percentile_duration(const std::vector<double>& sorted_durations, float k)
 {
 	if (k <= 0 || k >= 1)
 	{
@@ -32,7 +32,7 @@ float PartitionLatency::get_percentile_duration(const std::vector<float>& sorted
 	}
 }
 
-float PartitionLatency::get_mean(const std::vector<float>& durations)
+float PartitionLatency::get_mean(const std::vector<double>& durations)
 {
 	if (durations.size() <= 0)
 	{
@@ -105,11 +105,11 @@ void PartitionLatency::debs_frequent_route_partition_latency(const std::string& 
 {
 	uint64_t sum = 0;
 	const int debs_window_size_in_sec = 1800; // 30 minutes
-	std::vector<float> durations;
-	std::vector<float> mean_durations;
-	std::vector<float> median_durations;
-	std::vector<float> ninety_pile_durations;
-	std::vector<float> ninetynine_pile_durations;
+	std::vector<double> durations;
+	std::vector<double> mean_durations;
+	std::vector<double> median_durations;
+	std::vector<double> ninety_pile_durations;
+	std::vector<double> ninetynine_pile_durations;
 	std::vector<Experiment::DebsChallenge::CompactRide> window_buffer;
 	for (size_t iteration = 0; iteration < 7; ++iteration)
 	{

@@ -19,24 +19,40 @@ class DebsFrequentRideKeyExtractor : public KeyExtractor<Experiment::DebsChallen
 {
 public:
 	std::string extract_key(const Experiment::DebsChallenge::CompactRide& r) const override;
+	KeyExtractor<Experiment::DebsChallenge::CompactRide, std::string>* clone() const override
+	{
+		return new DebsFrequentRideKeyExtractor();
+	}
 };
 
 class DebsProfitCellMedallionKeyExtractor : public KeyExtractor<Experiment::DebsChallenge::CompactRide, std::string>
 {
 public:
 	std::string extract_key(const Experiment::DebsChallenge::CompactRide& r) const override;
+	KeyExtractor<Experiment::DebsChallenge::CompactRide, std::string>* clone() const override
+	{
+		return new DebsProfitCellMedallionKeyExtractor();
+	}
 };
 
 class DebsProfCellCompleteFareKeyExtractor : public KeyExtractor<std::pair<std::string, std::vector<float>>, std::string>
 {
 public:
 	std::string extract_key(const std::pair<std::string, std::vector<float>>& p) const override;
+	KeyExtractor<std::pair<std::string, std::vector<float>>, std::string>* clone() const override
+	{
+		return new DebsProfCellCompleteFareKeyExtractor();
+	}
 };
 
 class DebsProfCellDropoffCellKeyExtractor : public KeyExtractor<std::pair<std::string, std::pair<std::string, std::time_t>>, std::string>
 {
 public:
 	std::string extract_key(const std::pair<std::string, std::pair<std::string, std::time_t>>& p) const override;
+	KeyExtractor<std::pair<std::string, std::pair<std::string, std::time_t>>, std::string>* clone() const override
+	{
+		return new DebsProfCellDropoffCellKeyExtractor();
+	}
 };
 #endif //!DEBS_KEY_EXTRACTOR_H_
 

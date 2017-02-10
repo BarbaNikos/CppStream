@@ -112,10 +112,10 @@ inline float ImbalanceScoreAggr<Tuple, Tuple_Key>::imbalance()
 {
 	std::vector<unsigned long long>::iterator max_it = std::max_element(tuple_count.begin(), tuple_count.end());
 	float mean_tuple_count = static_cast<float>(std::accumulate(tuple_count.begin(), tuple_count.end(), 0.0)) / tuple_count.size();
-	std::cout << "tuple count: ";
+	/*std::cout << "tuple count: ";
 	for (size_t i = 0; i < tuple_count.size(); ++i)
 		std::cout << "(" << tuple_count[i] << ", " << key_count[i].size() << ") ";
-	std::cout << "\n";
+	std::cout << "\n";*/
 	return *max_it - mean_tuple_count;
 }
 

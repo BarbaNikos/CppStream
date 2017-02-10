@@ -88,11 +88,11 @@ namespace Experiment
 			static void aggregation_thread_operate(bool write, std::string partitioner_name, std::vector<frequent_route>* input_buffer,
 				std::vector<std::pair<unsigned long, std::string>>* result, double* total_duration, std::string worker_output_file_name, double* io_duration, double* order_duration);
 			static void frequent_route_simulation(const std::vector<Experiment::DebsChallenge::CompactRide>& lines, const size_t task_number);
-			static std::vector<double> frequent_route_partitioner_simulation(const std::vector<CompactRide>& rides, const std::vector<uint16_t>& tasks,
+			static std::vector<double> frequent_route_partitioner_simulation(const bool write, const std::vector<CompactRide>& rides, const std::vector<uint16_t>& tasks,
 				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name);
 			static void frequent_route_window_simulation(const std::string& file, const size_t task_number);
 			static void frequent_route_partitioner_window_simulation(const std::string& rides, const std::vector<uint16_t>& tasks,
-				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& output_file);
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name);
 		};
 
 		class ProfitableAreaWorker

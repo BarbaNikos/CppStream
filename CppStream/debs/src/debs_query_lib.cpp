@@ -170,15 +170,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-number,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,order-msec,imb,key-imb\n";
 	std::cout << info_stream.str();
-	frequent_route_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, la_naive, "la_naive", la_naive_file_name);
-	frequent_route_partitioner_simulation(lines, tasks, la_hll, "la_hll", la_hll_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, rrg, "sh", sh_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, fld, "fld", fld_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, pkg, "pk", pkg_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, la_naive, "la_naive", la_naive_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, la_hll, "la_hll", la_hll_file_name);
 	tasks.clear();
 
 	std::remove(sh_file_name.c_str());
@@ -300,7 +300,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_opera
 	*order_duration = order_time.count();
 }
 
-std::vector<double> Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(const std::vector<CompactRide>& rides, 
+std::vector<double> Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_simulation(const bool write, const std::vector<CompactRide>& rides, 
 	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name)
 {
 	float imbalance, key_imbalance;
@@ -362,12 +362,15 @@ std::vector<double> Experiment::DebsChallenge::FrequentRoutePartition::frequent_
 	aggr_durations.erase(min_it);
 	aggr_duration = std::accumulate(aggr_durations.begin(), aggr_durations.end(), 0.0) / aggr_durations.size();
 
-	std::stringstream result_stream;
-	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," << 
-		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << 
-		write_output_duration << "," << order_duration << "," << imbalance << "," << key_imbalance << "\n";
-	std::cout << result_stream.str();
+	if (write)
+	{
+		std::stringstream result_stream;
+		result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
+			*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
+			(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," <<
+			write_output_duration << "," << order_duration << "," << imbalance << "," << key_imbalance << "\n";
+		std::cout << result_stream.str();
+	}
 	std::vector<double> partition_results;
 	partition_results.push_back(*std::min_element(exec_durations.begin(), exec_durations.end()));
 	partition_results.push_back(*std::max_element(exec_durations.begin(), exec_durations.end()));
@@ -380,7 +383,7 @@ std::vector<double> Experiment::DebsChallenge::FrequentRoutePartition::frequent_
 	partial_result.clear();
 	exec_durations.clear();
 	aggr_durations.clear();
-
+	return partition_results;
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_window_simulation(const std::string& file, const size_t task_number)
@@ -401,28 +404,32 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_window_si
 		tasks[i] = i;
 	}
 	tasks.shrink_to_fit();
-	const std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string pkg_file_name = "pk_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_naive_file_name = "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_aff_naive_file_name = "ca_aff_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_hll_file_name = "ca_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string la_naive_file_name = "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string la_hll_file_name = "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
 
-	
+	std::stringstream info_stream;
+	info_stream << "partitioner,task-num,min-s1-msec,max-s1-msec,75ile-max-s1-msec,99ile-max-s1-msec,avg-s1-msec,avg-s1-aggr-msec,avg-order-msec,avg-imb,avg-key-imb\n";
+	std::cout << info_stream.str();
+	frequent_route_partitioner_window_simulation(file, tasks, rrg, "sh");
+	frequent_route_partitioner_window_simulation(file, tasks, fld, "fld");
+	frequent_route_partitioner_window_simulation(file, tasks, pkg, "pk");
+	frequent_route_partitioner_window_simulation(file, tasks, ca_naive, "cn");
+	frequent_route_partitioner_window_simulation(file, tasks, ca_aff_naive, "an");
+	frequent_route_partitioner_window_simulation(file, tasks, ca_hll, "chll");
+	frequent_route_partitioner_window_simulation(file, tasks, ca_aff_hll, "ahll");
+	frequent_route_partitioner_window_simulation(file, tasks, la_naive, "ln");
+	frequent_route_partitioner_window_simulation(file, tasks, la_hll, "lhll");
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_window_simulation(const std::string& rides, 
-	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& output_file)
+	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name)
 {
+	std::vector<double> min_parallel_durations, max_parallel_durations, mean_parallel_durations; 
+	std::vector<double> aggregate_durations, io_durations, order_durations, imbalances, key_imbalances, window_sizes;
 	std::vector<std::vector<double>> results;
 	std::vector<CompactRide> window_rides;
 	const int debs_window_size_in_sec = 1800; // 30 minutes
 	std::ifstream infile(rides);
-	std::ofstream outfile;
-	outfile.open(output_file);
+	/*std::ofstream outfile;
+	outfile.open(output_file);*/
 	std::string line;
 	std::getline(infile, line);
 	CompactRide r(line);
@@ -441,13 +448,21 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		if (sec_diff >= debs_window_size_in_sec)
 		{
 			// process window
-			std::vector<double> window_results = frequent_route_partitioner_simulation(window_rides, tasks, partitioner, partitioner_name, output_file);
+			std::vector<double> window_results = frequent_route_partitioner_simulation(false, window_rides, tasks, partitioner, partitioner_name, "result");
 			window_results.push_back(window_rides.size());
 			window_results.shrink_to_fit();
-			results.push_back(std::move(window_results));
-			for (size_t i = 0; i < window_results.size(); ++i)
+			min_parallel_durations.push_back(std::move(window_results[0]));
+			max_parallel_durations.push_back(std::move(window_results[1]));
+			mean_parallel_durations.push_back(std::move(window_results[2]));
+			aggregate_durations.push_back(std::move(window_results[3]));
+			io_durations.push_back(std::move(window_results[4]));
+			order_durations.push_back(std::move(window_results[5]));
+			imbalances.push_back(std::move(window_results[6]));
+			key_imbalances.push_back(std::move(window_results[7]));
+			window_sizes.push_back(window_rides.size());
+			/*for (size_t i = 0; i < window_results.size(); ++i)
 				outfile << std::to_string(window_results[i]) << ",";
-			outfile << "\n";
+			outfile << "\n";*/
 			// progress window
 			window_start = ride.dropoff_datetime;
 			window_rides.clear();
@@ -458,8 +473,51 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 			window_rides.push_back(ride);
 		}
 	}
+	if (window_rides.size() > 0)
+	{
+		std::vector<double> window_results = frequent_route_partitioner_simulation(false, window_rides, tasks, partitioner, partitioner_name, "result");
+		window_results.push_back(window_rides.size());
+		window_results.shrink_to_fit();
+		min_parallel_durations.push_back(std::move(window_results[0]));
+		max_parallel_durations.push_back(std::move(window_results[1]));
+		mean_parallel_durations.push_back(std::move(window_results[2]));
+		aggregate_durations.push_back(std::move(window_results[3]));
+		io_durations.push_back(std::move(window_results[4]));
+		order_durations.push_back(std::move(window_results[5]));
+		imbalances.push_back(std::move(window_results[6]));
+		key_imbalances.push_back(std::move(window_results[7]));
+		window_sizes.push_back(window_rides.size());
+		/*for (size_t i = 0; i < window_results.size(); ++i)
+			outfile << std::to_string(window_results[i]) << ",";
+		outfile << "\n";*/
+		window_results.clear();
+	}
 	// write output somewhere
-	outfile.close();
+	//outfile.close();
+	double mean_min_parallel_duration = std::accumulate(min_parallel_durations.begin(), 
+		min_parallel_durations.end(), 0.0) / min_parallel_durations.size();
+	double mean_max_parallel_duration = std::accumulate(max_parallel_durations.begin(), 
+		max_parallel_durations.end(), 0.0) / max_parallel_durations.size();
+	double ninety_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.9);
+	double seventyfive_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.75);
+	double mean_mean_parallel_duration = std::accumulate(mean_parallel_durations.begin(), 
+		mean_parallel_durations.end(), 0.0) / mean_parallel_durations.size();
+	double mean_aggr_duration = std::accumulate(aggregate_durations.begin(), 
+		aggregate_durations.end(), 0.0) / aggregate_durations.size();
+	double mean_order_duration = std::accumulate(order_durations.begin(), 
+		order_durations.end(), 0.0) / order_durations.size();
+	double mean_imbalance = std::accumulate(imbalances.begin(), 
+		imbalances.end(), 0.0) / imbalances.size();
+	double mean_key_imbalance = std::accumulate(key_imbalances.begin(), 
+		key_imbalances.end(), 0.0) / key_imbalances.size();
+	double mean_window_size = std::accumulate(window_sizes.begin(), 
+		window_sizes.end(), 0.0) / window_sizes.size();
+	std::stringstream s_stream;
+	s_stream << partitioner_name << "," << tasks.size() << "," << mean_min_parallel_duration << "," << mean_max_parallel_duration << "," <<
+		seventyfive_ile_max_parallel_duration << "," << ninety_ile_max_parallel_duration << "," << mean_mean_parallel_duration << "," <<
+		mean_aggr_duration << "," << mean_order_duration << "," << mean_imbalance << "," << mean_key_imbalance << "," <<
+		mean_window_size << "\n";
+	std::cout << s_stream.str();
 }
 
 void Experiment::DebsChallenge::ProfitableAreaWorker::update(const DebsChallenge::CompactRide & ride)
