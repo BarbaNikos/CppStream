@@ -153,12 +153,12 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	query_one_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
 	// query_one_partitioner_simulation(lines, tasks, naive_shed_fld, "naive_shed_fld", naive_shed_fld_file_name);
 	query_one_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	query_one_partitioner_simulation(lines, tasks, la_naive, "la_naive", la_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, la_hll, "la_hll", la_hll_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_naive, "cn", ca_naive_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_hll, "chll", ca_hll_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
+	query_one_partitioner_simulation(lines, tasks, la_naive, "ln", la_naive_file_name);
+	query_one_partitioner_simulation(lines, tasks, la_hll, "lhll", la_hll_file_name);
 
 	delete rrg;
 	delete fld;
@@ -666,15 +666,15 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 		"avg-order-msec,c-imb,c-key-imb,o-imb,o-key-imb,li-imb,li-key-imb\n";
 	std::string info_message = info_stream.str();
 	std::cout << info_message;
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);
+	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);*/
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "ca_naive", ca_naive_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "la_naive", la_naive_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, "la_hll", la_hll_file_name);
+	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);*/
+	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "cn", ca_naive_file_name);*/
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
+	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "chll", ca_hll_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "ln", la_naive_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, "lhll", la_hll_file_name);*/
 
 	delete rrg;
 	delete fld;
