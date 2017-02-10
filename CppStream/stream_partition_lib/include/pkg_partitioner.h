@@ -32,8 +32,8 @@ public:
 	{
 		uint64_t hash_one, long_hash_one[2], hash_two, long_hash_two[2];
 		size_t first, second;
-		MurmurHash3_x64_128(key, key_len, 13, &long_hash_one);
-		MurmurHash3_x64_128(key, key_len, 17, &long_hash_two);
+		MurmurHash3_x64_128(key, key_len, 313, &long_hash_one);
+		MurmurHash3_x64_128(key, key_len, 317, &long_hash_two);
 		hash_one = long_hash_one[0] ^ long_hash_one[1];
 		hash_two = long_hash_two[0] ^ long_hash_two[1];
 		first = hash_one % tasks.size();

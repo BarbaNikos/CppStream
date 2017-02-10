@@ -31,7 +31,7 @@ public:
 	{
 		uint64_t hash_code, long_hash_code[2];
 		size_t selected_task;
-		MurmurHash3_x64_128(key, key_len, 13, &long_hash_code);
+		MurmurHash3_x64_128(key, key_len, 313, &long_hash_code);
 		hash_code = long_hash_code[0] ^ long_hash_code[1];
 		selected_task = hash_code % tasks.size();
 		max_task_count = std::max(max_task_count, task_count[selected_task]);

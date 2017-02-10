@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 {
 	if (argc < 4)
 	{
-		std::cout << "usage: <debs_ride_q1.csv> <debs_ride_q2.csv> <experiment: 1 - queries, 2 - part. latency>\n";
+		std::cout << "usage: <debs_ride_q1.csv> <debs_ride_q2.csv> <experiment: 1 - queries, 2 - part. latency, 3 - windowed queries>\n";
 		exit(1);
 	}
 	std::string ride_q1_file = argv[1];
@@ -68,6 +68,14 @@ int main(int argc, char** argv)
 		latency_experiment.measure_latency(16, frequent_ride_table);
 		latency_experiment.measure_latency(32, frequent_ride_table);
 		frequent_ride_table.clear();
+	}
+	else if (experiment.compare("3") == 0)
+	{
+		Experiment::DebsChallenge::FrequentRoutePartition debs_frequent_route;
+		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 8);
+		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 16);
+		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 32);
+		
 	}
 	else
 	{
