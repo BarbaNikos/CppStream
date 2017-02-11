@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include "dense_array.h"
 #include "bit_util.h"
 

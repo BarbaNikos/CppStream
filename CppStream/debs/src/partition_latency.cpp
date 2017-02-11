@@ -32,6 +32,21 @@ float PartitionLatency::get_percentile_duration(const std::vector<double>& sorte
 	}
 }
 
+float PartitionLatency::get_percentile(const std::vector<double>& v, float k)
+{
+	if (k <= 0 || k >= 1 || v.size() <= 0)
+	{
+		return -1.0f;
+	}
+	else
+	{
+		std::vector<double> to_sort(v);
+		std::sort(to_sort.begin(), to_sort.end());
+		return PartitionLatency::get_percentile_duration(to_sort, k);
+	}
+}
+
+
 float PartitionLatency::get_mean(const std::vector<double>& durations)
 {
 	if (durations.size() <= 0)

@@ -498,8 +498,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		min_parallel_durations.end(), 0.0) / min_parallel_durations.size();
 	double mean_max_parallel_duration = std::accumulate(max_parallel_durations.begin(), 
 		max_parallel_durations.end(), 0.0) / max_parallel_durations.size();
-	double seventyfive_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.75);
-	double ninety_ile_max_parallel_duration = PartitionLatency::get_percentile_duration(max_parallel_durations, 0.9);
+	double seventyfive_ile_max_parallel_duration = PartitionLatency::get_percentile(max_parallel_durations, 0.75);
+	double ninety_ile_max_parallel_duration = PartitionLatency::get_percentile(max_parallel_durations, 0.9);
 	double mean_mean_parallel_duration = std::accumulate(mean_parallel_durations.begin(), 
 		mean_parallel_durations.end(), 0.0) / mean_parallel_durations.size();
 	double mean_aggr_duration = std::accumulate(aggregate_durations.begin(), 

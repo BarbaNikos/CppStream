@@ -1,0 +1,3 @@
+[submodule "CppStream/googletest"]
+	path = CppStream/googletest
+	url = https://github.com/google/googletest.git
