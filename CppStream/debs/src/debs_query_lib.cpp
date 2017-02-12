@@ -157,15 +157,15 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	}
 	tasks.shrink_to_fit();
 
-	const std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string pkg_file_name = "pk_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_naive_file_name = "ca_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_aff_naive_file_name = "ca_aff_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_hll_file_name = "ca_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string la_naive_file_name = "la_naive_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	const std::string la_hll_file_name = "la_hll_debs_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	const std::string sh_file_name = "sh_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string fld_file_name = "fld_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string pkg_file_name = "pk_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string ca_naive_file_name = "cn_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string ca_aff_naive_file_name = "an_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string ca_hll_file_name = "chll_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string ca_aff_hll_file_name = "ahll_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string la_naive_file_name = "ln_debs_q1_" + std::to_string(tasks.size()) + ".csv";
+	const std::string la_hll_file_name = "lhll_debs_q1_" + std::to_string(tasks.size()) + ".csv";
 	std::cout << "DEBS Q1***\n";
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-number,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,order-msec,imb,key-imb\n";
@@ -173,12 +173,12 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 	frequent_route_partitioner_simulation(true, lines, tasks, rrg, "sh", sh_file_name);
 	frequent_route_partitioner_simulation(true, lines, tasks, fld, "fld", fld_file_name);
 	frequent_route_partitioner_simulation(true, lines, tasks, pkg, "pk", pkg_file_name);
-	frequent_route_partitioner_simulation(true, lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
-	frequent_route_partitioner_simulation(true, lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	frequent_route_partitioner_simulation(true, lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	frequent_route_partitioner_simulation(true, lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	frequent_route_partitioner_simulation(true, lines, tasks, la_naive, "la_naive", la_naive_file_name);
-	frequent_route_partitioner_simulation(true, lines, tasks, la_hll, "la_hll", la_hll_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_naive, "cn", ca_naive_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_hll, "chll", ca_hll_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, la_naive, "ln", la_naive_file_name);
+	frequent_route_partitioner_simulation(true, lines, tasks, la_hll, "lhll", la_hll_file_name);
 	tasks.clear();
 
 	std::remove(sh_file_name.c_str());
@@ -245,7 +245,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_opera
 	std::vector<std::pair<unsigned long, std::string>> result_aux;
 	if (write)
 	{
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 		{
 			start = std::chrono::system_clock::now();
 			aggregator.final_aggregate(*input_buffer, final_results);
@@ -274,7 +274,7 @@ void Experiment::DebsChallenge::FrequentRoutePartition::aggregation_thread_opera
 	}
 	else
 	{
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 		{
 			start = std::chrono::system_clock::now();
 			aggregator.final_aggregate(*input_buffer, final_results);
@@ -852,15 +852,15 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
 	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
 
-	std::string sh_file_name = "sh_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string fld_file_name = "fld_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string pkg_file_name = "pk_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_naive_file_name = "ca_naive_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_naive_file_name = "ca_aff_naive_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_hll_file_name = "ca_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_hll_file_name = "ca_aff_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_naive_file_name = "la_naive_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_hll_file_name = "la_hll_debs_q2_" + std::to_string(tasks.size()) + "_result.csv";
+	std::string sh_file_name = "sh_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string fld_file_name = "fld_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string pkg_file_name = "pk_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_naive_file_name = "cn_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_naive_file_name = "an_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_hll_file_name = "chll_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_hll_file_name = "ahll_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_naive_file_name = "ln_debs_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_hll_file_name = "lhll_debs_q2_" + std::to_string(tasks.size()) + ".csv";
 	std::cout << "DEBS Q2 ***\n";
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-num,min-s1-msec,max-s1-msec,avg-s1-msec,avg-s1-aggr-msec,min-s2-msec,max-s2-msec,avg-s2-msec,avg-aggr-msec,io-msec,order-msec,avg-part-cell-msec," <<
@@ -869,12 +869,12 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_cell_si
 	most_profitable_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
 	most_profitable_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
 	most_profitable_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
-	most_profitable_partitioner_simulation(lines, tasks, ca_naive, "ca_naive", ca_naive_file_name);
-	most_profitable_partitioner_simulation(lines, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	most_profitable_partitioner_simulation(lines, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	most_profitable_partitioner_simulation(lines, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	most_profitable_partitioner_simulation(lines, tasks, la_naive, "la_naive", la_naive_file_name);
-	most_profitable_partitioner_simulation(lines, tasks, la_hll, "la_hll", la_hll_file_name);
+	most_profitable_partitioner_simulation(lines, tasks, ca_naive, "cn", ca_naive_file_name);
+	most_profitable_partitioner_simulation(lines, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
+	most_profitable_partitioner_simulation(lines, tasks, ca_hll, "chll", ca_hll_file_name);
+	most_profitable_partitioner_simulation(lines, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
+	most_profitable_partitioner_simulation(lines, tasks, la_naive, "ln", la_naive_file_name);
+	most_profitable_partitioner_simulation(lines, tasks, la_hll, "lhll", la_hll_file_name);
 
 	delete rrg;
 	delete fld;
@@ -1032,7 +1032,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::thread_execution_aggreg
 	if (write)
 	{
 		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
+		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("an") == 0 || partitioner_name.compare("ahll") == 0)
 		{
 			//aggregator.step_one_aggregation(*fare_table, *fare_table_out, *dropoff_table, *dropoff_table_out);
 			// fld and Aff can not just transfer tuples in this because the partitioning on step one takes place 
@@ -1050,7 +1050,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::thread_execution_aggreg
 	else
 	{
 		std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
+		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("an") == 0 || partitioner_name.compare("ahll") == 0)
 		{
 			aggregator.step_one_materialize_aggregation(*fare_table, fare_table_aux, *dropoff_table, dropoff_table_aux);
 		}
@@ -1078,7 +1078,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::thread_final_aggregatio
 	if (write)
 	{
 		
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 		{
 			start = std::chrono::system_clock::now();
 			aggregator.calculate_final_result(*partial_input_buffer, profit_final_buffer);
@@ -1108,7 +1108,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::thread_final_aggregatio
 	}
 	else
 	{
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 		{
 			start = std::chrono::system_clock::now();
 			aggregator.calculate_final_result(*partial_input_buffer, profit_final_buffer);
@@ -1222,7 +1222,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::most_profitable_partiti
 			{
 				worker.second_round_update(it->first, it->second.first, it->second.second);
 			}
-			if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+			if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 			{
 				worker.partial_finalize(cell_partial_result_buffer_copy);
 			}
