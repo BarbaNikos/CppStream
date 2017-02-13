@@ -1,7 +1,13 @@
+#pragma once
 #include <fstream>
+
 #ifndef GOOGLE_CLUSTER_MONITOR_QUERY_H_
 #include "../include/google_cluster_monitor_query.h"
 #endif // GOOGLE_CLUSTER_MONITOR_QUERY_H_
+
+#ifndef STREAM_PARTITION_LIB_UTILS_
+#include "StatUtil.h"
+#endif // !STREAM_PARTITION_LIB_UTILS_
 
 void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryWorker::update(const task_event& task_event)
 {
@@ -168,69 +174,43 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_simul
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
 	LoadAwarePolicy la_policy;
 	CardinalityAwarePolicy ca_policy;
-	Partitioner* sh, *fld, *pk, *ca_naive, *ca_aff_naive, *ca_hll, *ca_aff_hll, *la_naive, *la_hll;
 	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	sh = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	pk = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
-	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
-	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
-	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
-	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
-	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
 
-	std::string sh_file_name = "shg_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string fld_file_name = "fld_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string pkg_file_name = "pkg_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_naive_file_name = "ca_naive_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_naive_file_name = "ca_aff_naive_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_hll_file_name = "ca_hll_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_hll_file_name = "ca_aff_hll_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_naive_file_name = "la_naive_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_hll_file_name = "la_hll_google_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	std::string sh_file_name = "shg_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string fld_file_name = "fld_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string pkg_file_name = "pkg_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_naive_file_name = "ca_naive_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_naive_file_name = "ca_aff_naive_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_hll_file_name = "ca_hll_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_hll_file_name = "ca_aff_hll_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_naive_file_name = "la_naive_google_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_hll_file_name = "la_hll_google_q1_" + std::to_string(tasks.size()) + ".csv";
 	std::cout << "GCM Q1 ***\n";
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-num,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-order-msec,imb,key-imb\n";
 	std::cout << info_stream.str();
-	query_partitioner_simulation(buffer, tasks, sh, "sh", sh_file_name);
-	query_partitioner_simulation(buffer, tasks, fld, "fld", fld_file_name);
-	query_partitioner_simulation(buffer, tasks, pk, "pk", pkg_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_naive, "ca_naive", ca_naive_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_aff_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	query_partitioner_simulation(buffer, tasks, la_naive, "la_naive", la_naive_file_name);
-	query_partitioner_simulation(buffer, tasks, la_hll, "la_hll", la_hll_file_name);
-
-	delete sh;
-	delete fld;
-	delete pk;
-	delete ca_naive;
-	delete ca_aff_naive;
-	delete ca_hll;
-	delete ca_aff_hll;
-	delete la_naive;
-	delete la_hll;
-	tasks.clear();
-
-	std::remove(sh_file_name.c_str());
-	std::remove(fld_file_name.c_str());
-	std::remove(pkg_file_name.c_str());
-	std::remove(ca_naive_file_name.c_str());
-	std::remove(ca_aff_naive_file_name.c_str());
-	std::remove(ca_hll_file_name.c_str());
-	std::remove(ca_aff_hll_file_name.c_str());
-	std::remove(la_naive_file_name.c_str());
-	std::remove(la_hll_file_name.c_str());
+	query_partitioner_simulation(true, buffer, tasks, rrg, "sh", sh_file_name);
+	query_partitioner_simulation(true, buffer, tasks, fld, "fld", fld_file_name);
+	query_partitioner_simulation(true, buffer, tasks, pkg, "pk", pkg_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_naive, "cn", ca_naive_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_hll, "chll", ca_hll_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
+	query_partitioner_simulation(true, buffer, tasks, la_naive, "ln", la_naive_file_name);
+	query_partitioner_simulation(true, buffer, tasks, la_hll, "lhll", la_hll_file_name);
 }
 
-void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
-	Partitioner* partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name)
+std::vector<double> Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_partitioner_simulation(const bool write, const std::vector<task_event>& buffer, 
+	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name)
 {
 	float class_imbalance, class_key_imbalance;
 	// get maximum and minimum running times
@@ -254,11 +234,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	class_key_imbalance = sch_class_imb_aggregator.cardinality_imbalance();
 	// start gathering results
 	for	(size_t i = 0; i < tasks.size(); ++i)
-	{
 		worker_input_buffer[i].shrink_to_fit();
-		/*std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation():: partitioner: " << partitioner_name << ", input workload for task " << i << 
-			" has size: " << worker_input_buffer[i].size() << " tuples.\n";*/
-	}
 	worker_input_buffer.shrink_to_fit();
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
@@ -287,15 +263,13 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		durations.clear();
 		worker_input_buffer[i].clear();
 	}
-	/*std::cout << "partitioner: " << partitioner_name << " intermediate buffer size: " << intermediate_buffer.size() << 
-	", with size of each element: " << sizeof(cm_one_result) << " (bytes).\n";*/
 	for (size_t aggr_run = 0; aggr_run < 5; ++aggr_run)
 	{
 		TotalCpuPerCategoryAggregator aggregator;
 		std::vector<cm_one_result> final_result;
 		std::unordered_map<int, cm_one_result> full_result_buffer;
 		// TIME CRITICAL - START
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 		{
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 			aggregator.calculate_final_aggregation(intermediate_buffer, full_result_buffer);
@@ -320,7 +294,7 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 		if (aggr_run >= 4)
 		{
 			std::chrono::system_clock::time_point output_start = std::chrono::system_clock::now();
-			aggregator.write_output_to_file(final_result, worker_output_file_name);
+			//aggregator.write_output_to_file(final_result, worker_output_file_name);
 			std::chrono::system_clock::time_point output_end = std::chrono::system_clock::now();
 			write_output_duration = (output_end - output_start).count();
 		}
@@ -337,11 +311,129 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_parti
 	max_it = std::max_element(order_durations.begin(), order_durations.end());
 	order_durations.erase(max_it);
 	double mean_order_time = std::accumulate(order_durations.begin(), order_durations.end(), 0.0) / order_durations.size();
+	if (write)
+	{
+		std::stringstream result_stream;
+		result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
+			*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
+			(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << mean_aggr_duration << "," <<
+			write_output_duration << "," << mean_order_time << "," << class_imbalance << "," << class_key_imbalance << "\n";
+		std::cout << result_stream.str();
+	}
+	std::vector<double> duration_results;
+	duration_results.push_back(*std::min_element(exec_durations.begin(), exec_durations.end()));
+	duration_results.push_back(*std::max_element(exec_durations.begin(), exec_durations.end()));
+	duration_results.push_back((std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()));
+	duration_results.push_back(mean_aggr_duration);
+	duration_results.push_back(mean_order_time);
+	duration_results.push_back(class_imbalance);
+	duration_results.push_back(class_key_imbalance);
+	return duration_results;
+}
+
+void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_simulation(const std::vector<task_event>& buffer, const size_t task_number)
+{
+	std::vector<uint16_t> tasks;
+	for (uint16_t i = 0; i < task_number; i++)
+	{
+		tasks.push_back(i);
+	}
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
+	LoadAwarePolicy la_policy;
+	CardinalityAwarePolicy ca_policy;
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
+	std::cout << "GCM Q1 ***\n";
+	std::stringstream info_stream;
+	info_stream << "name,tasks,min-exec,max-exec,99ile-max-exec,avg-exec,aggr,99ile-aggr,order,imb,key-imb,window-size\n";
+	std::cout << info_stream.str();
+	query_window_partitioner_simulation(buffer, tasks, rrg, "sh");
+	query_window_partitioner_simulation(buffer, tasks, fld, "fld");
+	query_window_partitioner_simulation(buffer, tasks, pkg, "pk");
+	query_window_partitioner_simulation(buffer, tasks, ca_naive, "cn");
+	query_window_partitioner_simulation(buffer, tasks, ca_aff_naive, "an");
+	query_window_partitioner_simulation(buffer, tasks, ca_hll, "chll");
+	query_window_partitioner_simulation(buffer, tasks, ca_aff_hll, "ahll");
+	query_window_partitioner_simulation(buffer, tasks, la_naive, "ln");
+	query_window_partitioner_simulation(buffer, tasks, la_hll, "lhll");
+}
+
+void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
+	std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name)
+{
+	const long window_size_in_msec = 60 * 1000;
+	std::vector<double> min_parallel_durations, max_parallel_durations, mean_parallel_durations, 
+	aggr_durations, order_durations, imbalances, k_imbalances, window_sizes;
+	std::vector<task_event> window;
+	long window_start;
+	if (buffer.size() > 0)
+		window_start = buffer[0].timestamp;
+	else
+		return;
+	for (auto it = buffer.cbegin(); it != buffer.cend(); ++it)
+	{
+		task_event t_event(*it);
+		double sec_diff = std::abs(t_event.timestamp - window_start);
+		if (sec_diff >= window_size_in_msec)
+		{
+			partitioner->init();
+			// process window
+			auto window_results = query_partitioner_simulation(false, window, tasks, partitioner, partitioner_name, "result");
+			// accumulate results
+			min_parallel_durations.push_back(window_results[0]);
+			max_parallel_durations.push_back(window_results[1]);
+			mean_parallel_durations.push_back(window_results[2]);
+			aggr_durations.push_back(window_results[3]);
+			order_durations.push_back(window_results[4]);
+			imbalances.push_back(window_results[5]);
+			k_imbalances.push_back(window_results[6]);
+			window_sizes.push_back(window.size());
+			// progress window
+			window_start = t_event.timestamp;
+			window.clear();
+			window.push_back(t_event);
+		}
+		else
+		{
+			window.push_back(t_event);
+		}
+	}
+	if (window.size() > 0)
+	{
+		partitioner->init();
+		// process window
+		auto window_results = query_partitioner_simulation(false, window, tasks, partitioner, partitioner_name, "result");
+		// accumulate results
+		min_parallel_durations.push_back(window_results[0]);
+		max_parallel_durations.push_back(window_results[1]);
+		mean_parallel_durations.push_back(window_results[2]);
+		aggr_durations.push_back(window_results[3]);
+		order_durations.push_back(window_results[4]);
+		imbalances.push_back(window_results[5]);
+		k_imbalances.push_back(window_results[6]);
+		window_sizes.push_back(window.size());
+		window.clear();
+		window_results.clear();
+	}
+	double mean_min_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(min_parallel_durations);
+	double mean_max_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(max_parallel_durations);
+	double ninetynile_max_parallel_duration = StreamPartitionLib::Stats::Util::get_percentile(max_parallel_durations, 0.99);
+	double mean_mean_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(mean_parallel_durations);
+	double mean_aggr_duration = StreamPartitionLib::Stats::Util::get_mean(aggr_durations);
+	double ninetynile_aggr_duration = StreamPartitionLib::Stats::Util::get_percentile(aggr_durations, 0.99);
+	double mean_order_duration = StreamPartitionLib::Stats::Util::get_mean(order_durations);
+	double mean_imbalance = StreamPartitionLib::Stats::Util::get_mean(imbalances);
+	double mean_key_imbalance = StreamPartitionLib::Stats::Util::get_mean(k_imbalances);
+	double mean_window_size = StreamPartitionLib::Stats::Util::get_mean(window_sizes);
+	
 	std::stringstream result_stream;
-	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << mean_aggr_duration << "," << 
-		write_output_duration << "," << mean_order_time << "," << class_imbalance << "," << class_key_imbalance << "\n";
+	result_stream << partitioner_name << "," << tasks.size() << "," << mean_min_parallel_duration << "," << mean_max_parallel_duration << "," <<
+		ninetynile_max_parallel_duration << "," << mean_mean_parallel_duration << "," << mean_aggr_duration << "," << ninetynile_aggr_duration << "," <<
+		mean_order_duration << "," << mean_imbalance << "," << mean_key_imbalance << "," << mean_window_size << "\n";
 	std::cout << result_stream.str();
 }
 
@@ -473,71 +565,46 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_simulatio
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
 	std::vector<uint16_t> tasks;
-	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
-	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
-	Partitioner* rrg, *pkg, *fld, *ca_naive, *ca_aff_naive, *ca_hll, *ca_aff_hll, *la_naive, *la_hll;
 	for (uint16_t i = 0; i < task_number; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	rrg = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
-	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
-	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
-	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
-	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
-	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
 	std::cout << "GCM Q2 ***\n";
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-num,min-exec-msec,max-exec-msec,avg-exec-msec,avg-aggr-msec,avg-order-msec,io-msec\n";
 	std::cout << info_stream.str();
-	std::string sh_file_name = "shg_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string fld_file_name = "fld_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string pkg_file_name = "pkg_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_naive_file_name = "ca_naive_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_naive_file_name = "ca_aff_naive_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_hll_file_name = "ca_hll_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_hll_file_name = "ca_aff_hll_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_naive_file_name = "la_naive_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_hll_file_name = "la_hll_google_q2_" + std::to_string(tasks.size()) + "_result.csv";
+	std::string sh_file_name = "shg_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string fld_file_name = "fld_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string pkg_file_name = "pkg_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_naive_file_name = "ca_naive_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_naive_file_name = "ca_aff_naive_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_hll_file_name = "ca_hll_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_hll_file_name = "ca_aff_hll_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_naive_file_name = "la_naive_google_q2_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_hll_file_name = "la_hll_google_q2_" + std::to_string(tasks.size()) + ".csv";
 
-	query_partitioner_simulation(buffer, tasks, rrg, "sh", sh_file_name);
-	query_partitioner_simulation(buffer, tasks, fld, "fld", fld_file_name);
-	query_partitioner_simulation(buffer, tasks, pkg, "pk", pkg_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_naive, "ca-naive", ca_naive_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_naive, "ca_aff_naive", ca_aff_naive_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_hll, "ca_hll", ca_hll_file_name);
-	query_partitioner_simulation(buffer, tasks, ca_aff_hll, "ca_aff_hll", ca_aff_hll_file_name);
-	query_partitioner_simulation(buffer, tasks, la_naive, "la_naive", la_naive_file_name);
-	query_partitioner_simulation(buffer, tasks, la_hll, "la_hll", la_hll_file_name);
-
-	delete rrg;
-	delete fld;
-	delete pkg;
-	delete ca_naive;
-	delete ca_aff_naive;
-	delete ca_hll;
-	delete ca_aff_hll;
-	delete la_naive;
-	delete la_hll;
-	tasks.clear();
-
-	std::remove(sh_file_name.c_str());
-	std::remove(fld_file_name.c_str());
-	std::remove(pkg_file_name.c_str());
-	std::remove(ca_naive_file_name.c_str());
-	std::remove(ca_aff_naive_file_name.c_str());
-	std::remove(ca_hll_file_name.c_str());
-	std::remove(ca_aff_hll_file_name.c_str());
-	std::remove(la_naive_file_name.c_str());
-	std::remove(la_hll_file_name.c_str());
+	query_partitioner_simulation(true, buffer, tasks, rrg, "sh", sh_file_name);
+	query_partitioner_simulation(true, buffer, tasks, fld, "fld", fld_file_name);
+	query_partitioner_simulation(true, buffer, tasks, pkg, "pk", pkg_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_naive, "cn", ca_naive_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_naive, "an", ca_aff_naive_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_hll, "chll", ca_hll_file_name);
+	query_partitioner_simulation(true, buffer, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
+	query_partitioner_simulation(true, buffer, tasks, la_naive, "ln", la_naive_file_name);
+	query_partitioner_simulation(true, buffer, tasks, la_hll, "lhll", la_hll_file_name);
 }
 
-void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
-	Partitioner* partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name)
+std::vector<double> Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partitioner_simulation(bool write, const std::vector<task_event>& buffer, 
+	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, 
+		const std::string& worker_output_file_name)
 {
 	// get maximum and minimum running times
 	std::vector<double> exec_durations, aggr_durations, order_durations;
@@ -545,17 +612,20 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	std::vector<cm_two_result> intermediate_buffer;
 	std::vector<std::vector<task_event>> worker_input_buffer(tasks.size(), std::vector<task_event>());
 	// partition tuples
+	GCMTaskEventJobIdExtractor key_extractor;
+	ImbalanceScoreAggr<task_event, long> job_id_imb_aggregator(tasks.size(), key_extractor);
 	for (auto it = buffer.cbegin(); it != buffer.cend(); ++it)
 	{
 		uint16_t task = partitioner->partition_next(&(it->job_id), sizeof(long));
 		if (task < worker_input_buffer.size())
+		{
 			worker_input_buffer[task].push_back(*it);
+			job_id_imb_aggregator.incremental_measure_score(task, *it);
+		}
 	}
 	for	(size_t i = 0; i < tasks.size(); ++i)
 	{
 		worker_input_buffer[i].shrink_to_fit();
-		/*std::cout << "MeanCpuPerJobIdPartition::query_partitioner_simulation():: partitioner: " << partitioner_name << ", input workload for task " << i << 
-		 	" has size: " << worker_input_buffer[i].size() << " tuples.\n";*/
 	}
 	worker_input_buffer.shrink_to_fit();
 	for (size_t i = 0; i < tasks.size(); ++i)
@@ -592,7 +662,7 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		std::unordered_map<long, cm_two_result> full_result;
 		MeanCpuPerJobIdAggregator aggregator;
 		// TIME CRITICAL - START
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("an") != 0 && partitioner_name.compare("ahll") != 0)
 		{
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 			aggregator.calculate_final_aggregation(intermediate_buffer, full_result);
@@ -606,15 +676,18 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 		else
 		{
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-			aggregator.order_final_result(intermediate_buffer, final_result);
 			std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+			aggr_durations.push_back((end - start).count());
+			start = std::chrono::system_clock::now();
+			aggregator.order_final_result(intermediate_buffer, final_result);
+			end = std::chrono::system_clock::now();
 			order_durations.push_back((end - start).count());
 		}
 		// TIME CRITICAL - END
 		if (aggr_run >= 4)
 		{
 			std::chrono::system_clock::time_point output_start = std::chrono::system_clock::now();
-			aggregator.write_output_to_file(final_result, worker_output_file_name);
+			//aggregator.write_output_to_file(final_result, worker_output_file_name);
 			std::chrono::system_clock::time_point output_end = std::chrono::system_clock::now();
 			write_output_duration = (output_end - output_start).count();
 		}
@@ -631,10 +704,128 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_partition
 	order_durations.erase(max_it);
 	double mean_order_time = std::accumulate(order_durations.begin(), order_durations.end(), 0.0) / order_durations.size();
 
+	if (write)
+	{
+		std::stringstream result_stream;
+		result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
+			*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
+			(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," <<
+			mean_order_time << "," << write_output_duration << "\n";
+		std::cout << result_stream.str();
+	}
+	std::vector<double> result_durations;
+	result_durations.push_back(*std::min_element(exec_durations.begin(), exec_durations.end()));
+	result_durations.push_back(*std::max_element(exec_durations.begin(), exec_durations.end()));
+	result_durations.push_back((std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()));
+	result_durations.push_back(aggr_duration);
+	result_durations.push_back(mean_order_time);
+	result_durations.push_back(job_id_imb_aggregator.imbalance());
+	result_durations.push_back(job_id_imb_aggregator.cardinality_imbalance());
+	return result_durations;
+}
+
+void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_window_simulation(const std::vector<task_event>& buffer, const size_t task_number)
+{
+	std::vector<uint16_t> tasks;
+	for (uint16_t i = 0; i < task_number; i++)
+	{
+		tasks.push_back(i);
+	}
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
+	LoadAwarePolicy la_policy;
+	CardinalityAwarePolicy ca_policy;
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
+	std::cout << "GCM Q2 ***\n";
+	std::stringstream info_stream;
+	info_stream << "name,tasks,min-exec,max-exec,99ile-max-exec,avg-exec,aggr,99ile-aggr,order,imb,key-imb,window-size\n";
+	std::cout << info_stream.str();
+	query_window_partitioner_simulation(buffer, tasks, rrg, "sh");
+	query_window_partitioner_simulation(buffer, tasks, fld, "fld");
+	query_window_partitioner_simulation(buffer, tasks, pkg, "pk");
+	query_window_partitioner_simulation(buffer, tasks, ca_naive, "cn");
+	query_window_partitioner_simulation(buffer, tasks, ca_aff_naive, "an");
+	query_window_partitioner_simulation(buffer, tasks, ca_hll, "chll");
+	query_window_partitioner_simulation(buffer, tasks, ca_aff_hll, "ahll");
+	query_window_partitioner_simulation(buffer, tasks, la_naive, "ln");
+	query_window_partitioner_simulation(buffer, tasks, la_hll, "lhll");
+}
+
+void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_window_partitioner_simulation(const std::vector<task_event>& buffer,
+	const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name)
+{
+	const long window_size_in_msec = 60 * 1000;
+	std::vector<double> min_parallel_durations, max_parallel_durations, mean_parallel_durations,
+		aggr_durations, order_durations, imbalances, k_imbalances, window_sizes;
+	std::vector<task_event> window;
+	long window_start;
+	if (buffer.size() > 0)
+		window_start = buffer[0].timestamp;
+	else
+		return;
+	for (auto it = buffer.cbegin(); it != buffer.cend(); ++it)
+	{
+		task_event t_event(*it);
+		double sec_diff = std::abs(t_event.timestamp - window_start);
+		if (sec_diff >= window_size_in_msec)
+		{
+			partitioner->init();
+			// process window
+			auto window_results = query_partitioner_simulation(false, window, tasks, partitioner, partitioner_name, "result");
+			// accumulate results
+			min_parallel_durations.push_back(window_results[0]);
+			max_parallel_durations.push_back(window_results[1]);
+			mean_parallel_durations.push_back(window_results[2]);
+			aggr_durations.push_back(window_results[3]);
+			order_durations.push_back(window_results[4]);
+			imbalances.push_back(window_results[5]);
+			k_imbalances.push_back(window_results[6]);
+			window_sizes.push_back(window.size());
+			// progress window
+			window_start = t_event.timestamp;
+			window.clear();
+			window.push_back(t_event);
+		}
+		else
+		{
+			window.push_back(t_event);
+		}
+	}
+	if (window.size() > 0)
+	{
+		partitioner->init();
+		// process window
+		auto window_results = query_partitioner_simulation(false, window, tasks, partitioner, partitioner_name, "result");
+		// accumulate results
+		min_parallel_durations.push_back(window_results[0]);
+		max_parallel_durations.push_back(window_results[1]);
+		mean_parallel_durations.push_back(window_results[2]);
+		aggr_durations.push_back(window_results[3]);
+		order_durations.push_back(window_results[4]);
+		imbalances.push_back(window_results[5]);
+		k_imbalances.push_back(window_results[6]);
+		window_sizes.push_back(window.size());
+		window.clear();
+		window_results.clear();
+	}
+	double mean_min_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(min_parallel_durations);
+	double mean_max_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(max_parallel_durations);
+	double ninetynile_max_parallel_duration = StreamPartitionLib::Stats::Util::get_percentile(max_parallel_durations, 0.99);
+	double mean_mean_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(mean_parallel_durations);
+	double mean_aggr_duration = StreamPartitionLib::Stats::Util::get_mean(aggr_durations);
+	double ninetynile_aggr_duration = StreamPartitionLib::Stats::Util::get_percentile(aggr_durations, 0.99);
+	double mean_order_duration = StreamPartitionLib::Stats::Util::get_mean(order_durations);
+	double mean_imbalance = StreamPartitionLib::Stats::Util::get_mean(imbalances);
+	double mean_key_imbalance = StreamPartitionLib::Stats::Util::get_mean(k_imbalances);
+	double mean_window_size = StreamPartitionLib::Stats::Util::get_mean(window_sizes);
+
 	std::stringstream result_stream;
-	result_stream << partitioner_name << "," << tasks.size() << "," << *std::min_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		*std::max_element(exec_durations.begin(), exec_durations.end()) << "," <<
-		(std::accumulate(exec_durations.begin(), exec_durations.end(), 0.0) / exec_durations.size()) << "," << aggr_duration << "," << 
-		mean_order_time << "," << write_output_duration << "\n";
+	result_stream << partitioner_name << "," << tasks.size() << "," << mean_min_parallel_duration << "," << mean_max_parallel_duration << "," <<
+		ninetynile_max_parallel_duration << "," << mean_mean_parallel_duration << "," << mean_aggr_duration << "," << ninetynile_aggr_duration << "," <<
+		mean_order_duration << "," << mean_imbalance << "," << mean_key_imbalance << "," << mean_window_size << "\n";
 	std::cout << result_stream.str();
 }

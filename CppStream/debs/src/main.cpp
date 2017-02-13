@@ -23,7 +23,7 @@
 #endif // !DEBS_QUERY_LIB_H_
 
 #ifndef PARTITION_LATENCY_EXP_
-#include "../include/partition_latency.h"
+#include "../include/partition_latency_exp.h"
 #endif // !PARTITION_LATENCY_EXP_
 
 int main(int argc, char** argv)
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 		/*
 		 * Partition latency on DEBS Query 1
 		 */
-		PartitionLatency latency_experiment;
+		Experiment::DebsChallenge::PartitionLatency latency_experiment;
 		Experiment::DebsChallenge::Parser::parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
 		latency_experiment.measure_latency(8, frequent_ride_table);
 		latency_experiment.measure_latency(16, frequent_ride_table);

@@ -135,6 +135,7 @@
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
     <ClInclude Include="include\round_robin_partitioner.h" />
+    <ClInclude Include="include\StatUtil.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />
   </ItemGroup>

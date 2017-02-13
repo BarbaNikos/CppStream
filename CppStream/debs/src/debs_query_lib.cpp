@@ -1,7 +1,10 @@
 #ifndef DEBS_QUERY_LIB_H_
 #include "../include/debs_query_lib.h"
 #endif // DEBS_QUERY_LIB_H_
-#include "../include/partition_latency.h"
+
+#ifndef STREAM_PARTITION_LIB_UTILS_
+#include "StatUtil.h"
+#endif // !STREAM_PARTITION_LIB_UTILS_
 
 void Experiment::DebsChallenge::FrequentRouteWorker::update(const Experiment::DebsChallenge::CompactRide& ride)
 {
@@ -473,8 +476,6 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		partitioner->init();
 		auto window_results = frequent_route_partitioner_simulation(false, window_rides, tasks, partitioner, 
 			partitioner_name, "result");
-		window_results.push_back(window_rides.size());
-		window_results.shrink_to_fit();
 		min_parallel_durations.push_back(std::move(window_results[0]));
 		max_parallel_durations.push_back(std::move(window_results[1]));
 		mean_parallel_durations.push_back(std::move(window_results[2]));
@@ -486,17 +487,17 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partition
 		window_sizes.push_back(window_rides.size());
 		window_results.clear();
 	}
-	double mean_min_parallel_duration = PartitionLatency::get_mean(min_parallel_durations);
-	double mean_max_parallel_duration = PartitionLatency::get_mean(max_parallel_durations);
-	double seventyfive_ile_max_parallel_duration = PartitionLatency::get_percentile(max_parallel_durations, 0.75);
-	double ninety_ile_max_parallel_duration = PartitionLatency::get_percentile(max_parallel_durations, 0.9);
-	double mean_mean_parallel_duration = PartitionLatency::get_mean(mean_parallel_durations);
-	double mean_aggr_duration = PartitionLatency::get_mean(aggregate_durations);
-	double mean_aggr_99ile_duration = PartitionLatency::get_percentile(aggregate_durations, 0.99);
-	double mean_order_duration = PartitionLatency::get_mean(order_durations);
-	double mean_imbalance = PartitionLatency::get_mean(imbalances);
-	double mean_key_imbalance = PartitionLatency::get_mean(key_imbalances);
-	double mean_window_size = PartitionLatency::get_mean(window_sizes);
+	double mean_min_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(min_parallel_durations);
+	double mean_max_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(max_parallel_durations);
+	double seventyfive_ile_max_parallel_duration = StreamPartitionLib::Stats::Util::get_percentile(max_parallel_durations, 0.75);
+	double ninety_ile_max_parallel_duration = StreamPartitionLib::Stats::Util::get_percentile(max_parallel_durations, 0.9);
+	double mean_mean_parallel_duration = StreamPartitionLib::Stats::Util::get_mean(mean_parallel_durations);
+	double mean_aggr_duration = StreamPartitionLib::Stats::Util::get_mean(aggregate_durations);
+	double mean_aggr_99ile_duration = StreamPartitionLib::Stats::Util::get_percentile(aggregate_durations, 0.99);
+	double mean_order_duration = StreamPartitionLib::Stats::Util::get_mean(order_durations);
+	double mean_imbalance = StreamPartitionLib::Stats::Util::get_mean(imbalances);
+	double mean_key_imbalance = StreamPartitionLib::Stats::Util::get_mean(key_imbalances);
+	double mean_window_size = StreamPartitionLib::Stats::Util::get_mean(window_sizes);
 	std::stringstream s_stream;
 	s_stream << partitioner_name << "," << tasks.size() << "," << mean_min_parallel_duration << "," << mean_max_parallel_duration << "," <<
 		seventyfive_ile_max_parallel_duration << "," << ninety_ile_max_parallel_duration << "," << mean_mean_parallel_duration << "," <<
@@ -1402,15 +1403,24 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::profitable_route_partit
 	}
 	std::stringstream s_stream;
 	s_stream << partitioner_name << "," << tasks.size() << "," << 
-		PartitionLatency::get_mean(min_s1_parallel_durations) << "," << PartitionLatency::get_mean(max_s1_parallel_durations) << "," <<
-		PartitionLatency::get_percentile(max_s1_parallel_durations, 0.99) << "," << PartitionLatency::get_mean(mean_s1_parallel_durations) << "," <<
-		PartitionLatency::get_mean(aggregate_s1_durations) << "," << PartitionLatency::get_percentile(aggregate_s1_durations, 0.99) << "," <<
-		PartitionLatency::get_mean(min_s2_parallel_durations) << "," << PartitionLatency::get_mean(max_s2_parallel_durations) << "," <<
-		PartitionLatency::get_percentile(max_s2_parallel_durations, 0.99) << "," << PartitionLatency::get_mean(mean_s2_parallel_durations) << "," <<
-		PartitionLatency::get_mean(final_aggr_durations) << "," << PartitionLatency::get_percentile(final_aggr_durations, 0.99) << "," <<
-		PartitionLatency::get_mean(med_imbalances) << "," << PartitionLatency::get_mean(med_key_imbalances) << "," <<
-		PartitionLatency::get_mean(cell_imbalances) << "," << PartitionLatency::get_mean(cell_key_imbalances) << "," <<
-		PartitionLatency::get_mean(fare_imbalances) << "," << PartitionLatency::get_mean(fare_key_imbalances) << "," <<
-		PartitionLatency::get_mean(window_sizes) << "\n";
+		StreamPartitionLib::Stats::Util::get_mean(min_s1_parallel_durations) << "," << 
+		StreamPartitionLib::Stats::Util::get_mean(max_s1_parallel_durations) << "," <<
+		StreamPartitionLib::Stats::Util::get_percentile(max_s1_parallel_durations, 0.99) << "," << 
+			StreamPartitionLib::Stats::Util::get_mean(mean_s1_parallel_durations) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(aggregate_s1_durations) << "," << 
+			StreamPartitionLib::Stats::Util::get_percentile(aggregate_s1_durations, 0.99) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(min_s2_parallel_durations) << "," << 
+			StreamPartitionLib::Stats::Util::get_mean(max_s2_parallel_durations) << "," <<
+		StreamPartitionLib::Stats::Util::get_percentile(max_s2_parallel_durations, 0.99) << "," << 
+			StreamPartitionLib::Stats::Util::get_mean(mean_s2_parallel_durations) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(final_aggr_durations) << "," << 
+			StreamPartitionLib::Stats::Util::get_percentile(final_aggr_durations, 0.99) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(med_imbalances) << "," << 
+			StreamPartitionLib::Stats::Util::get_mean(med_key_imbalances) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(cell_imbalances) << "," << 
+			StreamPartitionLib::Stats::Util::get_mean(cell_key_imbalances) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(fare_imbalances) << "," << 
+			StreamPartitionLib::Stats::Util::get_mean(fare_key_imbalances) << "," <<
+		StreamPartitionLib::Stats::Util::get_mean(window_sizes) << "\n";
 	std::cout << s_stream.str();
 }

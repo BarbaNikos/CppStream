@@ -63,6 +63,9 @@
     <ClInclude Include="include\card_estimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\StatUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\murmurhash_3.cpp">

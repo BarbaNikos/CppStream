@@ -130,13 +130,12 @@
     <ClInclude Include="include\debs_key_extractor.h" />
     <ClInclude Include="include\debs_query_lib.h" />
     <ClInclude Include="include\debs_structure_lib.h" />
-    <ClInclude Include="include\partition_latency.h" />
+    <ClInclude Include="include\partition_latency_exp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\debs_cell_coordinate_util.cpp" />
     <ClCompile Include="src\debs_query_lib.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\partition_latency.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
