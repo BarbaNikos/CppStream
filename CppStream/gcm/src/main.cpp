@@ -52,9 +52,10 @@ int main(int argc, char** argv)
 		// need to figure out how to provide a single file
 		std::vector<Experiment::GoogleClusterMonitor::task_event> task_event_table;
 		Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::parse_task_events_from_directory(google_task_event_dir, task_event_table);
-		/*Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_simulation(task_event_table, 8);
+		
+		Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_simulation(task_event_table, 8);
 		Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_simulation(task_event_table, 16);
-		Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_simulation(task_event_table, 32);*/
+		Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_simulation(task_event_table, 32);
 
 		Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_window_simulation(task_event_table, 8);
 		Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_window_simulation(task_event_table, 16);

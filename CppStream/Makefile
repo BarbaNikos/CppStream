@@ -24,6 +24,10 @@ tpch:
 debs:
 	make -C debs/
 
+.PHONY: gcm
+gcm:
+	make -C gcm/
+
 .PHONY: unit_test
 unit_test:
 	make -C unit_test/
@@ -34,4 +38,5 @@ clean:
 	make clean -C stream_partition_lib/
 	make clean -C tpch/
 	make clean -C debs/
+	make clean -C gcm/
 	make clean -C unit_test/
