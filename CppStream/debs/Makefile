@@ -1,7 +1,7 @@
 include ../Makefile.inc
 
 EXE = debs_main
-DEBS_OBJS = debs_cell_coordinate_util.o debs_query_lib.o partition_latency.o main.o
+DEBS_OBJS = debs_cell_coordinate_util.o debs_query_lib.o main.o
 SRC_DIR = src
 BIT_UTIL_DIR = ../bit_util
 BIT_UTIL_INCLUDE_DIR = $(BIT_UTIL_DIR)/include
@@ -23,9 +23,6 @@ $(EXE): $(DEBS_OBJS)
 
 main.o: $(SRC_DIR)/main.cpp
 	$(CC) $(FLAGS) -c $(SRC_DIR)/main.cpp $(INC_PARAMS)
-
-partition_latency.o : $(SRC_DIR)/partition_latency.cpp
-	$(CC) $(FLAGS) -c $(SRC_DIR)/partition_latency.cpp $(INC_PARAMS)
 
 debs_query_lib.o : $(SRC_DIR)/debs_query_lib.cpp
 	$(CC) $(FLAGS) -c $(SRC_DIR)/debs_query_lib.cpp $(INC_PARAMS)
