@@ -308,7 +308,7 @@ private:
 			option_spec_cardinality[4] = card_e_[option[4]]->imitate_insert(code);
 			for (size_t i = 0; i < 5; ++i)
 			{
-				if (std::abs(long long(option_spec_cardinality[i] - option_cardinality[i])) == 0)
+				if (std::abs(long(option_spec_cardinality[i] - option_cardinality[i])) == 0)
 				{
 					task_count[option[i]] += 1;
 					max_task_count = std::max(max_task_count, task_count[option[i]]);
