@@ -136,14 +136,14 @@ namespace Experiment
 		{
 		public:
 			static void query_one_simulation(const std::vector<lineitem>& lines, const size_t task_num);
-			static void lineitem_partition(size_t task_num, Partitioner& partitioner, const std::vector<lineitem>& input_buffer,
+			static void lineitem_partition(size_t task_num, std::unique_ptr<Partitioner>& partitioner, const std::vector<lineitem>& input_buffer,
 				std::vector<std::vector<lineitem>>& worker_input_buffer, float *imbalance, float* key_imbalance);
 			static void thread_worker_operate(const bool write, const std::vector<lineitem>* input_buffer, 
 				std::vector<query_one_result>* result_buffer, double* operate_duration);
 			static void thread_aggregate(const bool write, const std::string partitioner_name, const std::vector<query_one_result>* input_buffer,
 				std::map<std::string, query_one_result>* result, const std::string worker_output_file_name, double* aggregate_duration, double* order_duration, double* io_duration);
 			static void query_one_partitioner_simulation(const std::vector<lineitem>& lineitem_table, const std::vector<uint16_t> tasks,
-				Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
+				std::unique_ptr<Partitioner>& partitioner, const std::string partitioner_name, const std::string worker_output_file_name_prefix);
 		};
 
 		class QueryThreeWorker
@@ -186,14 +186,14 @@ namespace Experiment
 		public:
 			static void query_three_simulation(const std::vector<Experiment::Tpch::q3_customer>& c_table, const std::vector<lineitem>& li_table, 
 				const std::vector<order>& o_table, const size_t task_num);
-			static void customer_partition(Partitioner& partitioner, const std::vector<q3_customer>& c_table,
+			static void customer_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<q3_customer>& c_table,
 				std::vector<std::vector<q3_customer>>& c_worker_input_buffer, float* imbalance, float* key_imbalance);
-			static void order_partition(Partitioner& partitioner, const std::vector<order>& o_table,
+			static void order_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<order>& o_table,
 				std::vector<std::vector<order>>& o_worker_input_buffer, float* imbalance, float* key_imbalance);
-			static void lineitem_partition(Partitioner& partitioner, const std::vector<lineitem>& li_table,
+			static void lineitem_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<lineitem>& li_table,
 				std::vector<std::vector<lineitem>>& li_worker_input_buffer, float* imbalance, float* key_imbalance);
 			static void query_three_partitioner_simulation(const std::vector<q3_customer>& c_table, const std::vector<lineitem>& li_table,
-				const std::vector<order>& o_table, const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, 
+				const std::vector<order>& o_table, const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string partitioner_name, 
 				const std::string worker_output_file_name);
 		};
 	}

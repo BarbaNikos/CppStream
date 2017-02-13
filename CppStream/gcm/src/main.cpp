@@ -1,22 +1,8 @@
+#pragma once
 #include <iostream>
-#include <ctime>
 #include <fstream>
-#include <string>
-#include <chrono>
-#include <climits>
-#include <cstdlib>
-#include <cstdio>
-#include <cmath>
-#include <unordered_map>
-#include <unordered_set>
-#include <queue>
-#include <thread>
 #include <future>
-#include <fstream>
 #include <functional>
-#include <numeric>
-#include <algorithm>
-#include <set>
 
 #ifndef GOOGLE_CLUSTER_MONITOR_QUERY_H_
 #include "../include/google_cluster_monitor_query.h"
