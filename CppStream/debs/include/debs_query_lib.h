@@ -63,8 +63,8 @@ namespace Experiment
 		class FrequentRouteWorker
 		{
 		public:
-			void update(const DebsChallenge::CompactRide& ride);
-			void finalize(bool write, std::vector<Experiment::DebsChallenge::frequent_route>* partial_result);
+			void update(const CompactRide& ride);
+			void finalize(bool write, std::vector<frequent_route>* partial_result);
 		private:
 			std::unordered_map<std::string, uint64_t> result;
 		};
@@ -72,8 +72,8 @@ namespace Experiment
 		class FrequentRouteAggregator
 		{
 		public:
-			static void final_aggregate(const std::vector<Experiment::DebsChallenge::frequent_route>& partial_results, std::unordered_map<std::string, uint64_t>& sorted_full_aggregates);
-			static void order_final_result(const std::vector<Experiment::DebsChallenge::frequent_route>& full_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
+			static void final_aggregate(const std::vector<frequent_route>& partial_results, std::unordered_map<std::string, uint64_t>& sorted_full_aggregates);
+			static void order_final_result(const std::vector<frequent_route>& full_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
 			static void order_final_result(const std::unordered_map<std::string, uint64_t>& full_aggregates, std::vector<std::pair<unsigned long, std::string>>& result);
 			static void write_output_to_file(const std::vector<std::pair<unsigned long, std::string>>& result, const std::string& outfile_name);
 		};
@@ -82,7 +82,7 @@ namespace Experiment
 		{
 		public:
 			static void partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<CompactRide>& rides, 
-				std::vector<std::vector<CompactRide>>* worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance);
+				std::vector<std::vector<CompactRide>>& worker_input_buffer, size_t task_number, float* imbalance, float* key_imbalance);
 			static void worker_thread_operate(bool write, std::vector<CompactRide>* input, std::vector<frequent_route>* result_buffer,
 				double* total_duration);
 			static void aggregation_thread_operate(bool write, std::string partitioner_name, std::vector<frequent_route>* input_buffer,
