@@ -665,8 +665,13 @@ void Experiment::Tpch::QueryThreePartition::customer_partition(std::unique_ptr<P
 			c_imbalance_aggregator.incremental_measure_score(task, *it);
 		}
 	}
+	size_t max_customer_size = c_worker_input_buffer[0].size();
 	for (size_t i = 0; i < c_worker_input_buffer.size(); ++i)
+	{
 		c_worker_input_buffer[i].shrink_to_fit();
+		max_customer_size = max_customer_size < c_worker_input_buffer[i].size() ? c_worker_input_buffer[i].size() : max_customer_size;
+	}
+	std::cout << "max customer size: " << max_customer_size << "\n";
 	c_worker_input_buffer.shrink_to_fit();
 	*imbalance = c_imbalance_aggregator.imbalance();
 	*key_imbalance = c_imbalance_aggregator.cardinality_imbalance();
@@ -689,8 +694,13 @@ void Experiment::Tpch::QueryThreePartition::order_partition(std::unique_ptr<Part
 			o_imbalance_aggregator.incremental_measure_score(task, *it);
 		}
 	}
+	size_t max_order_size = o_worker_input_buffer[0].size();
 	for (size_t i = 0; i < o_worker_input_buffer.size(); ++i)
+	{
 		o_worker_input_buffer[i].shrink_to_fit();
+		max_order_size = max_order_size < o_worker_input_buffer[i].size() ? o_worker_input_buffer[i].size() : max_order_size;
+	}
+	std::cout << "max order size: " << max_order_size << "\n";
 	o_worker_input_buffer.shrink_to_fit();
 	*imbalance = o_imbalance_aggregator.imbalance();
 	*key_imbalance = o_imbalance_aggregator.cardinality_imbalance();
@@ -713,8 +723,13 @@ void Experiment::Tpch::QueryThreePartition::lineitem_partition(std::unique_ptr<P
 			li_imbalance_aggregator.incremental_measure_score(task, *it);
 		}
 	}
+	size_t max_li_size = li_worker_input_buffer[0].size();
 	for (size_t i = 0; i < li_worker_input_buffer.size(); ++i)
+	{
 		li_worker_input_buffer[i].shrink_to_fit();
+		max_li_size = max_li_size < li_worker_input_buffer[i].size() ? li_worker_input_buffer[i].size() : max_li_size;
+	}
+	std::cout << "max lineitem size: " << max_li_size << "\n";
 	li_worker_input_buffer.shrink_to_fit();
 	*imbalance = li_imbalance_aggregator.imbalance();
 	*key_imbalance = li_imbalance_aggregator.cardinality_imbalance();
