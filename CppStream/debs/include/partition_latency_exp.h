@@ -32,8 +32,12 @@
 #endif // !DEBS_QUERY_LIB_H_
 
 #ifndef STREAM_PARTITION_LIB_UTILS_
-#include "StatUtil.h"
+#include "stat_util.h"
 #endif // !STREAM_PARTITION_LIB_UTILS_
+
+#ifndef STREAM_PARTITION_LIB_NAME_UTIL_
+#include "name_util.h"
+#endif
 
 #ifndef PARTITION_LATENCY_EXP_
 #define PARTITION_LATENCY_EXP_
@@ -62,16 +66,16 @@ namespace Experiment
 					ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
 					la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
 				std::cout << "tasks: " << task_number << "\n";
-				std::cout << "name, mean, median, 90-ile, 99-ile, sum\n";
-				debs_frequent_route_partition_latency("sh", rrg, frequent_ride_table);
-				debs_frequent_route_partition_latency("fld", fld, frequent_ride_table);
-				debs_frequent_route_partition_latency("pk", pkg, frequent_ride_table);
-				debs_frequent_route_partition_latency("cn", ca_naive, frequent_ride_table);
-				debs_frequent_route_partition_latency("an", ca_aff_naive, frequent_ride_table);
-				debs_frequent_route_partition_latency("chll", ca_hll, frequent_ride_table);
-				debs_frequent_route_partition_latency("ahll", ca_aff_hll, frequent_ride_table);
-				debs_frequent_route_partition_latency("ln", la_naive, frequent_ride_table);
-				debs_frequent_route_partition_latency("lhll", la_hll, frequent_ride_table);
+				std::cout << "name,mean,median,90 %ile,99 %ile, sum\n";
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::shuffle_partitioner(), rrg, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::field_partitioner(), fld, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::partial_key_partitioner(), pkg, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::cardinality_naive_partitioner(), ca_naive, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::affinity_naive_partitioner(), ca_aff_naive, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::cardinality_hip_partitioner(), ca_hll, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::affinity_hip_partitioner(), ca_aff_hll, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::load_naive_partitioner(), la_naive, frequent_ride_table);
+				debs_frequent_route_partition_latency(StreamPartitionLib::Name::Util::load_hip_partitioner(), la_hll, frequent_ride_table);
 			}
 			static void debs_frequent_route_partition_latency(const std::string& partitioner_name, std::unique_ptr<Partitioner>& partitioner,
 				const std::vector<CompactRide>& frequent_ride_table)

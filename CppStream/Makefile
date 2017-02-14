@@ -1,8 +1,8 @@
 include Makefile.inc
 
-DIRS = bit_util hll stream_partition_lib tpch debs
+DIRS = bit_util hll stream_partition_lib tpch debs gcm
 
-all: bit_util hll stream_partition_lib tpch debs unit_test
+all: bit_util hll stream_partition_lib tpch debs gcm unit_test
 
 .PHONY: bit_util 
 bit_util: 

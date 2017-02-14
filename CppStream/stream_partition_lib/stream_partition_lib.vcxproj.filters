@@ -63,7 +63,10 @@
     <ClInclude Include="include\card_estimator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\StatUtil.h">
+    <ClInclude Include="include\name_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\stat_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
