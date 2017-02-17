@@ -220,7 +220,7 @@ namespace CaPartitionLib
 			}
 		}
 
-private:
+protected:
 		
 		std::vector<uint16_t> tasks;
 		
@@ -237,6 +237,59 @@ private:
 		size_t max_task_cardinality;
 		
 		size_t min_task_cardinality;
+	};
+
+	template<typename Key>
+	class NewAN : public AN<Key>
+	{
+	public:
+		NewAN(const std::vector<uint16_t>& tasks, const CardinalityEstimator::cardinality_estimator<Key>& c) : AN<Key>(tasks, c) {}
+		uint16_t partition_next(const void* key, const size_t key_len) override
+		{
+			uint64_t hash_one, long_hash_one[2], hash_two, long_hash_two[2];
+			size_t first_choice, second_choice;
+			MurmurHash3_x64_128(key, key_len, 313, &long_hash_one);
+			MurmurHash3_x64_128(key, key_len, 317, &long_hash_two);
+			hash_one = long_hash_one[0] ^ long_hash_one[1];
+			hash_two = long_hash_two[0] ^ long_hash_two[1];
+			first_choice = hash_one % AN<Key>::tasks.size();
+			second_choice = hash_two % AN<Key>::tasks.size();
+			size_t first_card = AN<Key>::card_e_[first_choice]->count();
+			size_t second_card = AN<Key>::card_e_[second_choice]->count();
+			size_t first_new_card = AN<Key>::card_e_[first_choice]->imitate_insert(hash_one);
+			size_t second_new_card = AN<Key>::card_e_[second_choice]->imitate_insert(hash_one);
+			if (first_card == first_new_card)
+			{
+				AN<Key>::task_count[first_choice] += 1;
+				AN<Key>::max_task_count = std::max(AN<Key>::max_task_count, AN<Key>::task_count[first_choice]);
+				return AN<Key>::tasks[first_choice];
+			}
+			else if (second_card == second_new_card)
+			{
+				AN<Key>::task_count[second_choice] += 1;
+				AN<Key>::max_task_count = std::max(AN<Key>::max_task_count, AN<Key>::task_count[second_choice]);
+				return AN<Key>::tasks[second_choice];
+			}
+			else
+			{
+				size_t selected_choice = policy_.choose(first_choice, AN<Key>::task_count[first_choice], first_card,
+					second_choice, AN<Key>::task_count[second_choice], second_card, AN<Key>::min_task_count, AN<Key>::max_task_count,
+					AN<Key>::min_task_cardinality, AN<Key>::max_task_cardinality);
+				AN<Key>::card_e_[selected_choice]->insert(hash_one);
+				size_t selected_cardinality = AN<Key>::card_e_[selected_choice]->count();
+				AN<Key>::task_count[selected_choice] += 1;
+				AN<Key>::max_task_count = std::max(AN<Key>::max_task_count, AN<Key>::task_count[selected_choice]);
+				AN<Key>::max_task_cardinality = std::max(AN<Key>::max_task_cardinality, selected_cardinality);
+				// need to make the following faster
+				AN<Key>::min_task_count = *std::min_element(AN<Key>::task_count.begin(), AN<Key>::task_count.end());
+				std::vector<size_t> v;
+				AN<Key>::get_cardinality_vector(v);
+				AN<Key>::min_task_cardinality = *std::min_element(v.begin(), v.end());
+				return AN<Key>::tasks[selected_choice];
+			}
+		}
+	private:
+		CountAwarePolicy policy_;
 	};
 
 }
