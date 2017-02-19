@@ -125,8 +125,11 @@ namespace Experiment
 			static void parse_task_events(const std::string& input_file_name, std::vector<task_event>& buffer);
 			static void parse_task_events_from_directory(const std::string& input_dir_name, std::vector<task_event>& buffer);
 			static void query_simulation(const std::vector<task_event>& buffer, const size_t task_number);
-			static void query_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
-				Partitioner* partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name);
+			static std::vector<double> query_partitioner_simulation(const bool write, const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name);
+			static void query_window_simulation(const std::vector<task_event>& buffer, const size_t task_number);
+			static void query_window_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name);
 		};
 
 		class MeanCpuPerJobIdWorker
@@ -151,8 +154,11 @@ namespace Experiment
 		{
 		public:
 			static void query_simulation(const std::vector<task_event>& buffer, const size_t task_number);
-			static void query_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
-				Partitioner* partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name);
+			static std::vector<double> query_partitioner_simulation(bool write, const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name, const std::string& worker_output_file_name);
+			static void query_window_simulation(const std::vector<task_event>& buffer, const size_t task_number);
+			static void query_window_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
+				std::unique_ptr<Partitioner>& partitioner, const std::string& partitioner_name);
 		};
 	}
 }

@@ -2,6 +2,10 @@
 #include "../include/tpch_query_lib.h"
 #endif
 
+#ifndef STREAM_PARTITION_LIB_NAME_UTIL_
+#include "name_util.h"
+#endif
+
 void Experiment::Tpch::QueryOneWorker::update(const lineitem& line_item)
 {
 	const Tpch::date pred_date(1998, 11, 29);
@@ -117,85 +121,55 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	std::vector<uint16_t> tasks;
 	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
-	Partitioner* rrg, *fld, *pkg, *ca_naive, *ca_aff_naive, *ca_hll, *ca_aff_hll, *la_naive, *la_hll;
-	// Partitioner* naive_shed_fld;
+	
 	for (uint16_t i = 0; i < task_num; i++)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)), 
+	mpk(new MultiPkPartitioner(tasks));
 
-	rrg = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	// naive_shed_fld = new NaiveShedFieldPartitioner(tasks);
-	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
-	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
-	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
-	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
-	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
-	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
-
-	std::string sh_file_name = "shg_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string fld_file_name = "fld_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	std::string sh_file_name = "shg_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string fld_file_name = "fld_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
 	// std::string naive_shed_fld_file_name = "naive_shed_fld_tpch_q1_" + std::to_string(tasks.size()) + "_results.csv";
-	std::string pkg_file_name = "pkg_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_naive_file_name = "ca_naive_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_naive_file_name = "ca_aff_naive_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_hll_file_name = "ca_hll_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string ca_aff_hll_file_name = "ca_aff_hll_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_naive_file_name = "la_naive_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
-	std::string la_hll_file_name = "la_hll_tpch_q1_" + std::to_string(tasks.size()) + "_result.csv";
+	std::string pkg_file_name = "pkg_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_naive_file_name = "ca_naive_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_naive_file_name = "ca_aff_naive_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_hll_file_name = "ca_hll_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string ca_aff_hll_file_name = "ca_aff_hll_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_naive_file_name = "la_naive_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
+	std::string la_hll_file_name = "la_hll_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
 
-	std::cout << "TPC-H Q1 ***\n";
-	std::cout << "partitioner,task-num,max-exec-msec,min-exec-msec,avg-exec-msec,avg-aggr-msec,io-msec,avg-order-msec,imbalance,key-imbalance\n";
-	query_one_partitioner_simulation(lines, tasks, rrg, "sh", sh_file_name);
-	query_one_partitioner_simulation(lines, tasks, fld, "fld", fld_file_name);
-	// query_one_partitioner_simulation(lines, tasks, naive_shed_fld, "naive_shed_fld", naive_shed_fld_file_name);
-	query_one_partitioner_simulation(lines, tasks, pkg, "pk", pkg_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_naive, "cn", ca_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_hll, "chll", ca_hll_file_name);
-	query_one_partitioner_simulation(lines, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
-	query_one_partitioner_simulation(lines, tasks, la_naive, "ln", la_naive_file_name);
-	query_one_partitioner_simulation(lines, tasks, la_hll, "lhll", la_hll_file_name);
-
-	delete rrg;
-	delete fld;
-	delete pkg;
-	delete ca_naive;
-	delete ca_aff_naive;
-	delete ca_hll;
-	delete ca_aff_hll;
-	delete la_naive;
-	delete la_hll;
-	// delete naive_shed_fld;
-	tasks.clear();
-
-	std::remove(sh_file_name.c_str());
-	std::remove(fld_file_name.c_str());
-	// std::remove(naive_shed_fld_file_name.c_str());
-	std::remove(pkg_file_name.c_str());
-	std::remove(ca_naive_file_name.c_str());
-	std::remove(ca_aff_naive_file_name.c_str());
-	std::remove(ca_hll_file_name.c_str());
-	std::remove(ca_aff_hll_file_name.c_str());
-	std::remove(la_naive_file_name.c_str());
-	std::remove(la_hll_file_name.c_str());
+	std::cout << "***TPC-H Q1 ***\n";
+	std::cout << "name,tasks,max-exec,min-exec,avg-exec,avg-aggr,io,order,imb,key-imb\n";
+	query_one_partitioner_simulation(lines, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner(), sh_file_name);
+	query_one_partitioner_simulation(lines, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner(), fld_file_name);
+	query_one_partitioner_simulation(lines, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner(), pkg_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner(), ca_naive_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), ca_aff_naive_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner(), ca_hll_file_name);
+	query_one_partitioner_simulation(lines, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner(), ca_aff_hll_file_name);
+	query_one_partitioner_simulation(lines, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner(), la_naive_file_name);
+	query_one_partitioner_simulation(lines, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner(), la_hll_file_name);
+	query_one_partitioner_simulation(lines, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(), "man_tpch_q1.csv");
+	query_one_partitioner_simulation(lines, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(), "mpk_tpch_q1.csv");
 }
 
-void Experiment::Tpch::QueryOnePartition::lineitem_partition(size_t task_num, Partitioner& partitioner, const std::vector<lineitem>& input_buffer, 
+void Experiment::Tpch::QueryOnePartition::lineitem_partition(size_t task_num, std::unique_ptr<Partitioner>& partitioner, const std::vector<lineitem>& input_buffer, 
 	std::vector<std::vector<lineitem>>& worker_input_buffer, float *imbalance, float* key_imbalance)
 {
 	TpchQueryOneKeyExtractor key_extractor;
 	ImbalanceScoreAggr<lineitem, std::string> imbalance_aggregator(task_num, key_extractor);
-	partitioner.init();
+	partitioner->init();
 	for (auto it = input_buffer.cbegin(); it != input_buffer.cend(); ++it)
 	{
-		std::stringstream str_stream;
-		str_stream << it->l_returnflag << "," << it->l_linestatus;
-		std::string key = str_stream.str();
-		uint16_t task = partitioner.partition_next(key.c_str(), strlen(key.c_str()));
+		std::string key = key_extractor.extract_key(*it);
+		uint16_t task = partitioner->partition_next(key.c_str(), strlen(key.c_str()));
 		if (task < worker_input_buffer.size())
 		{
 			worker_input_buffer[task].push_back(*it);
@@ -253,7 +227,7 @@ void Experiment::Tpch::QueryOnePartition::thread_aggregate(const bool write, con
 	if (write)
 	{
 		
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (StreamPartitionLib::Name::Util::single_choice_partitioner(partitioner_name) == false)
 		{
 			start = std::chrono::system_clock::now();
 			aggregator.aggregate_final_result(*input_buffer, final_result);
@@ -275,13 +249,13 @@ void Experiment::Tpch::QueryOnePartition::thread_aggregate(const bool write, con
 			order_time = end - start;
 		}
 		start = std::chrono::system_clock::now();
-		aggregator.write_output_result(*result, worker_output_file_name);
+		//aggregator.write_output_result(*result, worker_output_file_name);
 		end = std::chrono::system_clock::now();
 		write_output_duration = end - start;
 	}
 	else
 	{
-		if (partitioner_name.compare("fld") != 0 && partitioner_name.compare("ca_aff_naive") != 0 && partitioner_name.compare("ca_aff_hll") != 0)
+		if (StreamPartitionLib::Name::Util::single_choice_partitioner(partitioner_name) == false)
 		{
 			start = std::chrono::system_clock::now();
 			aggregator.aggregate_final_result(*input_buffer, final_result);
@@ -309,7 +283,7 @@ void Experiment::Tpch::QueryOnePartition::thread_aggregate(const bool write, con
 }
 
 void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const std::vector<lineitem>& lineitem_table, 
-	const std::vector<uint16_t> tasks, Partitioner* partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
+	const std::vector<uint16_t> tasks, std::unique_ptr<Partitioner>& partitioner, const std::string partitioner_name, const std::string worker_output_file_name)
 {
 	float imbalance, cardinality_imbalance;
 	double aggregate_durations[5], order_durations[5], write_output_duration_in_msec;
@@ -319,7 +293,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_partitioner_simulation(const
 	std::vector<std::vector<lineitem>> worker_input_buffer(tasks.size(), std::vector<lineitem>());
 	std::map<std::string, query_one_result> result_buffer;
 	// partition tuples
-	lineitem_partition(tasks.size(), *partitioner, lineitem_table, worker_input_buffer, &imbalance, &cardinality_imbalance);
+	lineitem_partition(tasks.size(), partitioner, lineitem_table, worker_input_buffer, &imbalance, &cardinality_imbalance);
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -632,23 +606,19 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	CardinalityAwarePolicy ca_policy;
 	LoadAwarePolicy la_policy;
 	std::vector<uint16_t> tasks;
-	Partitioner* rrg, *fld, *pkg, *ca_naive, *ca_aff_naive, *ca_hll, *ca_aff_hll, *la_naive, *la_hll;
 	CardinalityEstimator::naive_cardinality_estimator<uint64_t> naive_estimator;
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_estimator;
-	for (uint16_t i = 0; i < task_num; i++)
+	for (uint16_t i = 0; i < task_num; ++i)
 	{
 		tasks.push_back(i);
 	}
 	tasks.shrink_to_fit();
-	rrg = new RoundRobinPartitioner(tasks);
-	fld = new HashFieldPartitioner(tasks);
-	pkg = new PkgPartitioner(tasks);
-	ca_naive = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator);
-	ca_aff_naive = new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator);
-	ca_hll = new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator);
-	ca_aff_hll = new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator);
-	la_naive = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator);
-	la_hll = new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator);
+	std::unique_ptr<Partitioner> rrg(new RoundRobinPartitioner(tasks)), fld(new HashFieldPartitioner(tasks)),
+		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
+		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
+		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)),
+		mpk(new MultiPkPartitioner(tasks));
 
 	std::string sh_file_name = "shg_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
@@ -660,45 +630,26 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	std::string la_naive_file_name = "la_naive_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string la_hll_file_name = "la_hll_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
 
-	std::cout << "TPC-H Q3 ***\n";
+	std::cout << "*** TPC-H Q3 ***\n";
 	std::stringstream info_stream;
-	info_stream << "partitioner,task-num,max-s1-exec-msec,min-s1-exec-msec,avg-s1-exec-msec,mean-s1-aggr-msec,max-s2-exec-msec,min-s2-exec-msec,avg-s2-exec-msec,mean-s2-aggr-msec,io-msec," <<
-		"avg-order-msec,c-imb,c-key-imb,o-imb,o-key-imb,li-imb,li-key-imb\n";
+	info_stream << "name,tasks,max-s1,min-s1,avg-s1,s1-aggr,max-s2,min-s2,avg-s2,s2-aggr,io," <<
+		"order,c-imb,c-key-imb,o-imb,o-key-imb,li-imb,li-key-imb\n";
 	std::string info_message = info_stream.str();
 	std::cout << info_message;
-	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, "sh", sh_file_name);*/
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, "fld", fld_file_name);
-	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, "pk", pkg_file_name);*/
-	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, "cn", ca_naive_file_name);*/
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_naive, "an", ca_aff_naive_file_name);
-	/*query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, "chll", ca_hll_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_hll, "ahll", ca_aff_hll_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, "ln", la_naive_file_name);
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, "lhll", la_hll_file_name);*/
-
-	delete rrg;
-	delete fld;
-	delete pkg;
-	delete ca_naive;
-	delete ca_aff_naive;
-	delete ca_hll;
-	delete ca_aff_hll;
-	delete la_naive;
-	delete la_hll;
-	tasks.clear();
-
-	std::remove(sh_file_name.c_str());
-	std::remove(fld_file_name.c_str());
-	std::remove(pkg_file_name.c_str());
-	std::remove(ca_naive_file_name.c_str());
-	std::remove(ca_aff_naive_file_name.c_str());
-	std::remove(ca_hll_file_name.c_str());
-	std::remove(ca_aff_hll_file_name.c_str());
-	std::remove(la_naive_file_name.c_str());
-	std::remove(la_hll_file_name.c_str());
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner(), sh_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner(), fld_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner(), pkg_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner(), ca_naive_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), ca_aff_naive_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner(), ca_hll_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner(), ca_aff_hll_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner(), la_naive_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner(), la_hll_file_name);
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(), "man_tpch_q2.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(), "mpk_tpch_q2.csv");
 }
 
-void Experiment::Tpch::QueryThreePartition::customer_partition(Partitioner& partitioner, const std::vector<q3_customer>& c_table, 
+void Experiment::Tpch::QueryThreePartition::customer_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<q3_customer>& c_table,
 	std::vector<std::vector<q3_customer>>& c_worker_input_buffer, float* imbalance, float* key_imbalance)
 {
 	TpchQueryThreeCustomerKeyExtractor c_key_extractor;
@@ -706,7 +657,7 @@ void Experiment::Tpch::QueryThreePartition::customer_partition(Partitioner& part
 	std::unordered_set<uint32_t> distinct_customers;
 	for (auto it = c_table.cbegin(); it != c_table.cend(); ++it)
 	{
-		uint16_t task = partitioner.partition_next(&it->c_custkey, sizeof(uint32_t));
+		uint16_t task = partitioner->partition_next(&it->c_custkey, sizeof(uint32_t));
 		//distinct_customers.insert(it->c_custkey);
 		if (task < c_worker_input_buffer.size())
 		{
@@ -714,15 +665,20 @@ void Experiment::Tpch::QueryThreePartition::customer_partition(Partitioner& part
 			c_imbalance_aggregator.incremental_measure_score(task, *it);
 		}
 	}
+	size_t max_customer_size = c_worker_input_buffer[0].size();
 	for (size_t i = 0; i < c_worker_input_buffer.size(); ++i)
+	{
 		c_worker_input_buffer[i].shrink_to_fit();
+		max_customer_size = max_customer_size < c_worker_input_buffer[i].size() ? c_worker_input_buffer[i].size() : max_customer_size;
+	}
+	std::cout << "max customer size: " << max_customer_size << "\n";
 	c_worker_input_buffer.shrink_to_fit();
 	*imbalance = c_imbalance_aggregator.imbalance();
 	*key_imbalance = c_imbalance_aggregator.cardinality_imbalance();
 	//std::cout << "number of distinct customer keys: " << distinct_customers.size() << "\n";
 }
 
-void Experiment::Tpch::QueryThreePartition::order_partition(Partitioner& partitioner, const std::vector<order>& o_table, 
+void Experiment::Tpch::QueryThreePartition::order_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<order>& o_table,
 	std::vector<std::vector<order>>& o_worker_input_buffer, float* imbalance, float* key_imbalance)
 {
 	TpchQueryThreeOrderKeyExtractor o_key_extractor;
@@ -730,7 +686,7 @@ void Experiment::Tpch::QueryThreePartition::order_partition(Partitioner& partiti
 	std::unordered_set<uint32_t> distinct_orders;
 	for (auto it = o_table.cbegin(); it != o_table.cend(); ++it)
 	{
-		uint16_t task = partitioner.partition_next(&it->o_custkey, sizeof(uint32_t));
+		uint16_t task = partitioner->partition_next(&it->o_custkey, sizeof(uint32_t));
 		//distinct_orders.insert(it->o_custkey);
 		if (task < o_worker_input_buffer.size())
 		{
@@ -738,15 +694,20 @@ void Experiment::Tpch::QueryThreePartition::order_partition(Partitioner& partiti
 			o_imbalance_aggregator.incremental_measure_score(task, *it);
 		}
 	}
+	size_t max_order_size = o_worker_input_buffer[0].size();
 	for (size_t i = 0; i < o_worker_input_buffer.size(); ++i)
+	{
 		o_worker_input_buffer[i].shrink_to_fit();
+		max_order_size = max_order_size < o_worker_input_buffer[i].size() ? o_worker_input_buffer[i].size() : max_order_size;
+	}
+	std::cout << "max order size: " << max_order_size << "\n";
 	o_worker_input_buffer.shrink_to_fit();
 	*imbalance = o_imbalance_aggregator.imbalance();
 	*key_imbalance = o_imbalance_aggregator.cardinality_imbalance();
 	//std::cout << "number of distinct order keys: " << distinct_orders.size() << "\n";
 }
 
-void Experiment::Tpch::QueryThreePartition::lineitem_partition(Partitioner& partitioner, const std::vector<lineitem>& li_table, 
+void Experiment::Tpch::QueryThreePartition::lineitem_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<lineitem>& li_table,
 	std::vector<std::vector<lineitem>>& li_worker_input_buffer, float* imbalance, float* key_imbalance)
 {
 	TpchQueryThreeLineitemKeyExtractor li_key_extractor;
@@ -754,7 +715,7 @@ void Experiment::Tpch::QueryThreePartition::lineitem_partition(Partitioner& part
 	ImbalanceScoreAggr<Experiment::Tpch::lineitem, uint32_t> li_imbalance_aggregator(li_worker_input_buffer.size(), li_key_extractor);
 	for (auto it = li_table.cbegin(); it != li_table.cend(); ++it)
 	{
-		uint16_t task = partitioner.partition_next(&it->l_order_key, sizeof(it->l_order_key));
+		uint16_t task = partitioner->partition_next(&it->l_order_key, sizeof(it->l_order_key));
 		//distinct_lineitems.insert(it->l_order_key);
 		if (task < li_worker_input_buffer.size())
 		{
@@ -762,21 +723,24 @@ void Experiment::Tpch::QueryThreePartition::lineitem_partition(Partitioner& part
 			li_imbalance_aggregator.incremental_measure_score(task, *it);
 		}
 	}
+	size_t max_li_size = li_worker_input_buffer[0].size();
 	for (size_t i = 0; i < li_worker_input_buffer.size(); ++i)
+	{
 		li_worker_input_buffer[i].shrink_to_fit();
+		max_li_size = max_li_size < li_worker_input_buffer[i].size() ? li_worker_input_buffer[i].size() : max_li_size;
+	}
+	std::cout << "max lineitem size: " << max_li_size << "\n";
 	li_worker_input_buffer.shrink_to_fit();
 	*imbalance = li_imbalance_aggregator.imbalance();
 	*key_imbalance = li_imbalance_aggregator.cardinality_imbalance();
 	//std::cout << "number of distinct lineitem keys: " << distinct_lineitems.size() << "\n";
 }
 
-void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(const std::vector<q3_customer>& c_table, 
-	const std::vector<lineitem>& li_table, 
-	const std::vector<order>& o_table, 
-	const std::vector<uint16_t> tasks, Partitioner* partitioner, 
-	const std::string partitioner_name, const std::string worker_output_file_name)
+void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(const std::vector<q3_customer>& c_table, const std::vector<lineitem>& li_table,
+	const std::vector<order>& o_table, const std::vector<uint16_t>& tasks, std::unique_ptr<Partitioner>& partitioner, const std::string partitioner_name,
+	const std::string worker_output_file_name)
 {
-	std::vector<double> step_one_exec_durations(tasks.size(), double(0)), step_two_exec_durations(tasks.size(), double(0)), 
+	std::vector<double> step_one_exec_durations, step_two_exec_durations, 
 		step_one_aggr_durations, step_two_aggr_durations, step_two_order_durations;
 	std::chrono::duration<double, std::milli> write_to_output_time;
 	query_three_predicate predicate;
@@ -801,8 +765,8 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	 * because it needs to know how much workload has been sent to each worker 
 	 * and which cust_key is on which worker.
 	 */
-	customer_partition(*partitioner, c_table, c_worker_input_buffer, &c_imbalance, &c_key_imbalance);
-	order_partition(*partitioner, o_table, o_worker_input_buffer, &o_imbalance, &o_key_imbalance);
+	customer_partition(partitioner, c_table, c_worker_input_buffer, &c_imbalance, &c_key_imbalance);
+	order_partition(partitioner, o_table, o_worker_input_buffer, &o_imbalance, &o_key_imbalance);
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -825,7 +789,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 				worker.step_one_update(*it, partitioner_name);
 			}
 			// finalize
-			if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
+			if (StreamPartitionLib::Name::Util::single_choice_partitioner(partitioner_name) == true)
 			{
 				worker.step_one_finalize(step_one_result_buffer_copy);
 			}
@@ -849,7 +813,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		it = std::min_element(durations.begin(), durations.end());
 		durations.erase(it);
 		double avg_of_durations = std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
-		step_one_exec_durations[i] = avg_of_durations;
+		step_one_exec_durations.push_back(avg_of_durations);
 		c_worker_input_buffer[i].clear();
 		o_worker_input_buffer[i].clear();
 	}
@@ -863,7 +827,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		std::unordered_set<uint32_t> s_one_c_aux(step_one_customer_buffer);
 		std::unordered_map<uint32_t, order> s_one_order_aux(step_one_order_buffer);
 		QueryThreeOfflineAggregator aggregator;
-		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
+		if (StreamPartitionLib::Name::Util::single_choice_partitioner(partitioner_name) == true)
 		{
 			aggregator.step_one_transfer(s_one_result_aux, broadcast_result);
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
@@ -873,8 +837,8 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		}
 		else
 		{
-			aggregator.step_one_materialize(s_one_c_aux, s_one_order_aux, s_one_result_aux, broadcast_result);
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+			aggregator.step_one_materialize(s_one_c_aux, s_one_order_aux, s_one_result_aux, broadcast_result);
 			std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
 			std::chrono::duration<double, std::milli> aggr_time = end - start;
 			step_one_aggr_durations.push_back(aggr_time.count());
@@ -886,7 +850,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	// step Two: join lineitem table and calculate group by aggregate-sum()
 	// partition lineitem tuples - Need to initialize since the S1 result is broadcasted to all workers
 	partitioner->init();
-	lineitem_partition(*partitioner, li_table, li_worker_input_buffer, &li_imbalance, &li_key_imbalance);
+	lineitem_partition(partitioner, li_table, li_worker_input_buffer, &li_imbalance, &li_key_imbalance);
 	for (size_t i = 0; i < tasks.size(); ++i)
 	{
 		std::vector<double> durations;
@@ -917,15 +881,15 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		it = std::min_element(durations.begin(), durations.end());
 		durations.erase(it);
 		double avg_of_durations = std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
-		step_two_exec_durations[i] = avg_of_durations;
+		step_two_exec_durations.push_back(avg_of_durations);
 	}
 	li_worker_input_buffer.clear();
-	for (size_t aggr_run = 0; aggr_run < 5; aggr_run++)
+	for (size_t aggr_run = 0; aggr_run < 5; ++aggr_run)
 	{
 		std::vector<std::pair<std::string, query_three_result>> final_result;
 		std::unordered_map<std::string, query_three_result> full_result_buffer;
 		QueryThreeOfflineAggregator aggregator;
-		if (partitioner_name.compare("fld") == 0 || partitioner_name.compare("ca_aff_naive") == 0 || partitioner_name.compare("ca_aff_hll") == 0)
+		if (StreamPartitionLib::Name::Util::single_choice_partitioner(partitioner_name) == true)
 		{
 			std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 			std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
@@ -949,7 +913,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 		if (aggr_run >= 4)
 		{
 			std::chrono::system_clock::time_point write_to_output_start = std::chrono::system_clock::now();
-			aggregator.write_output_to_file(final_result, worker_output_file_name);
+			//aggregator.write_output_to_file(final_result, worker_output_file_name);
 			std::chrono::system_clock::time_point write_to_output_end = std::chrono::system_clock::now();
 			write_to_output_time = write_to_output_end - write_to_output_start;
 		}
@@ -981,9 +945,12 @@ void Experiment::Tpch::QueryThreePartition::query_three_partitioner_simulation(c
 	step_two_order_durations.erase(it);
 	double mean_s2_order_time = std::accumulate(step_two_order_durations.begin(), step_two_order_durations.end(), 0.0) / step_two_order_durations.size();
 	std::stringstream result_stream;
-	result_stream << partitioner_name << "," << tasks.size() << "," << *max_step_one_it << "," << *min_step_one_it << "," << avg_step_one_exec_time << "," << mean_s1_aggr_duration << "," <<
-		*max_step_two_it << "," << *min_step_two_it << "," << avg_step_two_exec_time << "," << mean_s2_aggr_duration << "," << write_to_output_time.count() << "," <<
-		mean_s2_order_time << "," << c_imbalance << "," << c_key_imbalance << "," << o_imbalance << "," << o_key_imbalance << "," << li_imbalance << "," << li_key_imbalance << "\n";
+	result_stream << partitioner_name << "," << tasks.size() << "," << *max_step_one_it << "," << *min_step_one_it << "," << 
+		avg_step_one_exec_time << "," << mean_s1_aggr_duration << "," <<
+		*max_step_two_it << "," << *min_step_two_it << "," << avg_step_two_exec_time << "," << mean_s2_aggr_duration << "," << 
+		write_to_output_time.count() << "," << mean_s2_order_time << "," << 
+		c_imbalance << "," << c_key_imbalance << "," << o_imbalance << "," << 
+		o_key_imbalance << "," << li_imbalance << "," << li_key_imbalance << "\n";
 	std::string result_string = result_stream.str();
 	std::cout << result_string;
 	result_buffer.clear();

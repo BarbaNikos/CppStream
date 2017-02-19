@@ -131,10 +131,12 @@
     <ClInclude Include="include\imbalance_score_aggr.h" />
     <ClInclude Include="include\murmurhash_3.h" />
     <ClInclude Include="include\naive_shed_fld.h" />
+    <ClInclude Include="include\name_util.h" />
     <ClInclude Include="include\partitioner.h" />
     <ClInclude Include="include\partition_policy.h" />
     <ClInclude Include="include\pkg_partitioner.h" />
     <ClInclude Include="include\round_robin_partitioner.h" />
+    <ClInclude Include="include\stat_util.h" />
     <ClInclude Include="include\WindowLoad.h" />
     <ClInclude Include="include\window_partitioner.h" />
   </ItemGroup>

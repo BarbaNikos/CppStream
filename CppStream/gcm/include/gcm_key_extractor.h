@@ -9,11 +9,27 @@
 class GCMTaskEventKeyExtractor : public KeyExtractor<Experiment::GoogleClusterMonitor::task_event, int>
 {
 public:
-	int extract_key(const Experiment::GoogleClusterMonitor::task_event& e) const override;
+	int extract_key(const Experiment::GoogleClusterMonitor::task_event& e) const override
+	{
+		return e.scheduling_class;
+	}
+
+	KeyExtractor<Experiment::GoogleClusterMonitor::task_event, int>* clone() const override
+	{
+		return new GCMTaskEventKeyExtractor();
+	}
+};
+class GCMTaskEventJobIdExtractor : public KeyExtractor<Experiment::GoogleClusterMonitor::task_event, long>
+{
+public:
+	long extract_key(const Experiment::GoogleClusterMonitor::task_event& e) const override
+	{
+		return e.job_id;
+	}
+
+	KeyExtractor<Experiment::GoogleClusterMonitor::task_event, long>* clone() const override
+	{
+		return new GCMTaskEventJobIdExtractor();
+	}
 };
 #endif
-
-inline int GCMTaskEventKeyExtractor::extract_key(const Experiment::GoogleClusterMonitor::task_event& e) const
-{
-	return e.scheduling_class;
-}

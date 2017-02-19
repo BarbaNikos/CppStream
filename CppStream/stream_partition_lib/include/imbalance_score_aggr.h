@@ -10,6 +10,7 @@ template <class Tuple, class Tuple_Key>
 class KeyExtractor
 {
 public:
+	virtual ~KeyExtractor() {}
 	virtual Tuple_Key extract_key(const Tuple& t) const = 0;
 	virtual KeyExtractor* clone() const = 0;
 };

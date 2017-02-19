@@ -2,6 +2,7 @@
 #include "hip_estimator.h"
 #include "card_estimator.h"
 #include "ca_partition_lib.h"
+#include "pkg_partitioner.h"
 
 TEST(DenseArrayTest, Init)
 {
@@ -270,9 +271,9 @@ TEST(CaPartitionerTest, CopyConstructor)
 	LoadAwarePolicy policy;
 	CaPartitionLib::CA<uint64_t> partitioner(tasks, policy, est);
 	CaPartitionLib::CA<uint64_t> hip_partitioner(tasks, policy, hip_est);
+	srand(time(nullptr));
 	for (size_t i = 0; i < 100; ++i)
 	{
-		srand(time(nullptr));
 		uint64_t r = rand() % 1000;
 		partitioner.partition_next(&r, sizeof(r));
 		hip_partitioner.partition_next(&r, sizeof(r));
@@ -285,7 +286,6 @@ TEST(CaPartitionerTest, CopyConstructor)
 	CaPartitionLib::CA<uint64_t> hip_partitioner_replica(hip_partitioner);
 	for (size_t i = 0; i < 10; ++i)
 	{
-		srand(time(nullptr));
 		uint64_t r = rand() % 1000;
 		size_t c1 = partitioner.partition_next(&r, sizeof(r));
 		size_t c2 = partitioner_replica.partition_next(&r, sizeof(r));
@@ -306,9 +306,9 @@ TEST(AnPartitionTest, CopyConstructor)
 	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_est;
 	CaPartitionLib::AN<uint64_t> partitioner(tasks, est);
 	CaPartitionLib::AN<uint64_t> hip_partitioner(tasks, est);
+	srand(time(nullptr));
 	for (size_t i = 0; i < 100; ++i)
 	{
-		srand(time(nullptr));
 		uint64_t r = rand() % 1000;
 		partitioner.partition_next(&r, sizeof(r));
 		hip_partitioner.partition_next(&r, sizeof(r));
@@ -321,7 +321,6 @@ TEST(AnPartitionTest, CopyConstructor)
 	CaPartitionLib::AN<uint64_t> hip_partitioner_replica(hip_partitioner);
 	for (size_t i = 0; i < 10; ++i)
 	{
-		srand(time(nullptr));
 		uint64_t r = rand() % 1000;
 		size_t c1 = partitioner.partition_next(&r, sizeof(r));
 		size_t c2 = partitioner_replica.partition_next(&r, sizeof(r));
@@ -329,5 +328,25 @@ TEST(AnPartitionTest, CopyConstructor)
 		size_t hc1 = hip_partitioner.partition_next(&r, sizeof(r));
 		size_t hc2 = hip_partitioner_replica.partition_next(&r, sizeof(r));
 		EXPECT_EQ(hc1, hc2);
+	}
+}
+
+TEST(MultiPkgTest, UseCase)
+{
+	std::vector<uint16_t> tasks;
+	for (size_t i = 0; i < 32; ++i)
+		tasks.push_back(i);
+	MultiPkPartitioner mPk(tasks);
+	CardinalityEstimator::naive_cardinality_estimator<uint64_t> est;
+	CardinalityEstimator::hip_cardinality_estimator<uint64_t> hip_est;
+	CaPartitionLib::MultiAN<uint64_t> partitioner(tasks, est);
+	CaPartitionLib::MultiAN<uint64_t> hip_partitioner(tasks, hip_est);
+	srand(time(nullptr));
+	for (size_t i = 0; i < 100; ++i)
+	{
+		uint64_t r = rand() % 1000;
+		mPk.partition_next(&r, sizeof(r));
+		partitioner.partition_next(&r, sizeof(r));
+		hip_partitioner.partition_next(&r, sizeof(r));
 	}
 }

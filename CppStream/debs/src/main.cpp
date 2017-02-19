@@ -23,7 +23,7 @@
 #endif // !DEBS_QUERY_LIB_H_
 
 #ifndef PARTITION_LATENCY_EXP_
-#include "../include/partition_latency.h"
+#include "../include/partition_latency_exp.h"
 #endif // !PARTITION_LATENCY_EXP_
 
 int main(int argc, char** argv)
@@ -52,9 +52,9 @@ int main(int argc, char** argv)
 		frequent_ride_table.clear();
 		Experiment::DebsChallenge::Parser::parse_debs_rides_with_to_string(ride_q2_file, &profitable_cell_table);
 		Experiment::DebsChallenge::ProfitableAreaPartition debs_experiment_profit_cell;
-		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 8);
-		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 16);
-		debs_experiment_profit_cell.most_profitable_cell_simulation(&profitable_cell_table, 32);
+		debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 8);
+		debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 16);
+		debs_experiment_profit_cell.most_profitable_cell_simulation(profitable_cell_table, 32);
 		profitable_cell_table.clear();
 	}
 	else if (experiment.compare("2") == 0)
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 		/*
 		 * Partition latency on DEBS Query 1
 		 */
-		PartitionLatency latency_experiment;
+		Experiment::DebsChallenge::PartitionLatency latency_experiment;
 		Experiment::DebsChallenge::Parser::parse_debs_rides_with_to_string(ride_q1_file, &frequent_ride_table);
 		latency_experiment.measure_latency(8, frequent_ride_table);
 		latency_experiment.measure_latency(16, frequent_ride_table);
@@ -76,6 +76,10 @@ int main(int argc, char** argv)
 		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 16);
 		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 32);
 		
+		Experiment::DebsChallenge::ProfitableAreaPartition debs_profitable_route;
+		debs_profitable_route.profitable_route_window_simulation(ride_q2_file, 8);
+		debs_profitable_route.profitable_route_window_simulation(ride_q2_file, 16);
+		debs_profitable_route.profitable_route_window_simulation(ride_q2_file, 32);
 	}
 	else
 	{

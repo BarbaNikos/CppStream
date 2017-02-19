@@ -27,7 +27,7 @@
     <ClInclude Include="include\debs_key_extractor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\partition_latency.h">
+    <ClInclude Include="include\partition_latency_exp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,9 +39,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\partition_latency.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

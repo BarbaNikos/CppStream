@@ -62,4 +62,62 @@ private:
 	
 	size_t min_task_count;
 };
+
+class MultiPkPartitioner : public Partitioner
+{
+public:
+	MultiPkPartitioner(const std::vector<uint16_t>& tasks) : tasks(tasks), task_count(tasks.size(), 0), 
+	max_task_count(0), min_task_count(0) {}
+	
+	MultiPkPartitioner(const MultiPkPartitioner& p) : tasks(p.tasks), task_count(p.task_count), 
+	max_task_count(p.max_task_count), min_task_count(p.min_task_count) {}
+	
+	void init() override
+	{
+		task_count = std::vector<size_t>(tasks.size(), 0);
+		max_task_count = 0;
+		min_task_count = 0;
+	}
+
+	uint16_t partition_next(const void* key, const size_t key_len) override
+	{
+		uint64_t long_hash[2];
+		std::vector<size_t> hash(5, 0), count(5, 0);
+		size_t first, second;
+		MurmurHash3_x64_128(key, key_len, 313, &long_hash);
+		hash[0] = (long_hash[0] ^ long_hash[1]) % tasks.size();
+		count[0] = task_count[hash[0]];
+		MurmurHash3_x64_128(key, key_len, 317, &long_hash);
+		hash[1] = (long_hash[0] ^ long_hash[1]) % tasks.size();
+		count[1] = task_count[hash[1]];
+		MurmurHash3_x64_128(key, key_len, 331, &long_hash);
+		hash[2] = (long_hash[0] ^ long_hash[1]) % tasks.size();
+		count[2] = task_count[hash[2]];
+		MurmurHash3_x64_128(key, key_len, 337, &long_hash);
+		hash[3] = (long_hash[0] ^ long_hash[1]) % tasks.size();
+		count[3] = task_count[hash[3]];
+		MurmurHash3_x64_128(key, key_len, 347, &long_hash);
+		hash[4] = (long_hash[0] ^ long_hash[1]) % tasks.size();
+		count[4] = task_count[hash[4]];
+		// find the smallest
+		auto it = std::min_element(count.cbegin(), count.cend());
+		size_t index = std::distance(count.cbegin(), it);
+		task_count[hash[index]] += 1;
+		return tasks[hash[index]];
+	}
+
+	size_t get_min_task_count() const override { return min_task_count; }
+
+	size_t get_max_task_count() const override { return max_task_count; }
+private:
+	std::vector<uint16_t> tasks;
+
+	std::vector<size_t> task_count;
+
+	CountAwarePolicy policy;
+
+	size_t max_task_count;
+
+	size_t min_task_count;
+};
 #endif // !PKG_PARTITIONER_H_

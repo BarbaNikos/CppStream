@@ -291,6 +291,129 @@ protected:
 	private:
 		CountAwarePolicy policy_;
 	};
+	
+	template<typename Key>
+	class MultiAN : public Partitioner
+	{
+	public:
+		MultiAN(const std::vector<uint16_t>& tasks, const CardinalityEstimator::cardinality_estimator<Key>& c) :
+			tasks(tasks), task_count(tasks.size(), uint64_t(0)), max_task_count(0), min_task_count(0),
+			max_task_cardinality(0), min_task_cardinality(0)
+		{
+			for (size_t i = 0; i < tasks.size(); ++i)
+			{
+				std::unique_ptr<CardinalityEstimator::cardinality_estimator<Key>> ptr(c.clone());
+				card_e_.push_back(std::move(ptr));
+			}
+		}
 
+		MultiAN(const MultiAN& p) : tasks(p.tasks), task_count(p.task_count), max_task_count(p.max_task_count), min_task_count(p.min_task_count),
+			max_task_cardinality(p.max_task_cardinality), min_task_cardinality(p.min_task_cardinality)
+		{
+			for (size_t i = 0; i < p.card_e_.size(); ++i)
+			{
+				std::unique_ptr<CardinalityEstimator::cardinality_estimator<Key>> ptr(p.card_e_[i]->clone());
+				card_e_.push_back(std::move(ptr));
+			}
+		}
+
+		void init() override
+		{
+			for (size_t i = 0; i < tasks.size(); ++i)
+			{
+				task_count[i] = 0;
+				card_e_[i]->init();
+			}
+			max_task_count = 0;
+			min_task_count = 0;
+			max_task_cardinality = 0;
+			min_task_cardinality = 0;
+		}
+
+		uint16_t partition_next(const void* key, const size_t key_len) override
+		{
+			size_t option[5], option_cardinality[5], option_spec_cardinality[5];
+			uint64_t long_hash[2], code;
+			MurmurHash3_x64_128(key, key_len, 313, &long_hash);
+			code = long_hash[0] ^ long_hash[1];
+			option[0] = code % tasks.size();
+			option_cardinality[0] = card_e_[option[0]]->count();
+			option_spec_cardinality[0] = card_e_[option[0]]->imitate_insert(code);
+			MurmurHash3_x64_128(key, key_len, 317, &long_hash);
+			code = long_hash[0] ^ long_hash[1];
+			option[1] = code % tasks.size();
+			option_cardinality[1] = card_e_[option[1]]->count();
+			option_spec_cardinality[1] = card_e_[option[1]]->imitate_insert(code);
+			MurmurHash3_x64_128(key, key_len, 331, &long_hash);
+			code = long_hash[0] ^ long_hash[1];
+			option[2] = code % tasks.size();
+			option_cardinality[2] = card_e_[option[2]]->count();
+			option_spec_cardinality[2] = card_e_[option[2]]->imitate_insert(code);
+			MurmurHash3_x64_128(key, key_len, 337, &long_hash);
+			code = long_hash[0] ^ long_hash[1];
+			option[3] = code % tasks.size();
+			option_cardinality[3] = card_e_[option[3]]->count();
+			option_spec_cardinality[3] = card_e_[option[3]]->imitate_insert(code);
+			MurmurHash3_x64_128(key, key_len, 347, &long_hash);
+			code = long_hash[0] ^ long_hash[1];
+			option[4] = code % tasks.size();
+			option_cardinality[4] = card_e_[option[4]]->count();
+			option_spec_cardinality[4] = card_e_[option[4]]->imitate_insert(code);
+			for (size_t i = 0; i < 5; ++i)
+			{
+				if (std::abs(long(option_spec_cardinality[i] - option_cardinality[i])) == 0)
+				{
+					task_count[option[i]] += 1;
+					max_task_count = std::max(max_task_count, task_count[option[i]]);
+					return tasks[option[i]];
+				}
+			}
+			// find the minimum cardinality and send it there
+			auto it = std::min_element(option_cardinality, option_cardinality + 5);
+			size_t index = std::distance(option_cardinality, it);
+			card_e_[option[index]]->insert(code);
+			task_count[option[index]] += 1;
+			max_task_count = std::max(max_task_count, task_count[option[index]]);
+			max_task_cardinality = std::max(max_task_cardinality, option_spec_cardinality[index]);
+			min_task_count = *std::min_element(task_count.cbegin(), task_count.cend());
+			std::vector<size_t> v;
+			get_cardinality_vector(v);
+			min_task_cardinality = *std::min_element(v.begin(), v.end());
+			return tasks[option[index]];
+		}
+
+		size_t get_min_task_count() const override { return min_task_count; }
+
+		size_t get_max_task_count() const override { return max_task_count; }
+
+		size_t get_max_cardinality() const { return max_task_cardinality; }
+
+		size_t get_min_cardinality() const { return min_task_cardinality; }
+
+		void get_cardinality_vector(std::vector<size_t>& v) const
+		{
+			for (size_t i = 0; i < card_e_.size(); ++i)
+			{
+				v.push_back(card_e_[i]->count());
+			}
+		}
+	private:
+
+		std::vector<uint16_t> tasks;
+
+		std::vector<size_t> task_count;
+
+		std::vector<std::unique_ptr<CardinalityEstimator::cardinality_estimator<Key>>> card_e_;
+
+		CardinalityAwarePolicy policy;
+
+		size_t max_task_count;
+
+		size_t min_task_count;
+
+		size_t max_task_cardinality;
+
+		size_t min_task_cardinality;
+	};
 }
 #endif // !CA_PARTITION_LIB_H_
