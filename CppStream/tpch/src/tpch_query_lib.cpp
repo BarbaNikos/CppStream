@@ -132,7 +132,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
 		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
 		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)), 
-		can(new CaPartitionLib::NewAN<uint64_t>(tasks, naive_estimator)), mpk(new MultiPkPartitioner(tasks));
+		can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)), mpk(new MultiPkPartitioner(tasks)), 
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 
 	std::string sh_file_name = "shg_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
 	std::string fld_file_name = "fld_tpch_q1_" + std::to_string(tasks.size()) + ".csv";
@@ -159,7 +160,7 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	query_one_partitioner_simulation(lines, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(), "man_tpch_q1.csv");
 	query_one_partitioner_simulation(lines, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(), "mpk_tpch_q1.csv");*/
 	query_one_partitioner_simulation(lines, tasks, can, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "can_tpch_q1.csv");
-
+	query_one_partitioner_simulation(lines, tasks, mcan, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "mcan_tpch_q1.csv");
 }
 
 void Experiment::Tpch::QueryOnePartition::lineitem_partition(size_t task_num, std::unique_ptr<Partitioner>& partitioner, const std::vector<lineitem>& input_buffer, 
@@ -620,7 +621,8 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
 		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
 		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)),
-		can(new CaPartitionLib::NewAN<uint64_t>(tasks, naive_estimator)), mpk(new MultiPkPartitioner(tasks));
+		can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)), mpk(new MultiPkPartitioner(tasks)), 
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 
 	std::string sh_file_name = "shg_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
 	std::string fld_file_name = "fld_tpch_q3_" + std::to_string(tasks.size()) + "_result.csv";
@@ -650,6 +652,7 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(), "man_tpch_q2.csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(), "mpk_tpch_q2.csv");*/
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, can, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "can_tpch_q3.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, mcan, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "mcan_tpch_q3.csv");
 }
 
 void Experiment::Tpch::QueryThreePartition::customer_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<q3_customer>& c_table,
