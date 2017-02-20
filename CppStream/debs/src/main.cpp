@@ -72,9 +72,9 @@ int main(int argc, char** argv)
 	else if (experiment.compare("3") == 0)
 	{
 		Experiment::DebsChallenge::FrequentRoutePartition debs_frequent_route;
-		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 8);
-		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 16);
-		debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 32);
+		// debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 8);
+		// debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 16);
+		// debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 32);
 		
 		Experiment::DebsChallenge::ProfitableAreaPartition debs_profitable_route;
 		debs_profitable_route.profitable_route_window_simulation(ride_q2_file, 8);

@@ -351,22 +351,25 @@ void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_windo
 		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
 		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
 		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), mpk(new MultiPkPartitioner(tasks)),
-		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator));
+		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)), can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)),
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 	std::cout << "*** GCM Q1 ***\n";
 	std::stringstream info_stream;
 	info_stream << "name,tasks,min-exec,max-exec,99ile-max-exec,avg-exec,aggr,99ile-aggr,order,imb,key-imb,window-size\n";
 	std::cout << info_stream.str();
-	query_window_partitioner_simulation(buffer, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(5));
+	// query_window_partitioner_simulation(buffer, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(5));
+	query_window_partitioner_simulation(buffer, tasks, can, StreamPartitionLib::Name::Util::affinity_count_naive_partitioner());
+	query_window_partitioner_simulation(buffer, tasks, mcan, StreamPartitionLib::Name::Util::multiple_affinity_count_naive_partitioner(5));
 }
 
 void Experiment::GoogleClusterMonitor::TotalCpuPerCategoryPartition::query_window_partitioner_simulation(const std::vector<task_event>& buffer, const std::vector<uint16_t>& tasks,
@@ -747,22 +750,25 @@ void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_window_si
 		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
 		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
 		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), mpk(new MultiPkPartitioner(tasks)),
-		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator));
+		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)), can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)),
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 	std::cout << "*** GCM Q2 ***\n";
 	std::stringstream info_stream;
 	info_stream << "name,tasks,min-exec,max-exec,99ile-max-exec,avg-exec,aggr,99ile-aggr,order,imb,key-imb,window-size\n";
 	std::cout << info_stream.str();
-	query_window_partitioner_simulation(buffer, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner());
-	query_window_partitioner_simulation(buffer, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
+	// query_window_partitioner_simulation(buffer, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(5));
+	// query_window_partitioner_simulation(buffer, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(5));
+	query_window_partitioner_simulation(buffer, tasks, can, StreamPartitionLib::Name::Util::affinity_count_naive_partitioner());
+	query_window_partitioner_simulation(buffer, tasks, mcan, StreamPartitionLib::Name::Util::multiple_affinity_count_naive_partitioner(5));
 }
 
 void Experiment::GoogleClusterMonitor::MeanCpuPerJobIdPartition::query_window_partitioner_simulation(const std::vector<task_event>& buffer,

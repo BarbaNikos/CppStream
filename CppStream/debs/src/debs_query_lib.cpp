@@ -157,7 +157,8 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_simulatio
 		pkg(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)), ca_naive(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, naive_estimator)),
 		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
 		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
-		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator));
+		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)), 
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 	for (uint16_t i = 0; i < task_number; ++i)
 	{
 		tasks[i] = i;
@@ -407,23 +408,26 @@ void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_window_si
 	ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)), 
 	ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)), 
 	la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), mpk(new MultiPkPartitioner(tasks)),
-		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator));
+		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)), can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)),
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 
 	std::stringstream info_stream;
 	info_stream << "partitioner,task-num,min-s1-msec,max-s1-msec,75ile-max-s1-msec,99ile-max-s1-msec,avg-s1-msec," << 
 		"avg-s1-aggr-msec,99ile-s1-aggre,avg-order-msec,avg-imb,avg-key-imb,mean-window\n";
 	std::cout << info_stream.str();
-	frequent_route_partitioner_window_simulation(file, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner());
-	frequent_route_partitioner_window_simulation(file, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
+	// frequent_route_partitioner_window_simulation(file, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(5));
+	// frequent_route_partitioner_window_simulation(file, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(5));
+	frequent_route_partitioner_window_simulation(file, tasks, can, StreamPartitionLib::Name::Util::affinity_count_naive_partitioner());
+	frequent_route_partitioner_window_simulation(file, tasks, mcan, StreamPartitionLib::Name::Util::multiple_affinity_count_naive_partitioner(5));
 }
 
 void Experiment::DebsChallenge::FrequentRoutePartition::frequent_route_partitioner_window_simulation(const std::string& rides, 
@@ -923,10 +927,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::partition_step_two(std:
 	for (auto it = fares->cbegin(); it != fares->cend(); ++it)
 	{
 		std::string key = it->first;
-		char* c_key = static_cast<char*>(malloc(sizeof(char) * (key.length() + 1)));
-		strcpy(c_key, key.c_str());
-		uint16_t task = partitioner->partition_next(c_key, strlen(c_key));
-		free(c_key);
+		uint16_t task = partitioner->partition_next(key.c_str(), strlen(key.c_str()));
 		if (task < (*fare_sub_table).size())
 		{
 			(*fare_sub_table)[task].push_back(std::make_pair(it->first, it->second));
@@ -942,10 +943,7 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::partition_step_two(std:
 	for (auto it = dropoffs->cbegin(); it != dropoffs->cend(); ++it)
 	{
 		std::string key = it->second.first;
-		char* c_key = static_cast<char*>(malloc(sizeof(char) * (key.length() + 1)));
-		strcpy(c_key, key.c_str());
-		uint16_t task = partitioner->partition_next(c_key, strlen(c_key));
-		free(c_key);
+		uint16_t task = partitioner->partition_next(key.c_str(), strlen(key.c_str()));
 		if (task < (*dropoffs_sub_table).size())
 		{
 			(*dropoffs_sub_table)[task].push_back(std::make_pair(it->first, it->second));
@@ -1308,23 +1306,26 @@ void Experiment::DebsChallenge::ProfitableAreaPartition::profitable_route_window
 		ca_aff_naive(new CaPartitionLib::AN<uint64_t>(tasks, naive_estimator)), ca_hll(new CaPartitionLib::CA<uint64_t>(tasks, ca_policy, hip_estimator)),
 		ca_aff_hll(new CaPartitionLib::AN<uint64_t>(tasks, hip_estimator)), la_naive(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, naive_estimator)),
 		la_hll(new CaPartitionLib::CA<uint64_t>(tasks, la_policy, hip_estimator)), mpk(new MultiPkPartitioner(tasks)), 
-		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator));
+		man(new CaPartitionLib::MultiAN<uint64_t>(tasks, naive_estimator)), can(new CaPartitionLib::CountAN<uint64_t>(tasks, naive_estimator)),
+		mcan(new CaPartitionLib::MultiCountAN<uint64_t>(tasks, naive_estimator));
 	
 	std::stringstream info_stream;
 	info_stream << "name,task-num,min-s1,max-s1,max-99ile-s1,mean-s1,s1-aggr,s1-aggr-99ile,min-s2,max-s2,max-99ile-s2," <<
 		"mean-s2,s2-aggr,s2-aggr-99ile,med-imb,med-k-imb,cell-imb,cell-k-imb,fare-imb,fare-k-imb,mean-window\n";
 	std::cout << info_stream.str();
-	profitable_route_partitioner_window_simulation(file, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner());
-	profitable_route_partitioner_window_simulation(file, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, rrg, StreamPartitionLib::Name::Util::shuffle_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, fld, StreamPartitionLib::Name::Util::field_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, pkg, StreamPartitionLib::Name::Util::partial_key_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, ca_naive, StreamPartitionLib::Name::Util::cardinality_naive_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, ca_aff_naive, StreamPartitionLib::Name::Util::affinity_naive_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, ca_hll, StreamPartitionLib::Name::Util::cardinality_hip_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, ca_aff_hll, StreamPartitionLib::Name::Util::affinity_hip_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, la_naive, StreamPartitionLib::Name::Util::load_naive_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner());
+	// profitable_route_partitioner_window_simulation(file, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(5));
+	// profitable_route_partitioner_window_simulation(file, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(5));
+	profitable_route_partitioner_window_simulation(file, tasks, can, StreamPartitionLib::Name::Util::affinity_count_naive_partitioner());
+	profitable_route_partitioner_window_simulation(file, tasks, mcan, StreamPartitionLib::Name::Util::multiple_affinity_count_naive_partitioner(5));
 }
 
 void Experiment::DebsChallenge::ProfitableAreaPartition::profitable_route_partitioner_window_simulation(const std::string & rides, 

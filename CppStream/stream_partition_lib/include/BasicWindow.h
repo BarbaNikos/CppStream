@@ -6,7 +6,7 @@
 #define BASIC_WINDOW_H_
 namespace WindowLib
 {
-	template<class T>
+	template<typename T>
 	class BasicWindow
 	{
 	public:
@@ -22,7 +22,7 @@ namespace WindowLib
 	};
 }
 
-template<class T>
+template<typename T>
 WindowLib::BasicWindow<T>::BasicWindow(size_t task_number, int64_t start_t, int64_t end_t) :
 	cardinality(task_number, std::unordered_set<T>()), byte_state(task_number, uint64_t(0)), count(task_number, uint64_t(0))
 {
@@ -30,19 +30,19 @@ WindowLib::BasicWindow<T>::BasicWindow(size_t task_number, int64_t start_t, int6
 	this->end_t = end_t;
 }
 
-template<class T>
+template<typename T>
 WindowLib::BasicWindow<T>::~BasicWindow()
 {
 }
 
-template<class T>
+template<typename T>
 void WindowLib::BasicWindow<T>::set_time(int64_t start_t, int64_t end_t)
 {
 	this->start_t = start_t;
 	this->end_t = end_t;
 }
 
-template<class T>
+template<typename T>
 void WindowLib::BasicWindow<T>::init()
 {
 	auto byte_it = byte_state.begin();

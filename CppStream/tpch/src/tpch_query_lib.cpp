@@ -159,8 +159,8 @@ void Experiment::Tpch::QueryOnePartition::query_one_simulation(const std::vector
 	query_one_partitioner_simulation(lines, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner(), la_hll_file_name);
 	query_one_partitioner_simulation(lines, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(), "man_tpch_q1.csv");
 	query_one_partitioner_simulation(lines, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(), "mpk_tpch_q1.csv");*/
-	query_one_partitioner_simulation(lines, tasks, can, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "can_tpch_q1.csv");
-	query_one_partitioner_simulation(lines, tasks, mcan, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "mcan_tpch_q1.csv");
+	query_one_partitioner_simulation(lines, tasks, can, StreamPartitionLib::Name::Util::affinity_count_naive_partitioner(), "can_tpch_q1.csv");
+	query_one_partitioner_simulation(lines, tasks, mcan, StreamPartitionLib::Name::Util::multiple_affinity_count_naive_partitioner(5), "mcan_tpch_q1.csv");
 }
 
 void Experiment::Tpch::QueryOnePartition::lineitem_partition(size_t task_num, std::unique_ptr<Partitioner>& partitioner, const std::vector<lineitem>& input_buffer, 
@@ -651,8 +651,8 @@ void Experiment::Tpch::QueryThreePartition::query_three_simulation(const std::ve
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, la_hll, StreamPartitionLib::Name::Util::load_hip_partitioner(), la_hll_file_name);
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, man, StreamPartitionLib::Name::Util::multi_affinity_naive_partitioner(), "man_tpch_q2.csv");
 	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, mpk, StreamPartitionLib::Name::Util::multi_partial_key_partitioner(), "mpk_tpch_q2.csv");*/
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, can, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "can_tpch_q3.csv");
-	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, mcan, StreamPartitionLib::Name::Util::affinity_naive_partitioner(), "mcan_tpch_q3.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, can, StreamPartitionLib::Name::Util::affinity_count_naive_partitioner(), "can_tpch_q3.csv");
+	query_three_partitioner_simulation(c_table, li_table, o_table, tasks, mcan, StreamPartitionLib::Name::Util::multiple_affinity_count_naive_partitioner(5), "mcan_tpch_q3.csv");
 }
 
 void Experiment::Tpch::QueryThreePartition::customer_partition(std::unique_ptr<Partitioner>& partitioner, const std::vector<q3_customer>& c_table,
