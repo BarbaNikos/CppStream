@@ -28,7 +28,8 @@
 
 int main(int argc, char** argv) {
   if (argc < 4) {
-    std::cout << "usage: <debs_ride_q1.csv> <debs_ride_q2.csv> <parse: 0, experiment: 1 "
+    std::cout << "usage: <debs_ride_q1.csv> <debs_ride_q2.csv> <parse: 0, "
+                 "experiment: 1 "
                  "- queries, 2 - part. latency, 3 - windowed queries>\n";
     exit(1);
   }
@@ -36,15 +37,15 @@ int main(int argc, char** argv) {
   std::string ride_q2_file = argv[2];
   std::string experiment = argv[3];
 
-  std::cout << "file-1: " << argv[1] << ", file-2: " << argv[2] << ", experiment: " << 
-    experiment << "\n";
+  std::cout << "file-1: " << argv[1] << ", file-2: " << argv[2]
+            << ", experiment: " << experiment << "\n";
   std::vector<Experiment::DebsChallenge::CompactRide> frequent_ride_table;
   std::vector<Experiment::DebsChallenge::CompactRide> profitable_cell_table;
   if (experiment.compare("0") == 0) {
-    Experiment::DebsChallenge::Parser::produce_compact_ride_file(argv[1], 
-        "debs_frequent_route_compact.csv", 500, 300);
-    Experiment::DebsChallenge::Parser::produce_compact_ride_file(argv[2], 
-        "debs_profitable_cell_compact.csv", 250, 600);
+    Experiment::DebsChallenge::Parser::produce_compact_ride_file(
+        argv[1], "debs_frequent_route_compact.csv", 500, 300);
+    Experiment::DebsChallenge::Parser::produce_compact_ride_file(
+        argv[2], "debs_profitable_cell_compact.csv", 250, 600);
   } else if (experiment.compare("1") == 0) {
     /*
     * DEBS queries
@@ -88,9 +89,9 @@ int main(int argc, char** argv) {
     frequent_ride_table.clear();
   } else if (experiment.compare("3") == 0) {
     Experiment::DebsChallenge::FrequentRoutePartition debs_frequent_route;
-    // debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 8);
-    // debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 16);
-    // debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 32);
+    debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 8);
+    debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 16);
+    debs_frequent_route.frequent_route_window_simulation(ride_q1_file, 32);
 
     Experiment::DebsChallenge::ProfitableAreaPartition debs_profitable_route;
     debs_profitable_route.profitable_route_window_simulation(ride_q2_file, 8);
